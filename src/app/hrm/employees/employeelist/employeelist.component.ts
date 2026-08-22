@@ -218,7 +218,7 @@ export class EmployeeListComponent implements OnInit, AfterViewInit, OnDestroy {
 	// Render employee column with image and details
 	private renderEmployeeColumn(row: any): string {
 		const imageUrl = row.profileImageUrl
-			? `/api/media/getthumbnailimage/employees/${row.profileImageUrl}`
+			? this.app.apiUrl(`/api/media/getthumbnailimage/employees/${row.profileImageUrl}`)
 			: 'assets/images/user.png';
 
 		return `

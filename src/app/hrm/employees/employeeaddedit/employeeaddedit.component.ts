@@ -245,7 +245,7 @@ export class EmployeeAddEditComponent implements OnInit {
 
 				// Image
 				this.imagePreviewUrl = this.employee.profileImageUrl
-					? `/api/media/getthumbnailimage/employees/${this.employee.profileImageUrl}`
+					? this.app.apiUrl(`/api/media/getthumbnailimage/employees/${this.employee.profileImageUrl}`)
 					: '';
 				this.deleteOldImage = false;
 				this.selectedFile = null;

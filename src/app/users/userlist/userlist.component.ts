@@ -194,7 +194,7 @@ export class UserListComponent implements OnInit, AfterViewInit, OnDestroy {
     private formatUserRow(data: any): any {
         return {
             ...data,
-            profileImageUrl: data.profileImageUrl ? `/api/media/getthumbnailimage/users/${data.profileImageUrl}` : 'assets/images/user.png',
+            profileImageUrl: data.profileImageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/users/${data.profileImageUrl}`) : 'assets/images/user.png',
             createdAt: this.app.formatDateTime(data.createdAt),
             updatedAt: this.app.formatDateTime(data.updatedAt),
             lastLogin: data.lastLogin ? this.app.formatDateTime(data.lastLogin) : '&mdash;',

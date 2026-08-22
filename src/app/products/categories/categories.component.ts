@@ -170,7 +170,7 @@ export class CategoriesComponent implements OnInit, AfterViewInit, OnDestroy {
 		// Render category column with image and name
 	private renderCategoryColumn(data: string, row: any): string {
 		const imageUrl = row.imageUrl
-			? `/api/media/getthumbnailimage/categories/${row.imageUrl}`
+			? this.app.apiUrl(`/api/media/getthumbnailimage/categories/${row.imageUrl}`)
 			: 'assets/images/default.png';
 
 		return `
@@ -277,7 +277,7 @@ export class CategoriesComponent implements OnInit, AfterViewInit, OnDestroy {
 						imageUrl: c.imageUrl || '',
 						isActive: c.isActive
 					};
-					this.imagePreviewUrl = this.category.imageUrl ? `/api/media/getthumbnailimage/categories/${this.category.imageUrl}` : '';
+					this.imagePreviewUrl = this.category.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/categories/${this.category.imageUrl}`) : '';
 					this.mainModal.loading = false;
 
 					this.app.loadImages('[data-form-img="true"]', true);

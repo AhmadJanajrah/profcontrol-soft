@@ -141,7 +141,7 @@ export class UserAddEditComponent implements OnInit, OnDestroy {
                         this.updateAvailableDefaultLocations();
                         this.user.userLocations = this.selectedLocations.map(locationId => ({ locationId }));
                         
-                        this.imagePreviewUrl = this.user.profileImageUrl ? `/api/media/getthumbnailimage/users/${this.user.profileImageUrl}` : '';
+                        this.imagePreviewUrl = this.user.profileImageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/users/${this.user.profileImageUrl}`) : '';
                         this.app.loadImages('[data-form-img="true"]');
 
                         this.isLoading = false;

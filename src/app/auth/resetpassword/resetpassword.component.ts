@@ -29,7 +29,7 @@ export class ResetPasswordComponent {
 				this.email = email;
 			}
 			else {
-				window.location.href = '/app/auth/login';
+				window.location.href = '/auth/login';
 			}
 		});
 	}

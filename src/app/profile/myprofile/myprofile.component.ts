@@ -69,7 +69,7 @@ export class MyProfileComponent implements OnInit {
 						roleName: p.roleName || '',
 						defaultLocationName: p.defaultLocationName || ''
 					};
-					this.imagePreviewUrl = this.profile.profileImageUrl ? `/api/media/getthumbnailimage/users/${this.profile.profileImageUrl}` : '';
+					this.imagePreviewUrl = this.profile.profileImageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/users/${this.profile.profileImageUrl}`) : '';
 					this.app.loadImages('[data-form-img="true"]');
 				}
 			},

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
+import { resolveApiUrl, resolveHubUrl } from '../core/api.config';
 
 // External library declarations
 declare var $: any;
@@ -366,13 +367,13 @@ export class AppService {
     this.showSplashScreen();
     this.setEncrypted('gorestofy_UserSelectedLocationId', userData.defaultLocation);
     this.setEncrypted('gorestofy_User', userData);
-    window.location.href = '/app';
+    window.location.href = '/';
   }
 
   public logout(): void {
     this.showSplashScreen();
     localStorage.clear();
-    window.location.href = '/app/auth/login';
+    window.location.href = '/auth/login';
   }
 
   public isAuthenticated(): boolean {
@@ -430,6 +431,14 @@ export class AppService {
   public getJwtToken(): string {
     const decodedUser = this.getDecrypted<any>('gorestofy_User');
     return decodedUser?.token || "";
+  }
+
+  public apiUrl(path: string): string {
+    return resolveApiUrl(path);
+  }
+
+  public hubUrl(): string {
+    return resolveHubUrl();
   }
 
   public getUserLocations(): any[] {

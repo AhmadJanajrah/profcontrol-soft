@@ -23,8 +23,8 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/gorestofy.client",
-            "baseHref": "/app/",
+            "outputPath": "dist/profcontrol-soft",
+            "baseHref": "/",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -77,7 +77,13 @@
                 }
               ],
               "outputHashing": "all",
-              "serviceWorker": "ngsw-config.json"
+              "serviceWorker": "ngsw-config.json",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
             },
             "development": {
               "optimization": false,
@@ -155,5 +161,8 @@
     "@schematics/angular:resolver": {
       "typeSeparator": "."
     }
+  },
+  "cli": {
+    "analytics": false
   }
 }

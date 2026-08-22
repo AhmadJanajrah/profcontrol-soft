@@ -149,7 +149,7 @@ export class EmployeeViewComponent implements OnInit {
 	// Get profile image URL
 	public getProfileImageUrl(): string {
 		return this.employee.profileImageUrl
-			? `/api/media/getthumbnailimage/employees/${this.employee.profileImageUrl}`
+			? this.app.apiUrl(`/api/media/getthumbnailimage/employees/${this.employee.profileImageUrl}`)
 			: 'assets/images/user.png';
 	}
 

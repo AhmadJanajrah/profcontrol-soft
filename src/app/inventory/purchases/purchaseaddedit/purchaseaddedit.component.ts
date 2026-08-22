@@ -170,7 +170,7 @@ export class PurchaseAddEditComponent implements OnInit {
 						quantity: this.app.apiNumberToLocale(item.quantity),
 						unitPrice: this.app.apiNumberToLocale(item.unitPrice),
 						item: item.item || {},
-						imageUrl: item.item?.imageUrl ? `/api/media/getthumbnailimage/items/${item.item.imageUrl}` : ''
+						imageUrl: item.item?.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/items/${item.item.imageUrl}`) : ''
 					}))
 				};
 
@@ -202,7 +202,7 @@ export class PurchaseAddEditComponent implements OnInit {
 				quantity: this.app.apiNumberToLocale(1),
 				unitPrice: this.app.apiNumberToLocale(item.cost || 0),
 				item: item,
-				imageUrl: item.imageUrl ? `/api/media/getthumbnailimage/items/${item.imageUrl}` : ''
+				imageUrl: item.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/items/${item.imageUrl}`) : ''
 			});
 		}
 	}

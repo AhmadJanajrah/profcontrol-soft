@@ -129,7 +129,7 @@ export class PurchaseReturnComponent implements OnInit {
                     quantity: '0',
                     unitCost: this.app.apiNumberToLocale(item.unitPrice || 0),
                     item: item.item || {},
-                    imageUrl: item.item?.imageUrl ? `/api/media/getthumbnailimage/images/${item.item.imageUrl}` : ''
+                    imageUrl: item.item?.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/images/${item.item.imageUrl}`) : ''
                 }));
 
                 this.calculateReturnTotals();
@@ -173,7 +173,7 @@ export class PurchaseReturnComponent implements OnInit {
             unitOfMeasure: orderItem.item?.unitOfMeasure || '',
             orderedQuantity: orderItem.quantity || 0,
             returnedQuantity: orderItem.returnedQuantity || 0,
-            imageUrl: orderItem.item?.imageUrl ? `/api/media/getthumbnailimage/images/${orderItem.item.imageUrl}` : ''
+            imageUrl: orderItem.item?.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/images/${orderItem.item.imageUrl}`) : ''
         };
     }
 

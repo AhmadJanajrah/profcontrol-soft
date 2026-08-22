@@ -303,8 +303,8 @@ export class SystemConfigComponent implements OnInit {
 							this.general.redemptionValuePerPoint = this.app.apiNumberToLocale(s.redemptionValuePerPoint);
 						}
 						// Resolve image preview URLs
-						this.logoPreviewUrl = this.general.logoUrl ? `/api/media/generalimage/${this.general.logoUrl}` : '';
-						this.faviconPreviewUrl = this.general.faviconUrl ? `/api/media/generalimage/${this.general.faviconUrl}` : '';
+						this.logoPreviewUrl = this.general.logoUrl ? this.app.apiUrl(`/api/media/generalimage/${this.general.logoUrl}`) : '';
+						this.faviconPreviewUrl = this.general.faviconUrl ? this.app.apiUrl(`/api/media/generalimage/${this.general.faviconUrl}`) : '';
 						this.app.loadImages?.('[data-form-image="true"]', true);
 						this.loading[tab] = false;
 					},

@@ -205,7 +205,7 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                     // Map inner objects with proper structure
                     itemImages: itemData.itemImages?.map((img: any) => ({
                         id: img.id,
-                        imageUrl: img.imageUrl ? `/api/media/getthumbnailimage/items/${img.imageUrl}` : 'assets/images/default.png'
+                        imageUrl: img.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/items/${img.imageUrl}`) : 'assets/images/default.png'
                     })) || [],
 
                     recipeItemItems: itemData.recipeItemItems?.map((ri: any) => ({

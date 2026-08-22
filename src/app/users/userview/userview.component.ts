@@ -85,7 +85,7 @@ export class UserViewComponent implements OnInit, OnDestroy {
 
 		// Process profile image URL
 		this.user.profileImageUrl = this.user.profileImageUrl
-			? `/api/media/getthumbnailimage/users/${this.user.profileImageUrl}`
+			? this.app.apiUrl(`/api/media/getthumbnailimage/users/${this.user.profileImageUrl}`)
 			: 'assets/images/user.png';
 	}
 

@@ -120,6 +120,6 @@ export class HomeMenuComponent implements OnInit {
 	}
 
 	public getUserImage(): string {
-		return '/api/media/userimage/' + this.app.getUserAttribute('profileImageUrl');
+		return this.app.apiUrl('/api/media/userimage/' + this.app.getUserAttribute('profileImageUrl'));
 	}
 }

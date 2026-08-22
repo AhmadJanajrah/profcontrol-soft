@@ -138,7 +138,7 @@ export class KitchenComponent implements OnInit, OnDestroy {
     this.signalRState = 'Connecting';
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl('/hub/notificationhub', {
+      .withUrl(this.app.hubUrl(), {
         accessTokenFactory: () => this.app.getJwtToken() || ''
       })
       .withAutomaticReconnect()

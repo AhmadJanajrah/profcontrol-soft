@@ -428,7 +428,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     this.hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl('/hub/notificationhub', {
+      .withUrl(this.app.hubUrl(), {
         accessTokenFactory: () => this.app.getJwtToken() || ''
       })
       .withAutomaticReconnect()
@@ -537,11 +537,11 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     this.categories.forEach((cat: any) => {
-      cat.imageUrl = cat.imageUrl ? `/api/media/getthumbnailimage/categories/${cat.imageUrl}` : '';
+      cat.imageUrl = cat.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/categories/${cat.imageUrl}`) : '';
     });
 
     this.items.forEach((item: any) => {
-      item.imageUrl = item.itemImages?.length ? `/api/media/getthumbnailimage/items/${item.itemImages[0].imageUrl}` : '';
+      item.imageUrl = item.itemImages?.length ? this.app.apiUrl(`/api/media/getthumbnailimage/items/${item.itemImages[0].imageUrl}`) : '';
     });
 
     this.taxRates.forEach((tax: any) => {
@@ -2627,7 +2627,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   public getCurrentImage(): any {
     if (this.modals.itemDetail.item?.itemImages) {
       const image = this.modals.itemDetail.item.itemImages[this.modals.itemDetail.selectedImageIndex] || null;
-      return `/api/media/getimage/items/${image?.imageUrl}`;
+      return this.app.apiUrl(`/api/media/getimage/items/${image?.imageUrl}`);
     }
     return 'assets/images/default.png';
   }

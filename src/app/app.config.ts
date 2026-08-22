@@ -4,6 +4,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { routes } from './app.routes';
+import { apiBaseInterceptor } from './api-base.interceptor';
 import { authInterceptor } from './auth.interceptor';
 
 // Third-party modules that provide SERVICES
@@ -19,7 +20,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideHttpClient(withInterceptors([apiBaseInterceptor, authInterceptor])),
     provideAnimations(),
 
     // Service-based modules only

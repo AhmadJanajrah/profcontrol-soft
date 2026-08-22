@@ -1,17 +1,17 @@
 {
   "$schema": "./node_modules/@angular/service-worker/config/schema.json",
-  "index": "/app/index.html",
+  "index": "/index.html",
   "assetGroups": [
     {
       "name": "app",
       "installMode": "prefetch",
       "resources": {
         "files": [
-          "/app/index.html",
-          "/app/index.csr.html",
-          "/app/manifest.webmanifest",
-          "/app/*.css",
-          "/app/*.js"
+          "/index.html",
+          "/index.csr.html",
+          "/manifest.webmanifest",
+          "/*.css",
+          "/*.js"
         ]
       }
     },
@@ -21,10 +21,10 @@
       "updateMode": "prefetch",
       "resources": {
         "files": [
-          "/app/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
+          "/**/*.(svg|cur|jpg|jpeg|png|apng|webp|avif|gif|otf|ttf|woff|woff2)"
         ],
         "urls": [
-          "/api/media/favicon"
+          "http://prof-api.profcontrol-soft.com/api/media/favicon"
         ]
       }
     }

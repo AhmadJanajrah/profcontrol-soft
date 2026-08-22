@@ -23,7 +23,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
       if (error.status === 401) {
         // Handle unauthorized access - redirect to login
         localStorage.clear();
-        window.location.href = '/app/auth/login';
+        window.location.href = '/auth/login';
       }
       return throwError(() => error);
     })

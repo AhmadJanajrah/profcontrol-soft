@@ -194,7 +194,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 	// Render item column with image and name
 	private renderItemColumn(data: string, row: any): string {
 		const imageUrl = row.primaryImageUrl
-			? `/api/media/getthumbnailimage/items/${row.primaryImageUrl}`
+			? this.app.apiUrl(`/api/media/getthumbnailimage/items/${row.primaryImageUrl}`)
 			: 'assets/images/default.png';
 
 		return `
