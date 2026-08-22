@@ -1,0 +1,946 @@
+<!-- Page header with title and breadcrumb -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ isEditMode ? app.localize('Edit Employee') : app.localize('Add Employee') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('HRM') }}
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/hrm/employees/list']">
+                        {{ app.localize('Employees') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ isEditMode ? app.localize('Edit') : app.localize('Add') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body p-2">
+            <div [ngClass]="{ 'disabled loader-full': isLoading }">
+                @if (!isLoading) {
+                <!-- Tabs -->
+                <ul class="nav nav-tabs style-1" role="tablist">
+                    <li class="nav-item">
+                        <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details">
+                            <i class="ri-user-line me-1"></i>
+                            {{ app.localize('Details') }}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button
+                            class="nav-link"
+                            [class.disabled]="!employee.id"
+                            id="documents-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#documents">
+                            <i class="ri-file-list-line me-1"></i>
+                            {{ app.localize('Documents') }}
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button
+                            class="nav-link"
+                            [class.disabled]="!employee.id"
+                            id="salary-tab"
+                            data-bs-toggle="tab"
+                            data-bs-target="#salary">
+                            <i class="ri-money-dollar-circle-line me-1"></i>
+                            {{ app.localize('Salary Components') }}
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content border-dashed mt-2 p-3">
+                    <!-- Details Tab -->
+                    <div class="tab-pane fade show active" id="details">
+                        <form
+                            #employeeForm="ngForm"
+                            [ngClass]="{ 'was-validated': isValidated }"
+                            (ngSubmit)="submitForm(employeeForm)"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="employee.id" type="hidden" name="id" />
+
+                            <div class="row">
+                                <!-- Basic Information -->
+                                <div class="col-12">
+                                    <div class="heading heading-form-title mb-3">
+                                        <i class="ri-user-line me-2"></i>
+                                        {{ app.localize('Basic Information') }}
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <!-- Profile Image -->
+                                    <div class="mb-4 text-center mt-md-4">
+                                        <div class="d-flex justify-content-center">
+                                            <div class="u-image-preview">
+                                                <input
+                                                    (change)="onFileInputChange($event)"
+                                                    id="profileImageFile"
+                                                    name="profileImageFile"
+                                                    type="file"
+                                                    accept=".jpg, .jpeg, .png, .gif, .webp" />
+                                                @if(employee.profileImageUrl || selectedFile) {
+                                                <img
+                                                    src="assets/images/user.png"
+                                                    [attr.data-form-img]="true"
+                                                    [attr.data-url]="imagePreviewUrl"
+                                                    alt="Profile Image" />
+                                                <button
+                                                    type="button"
+                                                    (click)="clearImage()"
+                                                    class="bg-light text-danger trash">
+                                                    <i class="ri-delete-bin-5-line"></i>
+                                                </button>
+                                                }@else {
+                                                <img src="assets/images/user.png" alt="Profile Image" />
+                                                <button type="button">
+                                                    <i class="ri-add-line"></i>
+                                                </button>
+                                                }
+                                            </div>
+                                        </div>
+                                        <label for="profileImageFile" class="control-label mt-2 d-block">
+                                            {{ app.localize('Profile Image') }}
+                                        </label>
+                                        <div class="form-text small text-muted">
+                                            {{ app.localize('Use JPG, PNG, GIF or WebP. Keep it under 5MB') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-md-8">
+                                    <div class="row">
+                                        <div class="col-md-6 form-group">
+                                            <label for="employeeName" class="form-label">
+                                                {{ app.localize('Full Name') }}
+                                                <code>*</code>
+                                            </label>
+                                            <input
+                                                [(ngModel)]="employee.employeeName"
+                                                type="text"
+                                                id="employeeName"
+                                                name="employeeName"
+                                                class="form-control"
+                                                maxlength="100"
+                                                required />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label for="email" class="form-label">
+                                                {{ app.localize('Email') }}
+                                            </label>
+                                            <input
+                                                [(ngModel)]="employee.email"
+                                                type="email"
+                                                id="email"
+                                                name="email"
+                                                class="form-control"
+                                                maxlength="100" />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('Please enter valid email address.') }}
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label for="phoneNumber" class="form-label">
+                                                {{ app.localize('Phone Number') }}
+                                            </label>
+                                            <input
+                                                [(ngModel)]="employee.phoneNumber"
+                                                id="phoneNumber"
+                                                name="phoneNumber"
+                                                type="tel"
+                                                class="form-control"
+                                                maxlength="20"
+                                                pattern="^\+?[0-9]{7,20}$" />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('Please enter a valid phone number.') }}
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label for="contactNumber" class="form-label">
+                                                {{ app.localize('Contact Number') }}
+                                            </label>
+                                            <input
+                                                [(ngModel)]="employee.contactNumber"
+                                                type="tel"
+                                                id="contactNumber"
+                                                name="contactNumber"
+                                                class="form-control"
+                                                maxlength="20"
+                                                pattern="^\+?[0-9]{7,20}$" />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('Please enter a valid contact number.') }}
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label for="nationalId" class="form-label">
+                                                {{ app.localize('National Identification') }}
+                                            </label>
+                                            <input
+                                                [(ngModel)]="employee.nationalId"
+                                                type="text"
+                                                id="nationalId"
+                                                name="nationalId"
+                                                class="form-control"
+                                                maxlength="20" />
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label for="dateOfBirth" class="form-label">
+                                                {{ app.localize('Date of Birth') }}
+                                            </label>
+                                            <div class="input-with-icon">
+                                                <input
+                                                    [(ngModel)]="employee.dateOfBirth"
+                                                    type="date"
+                                                    name="dateOfBirth"
+                                                    id="dateOfBirth"
+                                                    onclick="this.showPicker()"
+                                                    class="form-control" />
+                                                @if (employee.dateOfBirth) {
+                                                <button
+                                                    (click)="employee.dateOfBirth = null"
+                                                    type="button"
+                                                    class="input-icon-end"
+                                                    tabindex="-1">
+                                                    <i class="ri-close-line"></i>
+                                                </button>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label for="gender" class="form-label">
+                                                {{ app.localize('Gender') }}
+                                            </label>
+                                            <ng-select
+                                                [(ngModel)]="employee.gender"
+                                                [items]="genderOptions"
+                                                [searchable]="false"
+                                                [clearable]="true"
+                                                [placeholder]="app.localize('Choose an option')"
+                                                bindLabel="label"
+                                                bindValue="value"
+                                                name="gender"
+                                                id="gender"
+                                                class="form-control"></ng-select>
+                                        </div>
+
+                                        <div class="col-md-6 form-group">
+                                            <label for="maritalStatus" class="form-label">
+                                                {{ app.localize('Marital Status') }}
+                                            </label>
+                                            <ng-select
+                                                [(ngModel)]="employee.maritalStatus"
+                                                [items]="maritalStatusOptions"
+                                                [searchable]="false"
+                                                [clearable]="true"
+                                                [placeholder]="app.localize('Choose an option')"
+                                                bindLabel="label"
+                                                bindValue="value"
+                                                name="maritalStatus"
+                                                id="maritalStatus"
+                                                class="form-control"></ng-select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <!-- Employment Information -->
+                                <div class="col-12 mt-3">
+                                    <div class="heading heading-form-title mb-3">
+                                        <i class="ri-briefcase-line me-2"></i>
+                                        {{ app.localize('Employment Information') }}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 form-group">
+                                    <label for="departmentId" class="form-label">
+                                        {{ app.localize('Department') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="employee.departmentId"
+                                        [items]="departments"
+                                        [searchable]="true"
+                                        [clearable]="false"
+                                        [placeholder]="app.localize('Choose an option')"
+                                        [class.is-invalid]="isValidated && !employee.departmentId"
+                                        (ngModelChange)="onDepartmentChange()"
+                                        bindLabel="departmentName"
+                                        bindValue="id"
+                                        name="departmentId"
+                                        id="departmentId"
+                                        class="form-control"></ng-select>
+                                    @if (isValidated && !employee.departmentId) {
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                    }
+                                </div>
+
+                                <div class="col-md-4 form-group">
+                                    <label for="designationId" class="form-label">
+                                        {{ app.localize('Designation') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="employee.designationId"
+                                        [items]="filteredDesignations"
+                                        [searchable]="true"
+                                        [clearable]="false"
+                                        [placeholder]="app.localize('Choose an option')"
+                                        [class.is-invalid]="isValidated && !employee.designationId"
+                                        bindLabel="designationName"
+                                        bindValue="id"
+                                        name="designationId"
+                                        id="designationId"
+                                        class="form-control"></ng-select>
+                                    @if (isValidated && !employee.designationId) {
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                    }
+                                </div>
+
+                                <div class="col-md-4 form-group">
+                                    <label for="hireDate" class="form-label">
+                                        {{ app.localize('Hire Date') }}
+                                        <code>*</code>
+                                    </label>
+                                    <div class="input-with-icon">
+                                        <input
+                                            [(ngModel)]="employee.hireDate"
+                                            type="date"
+                                            name="hireDate"
+                                            id="hireDate"
+                                            onclick="this.showPicker()"
+                                            class="form-control"
+                                            required />
+                                        @if (employee.hireDate) {
+                                        <button
+                                            (click)="employee.hireDate = null"
+                                            type="button"
+                                            class="input-icon-end"
+                                            tabindex="-1">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                        }
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 form-group">
+                                    <label for="terminationDate" class="form-label">
+                                        {{ app.localize('Termination Date') }}
+                                    </label>
+                                    <div class="input-with-icon">
+                                        <input
+                                            [(ngModel)]="employee.terminationDate"
+                                            type="date"
+                                            name="terminationDate"
+                                            id="terminationDate"
+                                            onclick="this.showPicker()"
+                                            class="form-control" />
+                                        @if (employee.terminationDate) {
+                                        <button
+                                            (click)="employee.terminationDate = null"
+                                            type="button"
+                                            class="input-icon-end"
+                                            tabindex="-1">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4 form-group">
+                                    <label for="selectedShifts" class="form-label">
+                                        {{ app.localize('Assigned Shifts') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="selectedShifts"
+                                        [items]="shifts"
+                                        [multiple]="true"
+                                        [searchable]="true"
+                                        [clearable]="false"
+                                        [placeholder]="app.localize('Choose options')"
+                                        [class.is-invalid]="isValidated && !selectedShifts.length"
+                                        bindLabel="shiftName"
+                                        bindValue="id"
+                                        name="selectedShifts"
+                                        id="selectedShifts"
+                                        class="form-control"
+                                        appendTo="body"></ng-select>
+                                    @if (isValidated && !selectedShifts.length) {
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('Please select at least one shift.') }}
+                                    </div>
+                                    }
+                                </div>
+
+                                <!-- Active -->
+                                <div class="col-md-4 form-group">
+                                    <label for="isActive" class="form-label d-block">&nbsp;</label>
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="employee.isActive"
+                                            type="checkbox"
+                                            id="isActive"
+                                            name="isActive"
+                                            class="form-check-input" />
+                                        <label for="isActive" class="form-check-label">
+                                            {{ app.localize('Status') }}
+                                            ({{
+                                                employee.isActive ? app.localize('Active') : app.localize('Inactive')
+                                            }})
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Address Information -->
+                                <div class="col-12 mt-3">
+                                    <div class="heading heading-form-title mb-3">
+                                        <i class="ri-map-pin-line me-2"></i>
+                                        {{ app.localize('Address Information') }}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="presentAddress" class="form-label">
+                                        {{ app.localize('Present Address') }}
+                                    </label>
+                                    <textarea
+                                        [(ngModel)]="employee.presentAddress"
+                                        id="presentAddress"
+                                        name="presentAddress"
+                                        class="form-control"
+                                        maxlength="255"
+                                        rows="3"></textarea>
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="permanentAddress" class="form-label">
+                                        {{ app.localize('Permanent Address') }}
+                                    </label>
+                                    <textarea
+                                        [(ngModel)]="employee.permanentAddress"
+                                        id="permanentAddress"
+                                        name="permanentAddress"
+                                        class="form-control"
+                                        maxlength="255"
+                                        rows="3"></textarea>
+                                </div>
+
+                                <!-- Payroll Information -->
+                                <div class="col-12 mt-3">
+                                    <div class="heading heading-form-title mb-3">
+                                        <i class="ri-money-dollar-circle-line me-2"></i>
+                                        {{ app.localize('Payroll Information') }}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="payrollType" class="form-label">
+                                        {{ app.localize('Payroll Type') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="employee.payrollType"
+                                        [items]="payrollTypeOptions"
+                                        [searchable]="false"
+                                        [clearable]="false"
+                                        [placeholder]="app.localize('Choose an option')"
+                                        [class.is-invalid]="isValidated && !employee.payrollType"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        name="payrollType"
+                                        id="payrollType"
+                                        class="form-control"></ng-select>
+                                    @if (isValidated && !employee.payrollType) {
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                    }
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="basicPay" class="form-label">
+                                        {{ app.localize('Basic Pay') }}
+                                        <code>*</code>
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">
+                                                {{ app.getCurrencySymbol() }}
+                                            </span>
+                                        </div>
+                                        <input
+                                            [(ngModel)]="employee.basicPay"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                            [placeholder]="app.getNumberPlaceholder('0.00')"
+                                            type="text"
+                                            inputmode="numeric"
+                                            id="basicPay"
+                                            name="basicPay"
+                                            class="form-control"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 form-group">
+                                    <label for="taxInformation" class="form-label">
+                                        {{ app.localize('Tax Information') }}
+                                    </label>
+                                    <textarea
+                                        [(ngModel)]="employee.taxInformation"
+                                        id="taxInformation"
+                                        name="taxInformation"
+                                        class="form-control"
+                                        maxlength="255"
+                                        rows="2"></textarea>
+                                </div>
+
+                                <div class="col-12 mt-3">
+                                    <div class="heading heading-form-title mb-3">
+                                        <i class="ri-bank-line me-2"></i>
+                                        {{ app.localize('Bank Information') }}
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="bankName" class="form-label">
+                                        {{ app.localize('Bank Name') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="employee.bankName"
+                                        type="text"
+                                        id="bankName"
+                                        name="bankName"
+                                        class="form-control"
+                                        maxlength="100" />
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="branchName" class="form-label">
+                                        {{ app.localize('Branch Name') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="employee.branchName"
+                                        type="text"
+                                        id="branchName"
+                                        name="branchName"
+                                        class="form-control"
+                                        maxlength="100" />
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="iban" class="form-label">
+                                        {{ app.localize('IBAN') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="employee.iban"
+                                        type="text"
+                                        id="iban"
+                                        name="iban"
+                                        class="form-control"
+                                        maxlength="50" />
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="swiftCode" class="form-label">
+                                        {{ app.localize('SWIFT Code') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="employee.swiftCode"
+                                        type="text"
+                                        id="swiftCode"
+                                        name="swiftCode"
+                                        class="form-control"
+                                        maxlength="20" />
+                                </div>
+
+                                <div class="col-12 form-group">
+                                    <label for="notes" class="form-label">
+                                        {{ app.localize('Notes') }}
+                                    </label>
+                                    <textarea
+                                        [(ngModel)]="employee.notes"
+                                        id="notes"
+                                        name="notes"
+                                        class="form-control"
+                                        maxlength="1000"
+                                        rows="4"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div
+                                [ngClass]="{ disabled: isSubmitted }"
+                                class="d-flex gap-2 justify-content-end py-0 mt-4">
+                                <button (click)="app.goBack()" type="button" class="btn btn-light btn-round btn-back">
+                                    <i class="ri-arrow-left-line me-1"></i>
+                                    {{ app.localize('Back') }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line me-1"></i>
+                                    {{ employee.id > 0 ? app.localize('Update') : app.localize('Save') }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Documents Tab -->
+                    <div class="tab-pane fade" id="documents">
+                        @if (employee.id) {
+                        <div [ngClass]="{ 'disabled loader-full': documents.loading }">
+                            @if (!documents.loading) {
+                            <div class="form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Document Type') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="documents.documentType"
+                                    [items]="documents.documentTypes"
+                                    name="documentType"
+                                    [clearable]="true"
+                                    placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                            </div>
+                            <div class="form-group">
+                                <label for="empDocFile" class="form-label">
+                                    {{ app.localize('File') }}
+                                    <code>*</code>
+                                </label>
+                                <small class="text-muted small d-block mb-2">
+                                    {{ app.localize('Upload a file (Max: 5MB)') }}
+                                </small>
+                                <div class="upload-file">
+                                    <div><i class="ri-upload-cloud-2-fill fs-3"></i></div>
+                                    <label class="upload-label" for="empDocFile">
+                                        {{ app.localize('Drag & Drop or') }}
+                                        <span class="browse">{{ app.localize('Browse') }}</span>
+                                    </label>
+                                    <input
+                                        (change)="onDocumentFileSelected($event)"
+                                        type="file"
+                                        id="empDocFile"
+                                        accept=".pdf, .doc, .docx, .xls, .xlsx, .csv, .jpg, .jpeg, .png" />
+                                    @if (documents.fileName) {
+                                    <div class="fw-medium">{{ documents.fileName }}</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end mt-3">
+                                <button
+                                    (click)="uploadDocument()"
+                                    [disabled]="
+                                        documents.uploading || !documents.selectedFile || !documents.documentType
+                                    "
+                                    [ngClass]="{ 'btn-progress': documents.uploading }"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-upload-line"></i>
+                                    {{ app.localize('Upload') }}
+                                </button>
+                            </div>
+
+                            <div class="divider"></div>
+                            <div class="heading heading-form-title">
+                                <i class="ri-file-list-line me-2"></i>
+                                {{ app.localize('Uploaded Documents') }}
+                            </div>
+
+                            @if (documents.documents.length === 0) {
+                            <div class="text-center py-4 text-muted">
+                                <i class="ri-file-list-line fs-1"></i>
+                                <p class="mt-2">{{ app.localize('No documents uploaded yet') }}</p>
+                            </div>
+                            } @else {
+                            <div class="list-group style-1">
+                                @for (doc of documents.documents; track doc.id) {
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="d-flex gap-2 align-items-center">
+                                            <div class="avatar bg-primary-light">
+                                                <i class="ri-file-line"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-medium">{{ doc.documentName }}</div>
+                                                <small class="text-muted">
+                                                    {{ doc.documentType }} • {{ getFileSize(doc.documentSizeKb) }} •
+                                                    {{ app.formatDate(doc.uploadedAt) }}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button
+                                            (click)="downloadDocument(doc)"
+                                            [appTooltip]="app.localize('Download')"
+                                            type="button"
+                                            class="btn btn-icon btn-light text-primary btn-sm">
+                                            <i class="ri-download-line"></i>
+                                        </button>
+                                        <button
+                                            (click)="deleteDocument(doc)"
+                                            [appTooltip]="app.localize('Delete')"
+                                            type="button"
+                                            class="btn btn-icon btn-light text-danger btn-sm">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                }
+                            </div>
+                            } }
+                        </div>
+                        }
+                    </div>
+
+                    <!-- Salary Components Tab -->
+                    <div class="tab-pane fade" id="salary">
+                        @if (employee.id) {
+                        <div [ngClass]="{ 'disabled loader-full': salary.loading }">
+                            @if (!salary.loading) {
+                            <div class="heading heading-form-title">
+                                <i class="ri-money-dollar-circle-line me-2"></i>
+                                {{ app.localize('Add New Component') }}
+                            </div>
+                            <form
+                                #salaryForm="ngForm"
+                                [ngClass]="{ 'was-validated': salary.validated }"
+                                (ngSubmit)="addSalaryComponent(salaryForm)"
+                                novalidate>
+                                <div class="row">
+                                    <div class="form-group col-md-6">
+                                        <label class="form-label">
+                                            {{ app.localize('Component') }}
+                                            <code>*</code>
+                                        </label>
+                                        <ng-select
+                                            [(ngModel)]="salary.newComponent.salaryComponentId"
+                                            (change)="onSalaryComponentChange($event)"
+                                            [items]="salary.availableComponents"
+                                            bindLabel="componentName"
+                                            bindValue="id"
+                                            name="salaryComponentId"
+                                            [clearable]="false"
+                                            [required]="true"
+                                            placeholder="{{ app.localize('Choose an option') }}"
+                                            [class.is-invalid]="
+                                                salary.validated && !salary.newComponent.salaryComponentId
+                                            "
+                                            class="form-control"></ng-select>
+                                        @if (salary.validated && !salary.newComponent.salaryComponentId) {
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                        }
+                                    </div>
+
+                                    <div class="form-group col-md-6">
+                                        <label class="form-label">
+                                            {{ app.localize('Value') }}
+                                            <code>*</code>
+                                        </label>
+                                        <div class="input-group">
+                                            <div class="input-group-prepend">
+                                                <span class="input-group-text">
+                                                    @if (salary.newComponent.isPercentage) { % } @else {
+                                                    {{ app.getCurrencySymbol() }}
+                                                    }
+                                                </span>
+                                            </div>
+                                            <input
+                                                [(ngModel)]="salary.newComponent.value"
+                                                [appCleaveNumber]="app.getCleaveNumberOptions(2, false)"
+                                                [placeholder]="app.getNumberPlaceholder('0.00')"
+                                                type="text"
+                                                inputmode="numeric"
+                                                name="value"
+                                                class="form-control"
+                                                required />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group col-md-6">
+                                        <label class="form-label">
+                                            {{ app.localize('Effective From') }}
+                                            <code>*</code>
+                                        </label>
+                                        <div class="input-with-icon">
+                                            <input
+                                                [(ngModel)]="salary.newComponent.effectiveFrom"
+                                                type="date"
+                                                name="effectiveFrom"
+                                                id="effectiveFrom"
+                                                onclick="this.showPicker()"
+                                                class="form-control"
+                                                required />
+                                            @if (salary.newComponent.effectiveFrom) {
+                                            <button
+                                                (click)="salary.newComponent.effectiveFrom = ''"
+                                                type="button"
+                                                class="input-icon-end"
+                                                tabindex="-1">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                            }
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group col-md-6">
+                                        <label class="form-label">
+                                            {{ app.localize('Effective To') }}
+                                            <a
+                                                href="javascript:void(0)"
+                                                class="btn-link-icon ms-2"
+                                                [appTooltip]="app.localize('Leave empty for ongoing')">
+                                                <i class="ri-information-line"></i>
+                                            </a>
+                                        </label>
+                                        <div class="input-with-icon">
+                                            <input
+                                                [(ngModel)]="salary.newComponent.effectiveTo"
+                                                type="date"
+                                                name="effectiveTo"
+                                                id="effectiveTo"
+                                                onclick="this.showPicker()"
+                                                class="form-control" />
+                                            @if (salary.newComponent.effectiveTo) {
+                                            <button
+                                                (click)="salary.newComponent.effectiveTo = ''"
+                                                type="button"
+                                                class="input-icon-end"
+                                                tabindex="-1">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button
+                                        [ngClass]="{ 'disabled btn-progress': salary.submitted }"
+                                        [disabled]="salary.submitted"
+                                        type="submit"
+                                        class="btn btn-primary btn-round">
+                                        <i class="ri-save-line"></i>
+                                        {{ app.localize('Save') }}
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div class="divider"></div>
+
+                            <div class="heading heading-form-title">
+                                <i class="ri-file-list-line me-2"></i>
+                                {{ app.localize('Current Components') }}
+                            </div>
+
+                            @if (salary.components.length === 0) {
+                            <div class="text-center py-4 text-muted">
+                                <i class="ri-money-dollar-circle-line fs-1"></i>
+                                <p class="mt-2">{{ app.localize('No salary components configured') }}</p>
+                            </div>
+                            } @else {
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ app.localize('Component') }}</th>
+                                            <th>{{ app.localize('Type') }}</th>
+                                            <th>{{ app.localize('Value') }}</th>
+                                            <th>{{ app.localize('Period') }}</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (component of salary.components; track component.id) {
+                                        <tr>
+                                            <td>{{ component.salaryComponent?.componentName }}</td>
+                                            <td>
+                                                <span
+                                                    [class]="
+                                                        'badge ' +
+                                                        getComponentTypeBadgeClass(
+                                                            component.salaryComponent?.componentType
+                                                        )
+                                                    ">
+                                                    {{
+                                                        getComponentTypeLabel(component.salaryComponent?.componentType)
+                                                    }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (component.salaryComponent?.isPercentage) {
+                                                {{ app.formatPercent(component.value) }} } @else {
+                                                {{ app.formatCurrency(component.value) }}
+                                                }
+                                            </td>
+                                            <td>
+                                                {{ app.formatDate(component.effectiveFrom) }}
+                                                @if (component.effectiveTo) { -
+                                                {{ app.formatDate(component.effectiveTo) }} }
+                                            </td>
+                                            <td class="text-center">
+                                                <button
+                                                    (click)="deleteSalaryComponent(component)"
+                                                    [appTooltip]="app.localize('Remove')"
+                                                    type="button"
+                                                    class="btn btn-icon btn-light text-danger btn-sm">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            } }
+                        </div>
+                        }
+                    </div>
+                </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

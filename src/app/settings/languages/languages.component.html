@@ -1,0 +1,199 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Languages') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Settings') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Languages') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new language button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Languages DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Language modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Language form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="language.id" type="hidden" name="id" />
+
+                            <!-- Language Code -->
+                            <div class="form-group">
+                                <label for="languageCode" class="control-label">
+                                    {{ app.localize('Language') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="language.languageCode"
+                                    [items]="cultures"
+                                    bindLabel="displayName"
+                                    bindValue="name"
+                                    [class.is-invalid]="mainModal.validated && !language.languageCode"
+                                    id="languageCode"
+                                    name="languageCode"
+                                    placeholder="{{ app.localize('Choose an option') }}"
+                                    [required]="true"
+                                    [disabled]="mainModal.isUpdate"></ng-select>
+                                @if( mainModal.validated && !language.languageCode) {
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+
+                            <!-- Translation File -->
+                            <div class="form-group">
+                                <label for="translationFile">
+                                    {{ app.localize('Translation File') }}
+                                    @if (!mainModal.isUpdate) {
+                                    <code>*</code>
+                                    }
+                                </label>
+                                <small class="text-muted small d-block mb-2">
+                                    {{ app.localize('Upload JSON file with translations') }}
+                                    @if (mainModal.isUpdate) {
+                                    {{ app.localize('(Optional - leave empty to keep current translations)') }}
+                                    }
+                                </small>
+                                <div class="upload-file">
+                                    <div><i class="ri-upload-cloud-2-fill fs-3"></i></div>
+                                    <label class="upload-label" for="translationFile">
+                                        {{ app.localize('Drag & Drop or') }}
+                                        <span class="browse">{{ app.localize('Browse') }}</span>
+                                    </label>
+                                    <input
+                                        (change)="onFileInputChange($event)"
+                                        type="file"
+                                        id="translationFile"
+                                        accept=".json" />
+                                    @if (translationFile) {
+                                    <div class="fw-medium">{{ translationFile.name }}</div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Status Options -->
+                            <div class="form-group mt-3">
+                                <!-- Active Status -->
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="language.isActive"
+                                        type="checkbox"
+                                        id="isActive"
+                                        name="isActive"
+                                        class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">
+                                        {{ app.localize('Status') }}
+                                        ({{ language.isActive ? app.localize('Active') : app.localize('Inactive') }})
+                                        <a
+                                            href="javascript:void(0)"
+                                            class="btn-link-icon"
+                                            [appTooltip]="app.localize('Enable this language for users')">
+                                            <i class="ri-information-line ms-2"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Default Status -->
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="language.isDefault"
+                                        type="checkbox"
+                                        id="isDefault"
+                                        name="isDefault"
+                                        class="form-check-input" />
+                                    <label for="isDefault" class="form-check-label">
+                                        {{ app.localize('Set as Default') }}
+                                        <a
+                                            href="javascript:void(0)"
+                                            class="btn-link-icon"
+                                            [appTooltip]="
+                                                app.localize('Set as default language (only one default allowed)')
+                                            ">
+                                            <i class="ri-information-line ms-2"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

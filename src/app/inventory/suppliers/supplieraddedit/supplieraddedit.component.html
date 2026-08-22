@@ -1,0 +1,317 @@
+<!-- Page header with title and breadcrumb -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ getPageTitle() }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Inventory') }}
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/inventory/suppliers/list']">
+                        {{ app.localize('Suppliers') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ isEditMode ? app.localize('Edit') : app.localize('Add') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Supplier form card -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Loading overlay -->
+            <div [ngClass]="{ 'disabled loader-full': isLoading }"></div>
+
+            <!-- Supplier form -->
+            @if (!isLoading) {
+            <form
+                #supplierForm="ngForm"
+                [ngClass]="{ 'was-validated': isValidated }"
+                (ngSubmit)="submitForm(supplierForm)"
+                autocomplete="off"
+                novalidate>
+                <!-- Hidden ID field -->
+                <input [(ngModel)]="supplier.id" type="hidden" name="id" />
+
+                <div class="row">
+                    <!-- Supplier Name -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-group">
+                            <label for="supplierName" class="form-label">
+                                {{ app.localize('Supplier Name') }}
+                                <code>*</code>
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.supplierName"
+                                type="text"
+                                id="supplierName"
+                                name="supplierName"
+                                class="form-control"
+                                maxlength="100"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Person -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-group">
+                            <label for="contactPerson" class="form-label">
+                                {{ app.localize('Contact Person') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.contactPerson"
+                                type="text"
+                                id="contactPerson"
+                                name="contactPerson"
+                                class="form-control"
+                                maxlength="100" />
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-group">
+                            <label for="email" class="form-label">
+                                {{ app.localize('Email') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.email"
+                                type="email"
+                                id="email"
+                                name="email"
+                                class="form-control"
+                                maxlength="100" />
+                            <div class="invalid-feedback">
+                                {{ app.localize('Please enter a valid email address.') }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-group">
+                            <label for="phone" class="control-label">
+                                {{ app.localize('Phone') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.phone"
+                                id="phone"
+                                name="phone"
+                                type="tel"
+                                class="form-control"
+                                maxlength="20"
+                                pattern="^\+?[0-9]{7,20}$" />
+                            <div class="invalid-feedback">
+                                {{ app.localize('Please enter a valid phone number.') }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tax Identification Number -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-group">
+                            <label for="taxIdentificationNumber" class="form-label">
+                                {{ app.localize('Tax Identification Number') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.taxIdentificationNumber"
+                                type="text"
+                                id="taxIdentificationNumber"
+                                name="taxIdentificationNumber"
+                                class="form-control"
+                                maxlength="50" />
+                        </div>
+                    </div>
+
+                    <!-- Rating -->
+                    <div class="col-md-6 col-lg-4">
+                        <div class="form-group">
+                            <label for="rating" class="form-label">
+                                {{ app.localize('Rating') }}
+                            </label>
+                            <ng-select
+                                [(ngModel)]="supplier.rating"
+                                [items]="ratingOptions"
+                                [clearable]="false"
+                                [searchable]="false"
+                                bindLabel="label"
+                                bindValue="value"
+                                name="rating"
+                                placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Address -->
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="address" class="form-label">
+                                {{ app.localize('Address') }}
+                            </label>
+                            <textarea
+                                [(ngModel)]="supplier.address"
+                                id="address"
+                                name="address"
+                                class="form-control"
+                                rows="2"
+                                maxlength="255"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- City -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="city" class="form-label">
+                                {{ app.localize('City') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.city"
+                                type="text"
+                                id="city"
+                                name="city"
+                                class="form-control"
+                                maxlength="100" />
+                        </div>
+                    </div>
+
+                    <!-- State -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="state" class="form-label">
+                                {{ app.localize('State') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.state"
+                                type="text"
+                                id="state"
+                                name="state"
+                                class="form-control"
+                                maxlength="100" />
+                        </div>
+                    </div>
+
+                    <!-- Postal Code -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="postalCode" class="form-label">
+                                {{ app.localize('Postal Code') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.postalCode"
+                                type="text"
+                                id="postalCode"
+                                name="postalCode"
+                                class="form-control"
+                                maxlength="20" />
+                        </div>
+                    </div>
+
+                    <!-- Country -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label for="country" class="form-label">
+                                {{ app.localize('Country') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.country"
+                                type="text"
+                                id="country"
+                                name="country"
+                                class="form-control"
+                                maxlength="100" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Information Card -->
+                <div class="heading heading-form-title mt-2">
+                    <i class="ri-information-line me-1"></i>
+                    {{ app.localize('Additional Information') }}
+                </div>
+                <div class="row">
+                    <!-- Payment Terms -->
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="paymentTerms" class="form-label">
+                                {{ app.localize('Payment Terms') }}
+                            </label>
+                            <input
+                                [(ngModel)]="supplier.paymentTerms"
+                                type="text"
+                                id="paymentTerms"
+                                name="paymentTerms"
+                                class="form-control"
+                                maxlength="200" />
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <label for="notes" class="form-label">
+                                {{ app.localize('Notes') }}
+                            </label>
+                            <textarea
+                                [(ngModel)]="supplier.notes"
+                                id="notes"
+                                name="notes"
+                                class="form-control"
+                                rows="3"
+                                maxlength="1000"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-12">
+                        <div class="form-group">
+                            <div class="form-check form-switch">
+                                <input
+                                    [(ngModel)]="supplier.isActive"
+                                    type="checkbox"
+                                    id="isActive"
+                                    name="isActive"
+                                    class="form-check-input" />
+                                <label for="isActive" class="form-check-label">
+                                    {{ app.localize('Status') }}
+                                    ({{ supplier.isActive ? app.localize('Active') : app.localize('Inactive') }})
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div [ngClass]="{ disabled: isSubmitted }" class="d-flex justify-content-end gap-2">
+                    <button (click)="app.goBack()" type="button" class="btn btn-light btn-round">
+                        <i class="ri-arrow-left-line"></i>
+                        {{ app.localize('Back') }}
+                    </button>
+                    <button
+                        [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                        type="submit"
+                        class="btn btn-primary btn-round">
+                        <i class="ri-save-3-line"></i>
+                        {{ isEditMode ? app.localize('Update') : app.localize('Save') }}
+                    </button>
+                </div>
+            </form>
+            }
+        </div>
+    </div>
+</div>

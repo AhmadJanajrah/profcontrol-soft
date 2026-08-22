@@ -1,0 +1,336 @@
+<!-- Page header -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('My Profile') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">{{ app.localize('Profile') }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body p-2">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs style-1" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [ngClass]="{ active: activeTab === 'profile' }"
+                        (click)="selectTab('profile')">
+                        <i class="ri-user-line me-1"></i>
+                        {{ app.localize('My Profile') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [ngClass]="{ active: activeTab === 'security' }"
+                        (click)="selectTab('security')">
+                        <i class="ri-shield-user-line me-1"></i>
+                        {{ app.localize('Security') }}
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab panes -->
+            <div class="tab-content border-dashed p-3 mt-2">
+                <!-- My Profile Tab -->
+                <div class="tab-pane" [ngClass]="{ active: activeTab === 'profile' }">
+                    <form
+                        #profileForm="ngForm"
+                        (ngSubmit)="submitProfile(profileForm)"
+                        novalidate
+                        autocomplete="off"
+                        [ngClass]="{ 'was-validated': profileValidated }">
+                        <div class="row g-3">
+                            <div class="col-md-4 text-center">
+                                <!-- Profile Image Section -->
+                                <div class="d-flex justify-content-center">
+                                    <div class="u-image-preview">
+                                        <input
+                                            (change)="onFileSelected($event)"
+                                            id="profileImage"
+                                            name="profileImage"
+                                            type="file"
+                                            accept=".jpg, .jpeg, .png, .gif, .webp" />
+                                        @if(profile.profileImageUrl || imageFile) {
+                                        <img
+                                            src="assets/images/user.png"
+                                            [attr.data-form-img]="true"
+                                            [attr.data-url]="imagePreviewUrl"
+                                            alt="Profile Image" />
+                                        <button type="button" (click)="clearImage()" class="bg-light text-danger trash">
+                                            <i class="ri-delete-bin-5-line"></i>
+                                        </button>
+                                        }@else {
+                                        <img src="assets/images/user.png" alt="Profile Image" />
+                                        <button type="button">
+                                            <i class="ri-pencil-line"></i>
+                                        </button>
+                                        }
+                                    </div>
+                                </div>
+                                <label for="profileImage" class="control-label mt-2 d-block">
+                                    {{ app.localize('Profile Image') }}
+                                </label>
+                                <div class="form-text small text-muted">
+                                    {{ app.localize('Use JPG, PNG, GIF or WebP. Keep it under 5MB') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="fullName" class="control-label">
+                                            {{ app.localize('Full Name') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="profile.fullName"
+                                            name="fullName"
+                                            required
+                                            maxlength="100"
+                                            class="form-control" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="email" class="control-label">
+                                            {{ app.localize('Email') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="profile.email"
+                                            type="email"
+                                            id="email"
+                                            name="email"
+                                            class="form-control"
+                                            maxlength="100" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('Please enter a valid email address.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="phone" class="control-label">{{ app.localize('Phone') }}</label>
+                                        <input
+                                            [(ngModel)]="profile.phone"
+                                            type="tel"
+                                            id="phone"
+                                            name="phone"
+                                            class="form-control"
+                                            maxlength="20"
+                                            pattern="^\+?[0-9]{7,20}$" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('Please enter a valid phone number.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="userName" class="control-label">
+                                            {{ app.localize('User Name') }}
+                                        </label>
+                                        <input
+                                            [(ngModel)]="profile.userName"
+                                            id="userName"
+                                            name="userName"
+                                            readonly
+                                            class="form-control disabled" />
+                                    </div>
+
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="roleName" class="control-label">{{ app.localize('Role') }}</label>
+                                        <input
+                                            [(ngModel)]="profile.roleName"
+                                            id="roleName"
+                                            name="roleName"
+                                            readonly
+                                            class="form-control disabled" />
+                                    </div>
+
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="defaultLocation" class="control-label">
+                                            {{ app.localize('Default Location') }}
+                                        </label>
+                                        <input
+                                            [(ngModel)]="profile.defaultLocationName"
+                                            id="defaultLocation"
+                                            name="defaultLocation"
+                                            readonly
+                                            class="form-control disabled" />
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button
+                                        [ngClass]="{ 'disabled btn-progress': profileSubmitting }"
+                                        type="submit"
+                                        class="btn btn-primary btn-round">
+                                        <i class="ri-save-3-line"></i>
+                                        {{ app.localize('Save') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Security Tab -->
+                <div class="tab-pane" [ngClass]="{ active: activeTab === 'security' }">
+                    <div class="row g-3 g-md-4">
+                        <div class="col-md-6">
+                            <h6 class="heading heading-form-title">
+                                <i class="ri-key-2-line me-2"></i>
+                                {{ app.localize('Change Password') }}
+                            </h6>
+                            <form
+                                #pwdForm="ngForm"
+                                (ngSubmit)="changePassword(pwdForm)"
+                                novalidate
+                                [ngClass]="{ 'was-validated': pwdValidated }">
+                                <div class="form-group">
+                                    <label for="oldPassword" class="control-label">
+                                        {{ app.localize('Old Password') }}
+                                        <code>*</code>
+                                    </label>
+                                    <div class="input-with-icon">
+                                        <input
+                                            [(ngModel)]="passwordForm.oldPassword"
+                                            id="oldPassword"
+                                            name="oldPassword"
+                                            type="password"
+                                            required
+                                            minlength="6"
+                                            maxlength="30"
+                                            class="form-control" />
+                                        <button
+                                            type="button"
+                                            class="input-icon-end toggle-password"
+                                            tabindex="-1"
+                                            data-target="#oldPassword">
+                                            <i class="ri-eye-line"></i>
+                                        </button>
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="newPassword" class="control-label">
+                                        {{ app.localize('New Password') }}
+                                        <code>*</code>
+                                    </label>
+                                    <div class="input-with-icon">
+                                        <input
+                                            [(ngModel)]="passwordForm.newPassword"
+                                            id="newPassword"
+                                            name="newPassword"
+                                            type="password"
+                                            required
+                                            minlength="6"
+                                            maxlength="30"
+                                            [attr.pattern]="'^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{6,}$'"
+                                            class="form-control" />
+                                        <button
+                                            type="button"
+                                            class="input-icon-end toggle-password"
+                                            tabindex="-1"
+                                            data-target="#newPassword">
+                                            <i class="ri-eye-line"></i>
+                                        </button>
+                                        <div class="invalid-feedback">
+                                            {{
+                                                app.localize('At least 6 characters, including a letter and a number.')
+                                            }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirmNewPassword" class="control-label">
+                                        {{ app.localize('Confirm Password') }}
+                                        <code>*</code>
+                                    </label>
+                                    <div class="input-with-icon">
+                                        <input
+                                            [(ngModel)]="passwordForm.confirmNewPassword"
+                                            id="confirmNewPassword"
+                                            name="confirmNewPassword"
+                                            type="password"
+                                            required
+                                            minlength="6"
+                                            maxlength="30"
+                                            [attr.pattern]="'^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{6,}$'"
+                                            class="form-control" />
+                                        <button
+                                            type="button"
+                                            class="input-icon-end toggle-password"
+                                            tabindex="-1"
+                                            data-target="#confirmNewPassword">
+                                            <i class="ri-eye-line"></i>
+                                        </button>
+                                        <div class="invalid-feedback">
+                                            {{
+                                                app.localize('At least 6 characters, including a letter and a number.')
+                                            }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button
+                                        [ngClass]="{ 'disabled btn-progress': pwdSubmitting }"
+                                        type="submit"
+                                        class="btn btn-primary btn-round">
+                                        <i class="ri-key-2-line"></i>
+                                        {{ app.localize('Change Password') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="heading heading-form-title">
+                                <i class="ri-shield-keyhole-line me-2"></i>
+                                {{ app.localize('Two-Factor Authentication') }}
+                            </h6>
+                            <div class="card">
+                                <div class="card-body d-flex align-items-center justify-content-between">
+                                    <div>
+                                        <h6 class="mb-1">{{ app.localize('Two-Factor Authentication') }}</h6>
+                                        <div class="text-muted small">
+                                            {{ app.localize('Use two-factor authentication for extra security.') }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="form-check form-switch">
+                                            <input
+                                                class="form-check-input"
+                                                type="checkbox"
+                                                id="twoFactor"
+                                                [checked]="profile.isTwoFactorEnabled"
+                                                (change)="toggleTwoFactor()" />
+                                            <label class="form-check-label" for="twoFactor">
+                                                {{
+                                                    profile.isTwoFactorEnabled
+                                                        ? app.localize('Enabled')
+                                                        : app.localize('Disabled')
+                                                }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,384 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+	<div>
+		<h1 class="page-title">
+			{{ app.localize("Z/X Report") }}
+		</h1>
+		<nav>
+			<ol class="breadcrumb mb-0">
+				<li class="breadcrumb-item icon">
+					<a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+						<i class="ri-home-4-line"></i>
+					</a>
+				</li>
+				<li class="breadcrumb-item">
+					{{ app.localize("Reports") }}
+				</li>
+				<li class="breadcrumb-item active">
+					{{ app.localize("Z/X Report") }}
+				</li>
+			</ol>
+		</nav>
+	</div>
+	<!-- Action buttons -->
+	<div class="float-end">
+		@if (reportData && !isLoading) {
+		<div class="btn-group me-2">
+			<button (click)="printReport()" type="button" class="btn btn-outline-primary btn-round"
+				[appTooltip]="app.localize('Print Report')">
+				<i class="ri-printer-line"></i>
+				{{ app.localize("Print") }}
+			</button>
+		</div>
+		}
+		<button (click)="loadReport()" type="button" class="btn btn-primary btn-round"
+			[appTooltip]="app.localize('Refresh Report')">
+			<i class="ri-refresh-line"></i>
+			{{ app.localize("Refresh") }}
+		</button>
+	</div>
+</div>
+
+<div class="main-content">
+	<!-- Filters section -->
+	<div class="card mb-3">
+		<div class="card-body">
+			<form #filterForm="ngForm" [ngClass]="{ 'was-validated': filters.validated }"
+				(ngSubmit)="applyFilters(filterForm)" novalidate>
+				<div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+					<!-- Report Type filter -->
+					<div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+						<label class="form-label" for="reportTypeSelect">
+							{{ app.localize("Report Type") }}
+							<code>*</code>
+						</label>
+						<ng-select id="reportTypeSelect" name="reportTypeSelect" [(ngModel)]="filters.reportType"
+							[items]="reportTypes" [searchable]="false" [clearable]="false" bindLabel="label" bindValue="value"
+							appendTo="body" [class.is-invalid]="filters.validated && !filters.reportType" class="form-control"
+							required></ng-select>
+					</div>
+
+					<!-- Report Date filter -->
+					<div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+						<label for="reportDate" class="form-label">
+							{{ app.localize("Date") }}
+							<code>*</code>
+						</label>
+						<input [(ngModel)]="filters.reportDate" type="date" name="reportDate" id="reportDate"
+							onclick="this.showPicker()" class="form-control" required />
+					</div>
+
+					<!-- Register filter -->
+					<div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+						<label class="form-label" for="registerSelect">
+							{{ app.localize("Cash Register") }}
+							<code>*</code>
+						</label>
+						<ng-select id="registerSelect" name="registerSelect" [(ngModel)]="filters.registerId" [items]="registers"
+							[searchable]="true" [clearable]="false" [placeholder]="app.localize('Select Register')"
+							bindLabel="registerName" bindValue="id" appendTo="body"
+							[class.is-invalid]="filters.validated && !filters.registerId" class="form-control" required></ng-select>
+					</div>
+
+					<!-- Filter actions -->
+					<div class="d-flex align-items-end gap-2 flex-shrink-0">
+						<button [ngClass]="{ 'disabled btn-progress': filters.submitted }" [disabled]="filters.submitted"
+							type="submit" class="btn btn-primary btn-round">
+							<i class="ri-file-text-line"></i>
+							{{ app.localize("Generate") }}
+						</button>
+						<button (click)="resetFilters()" type="button" [disabled]="filters.submitted"
+							class="btn btn-light btn-round">
+							<i class="ri-refresh-line"></i>
+							{{ app.localize("Reset") }}
+						</button>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- Report Content -->
+	<div class="position-relative" [ngClass]="{ 'disabled loader-full': isLoading }">
+		@if (reportData && !isLoading) {
+		<div class="card">
+			<div class="card-body">
+				<div #printSection class="report-content zx-report" id="zx-report">
+					<!-- ================= HEADER ================= -->
+					<div class="header text-center mb-3">
+						<h4 class="mb-0">{{ app.getSelectedLocationName() }}</h4>
+						<h5 class="mt-1" [style.color]="getCurrentReportType()?.color">
+							{{ getCurrentReportType()?.label }}
+						</h5>
+					</div>
+
+					<div class="mb-2">
+						<strong>{{ app.localize("Report Date") }}:</strong>
+						{{ app.formatDate(reportData.reportDate) }}
+					</div>
+
+					@if (reportData.reportType === 'x-report' && reportData.reportTime) {
+					<div class="mb-2">
+						<strong>{{ app.localize("Report Time") }}:</strong>
+						{{ reportData.reportTime }}
+					</div>
+					}
+
+					<div class="mb-3">
+						<strong>{{ app.localize("Register") }}:</strong>
+						{{ reportData.register?.registerName }}
+					</div>
+
+					<!-- ================================================= -->
+					<!-- ================= Z REPORT ===================== -->
+					<!-- ================================================= -->
+					@if (reportData.reportType === 'z-report') { @for (sessionReport of
+					reportData.sessions; track sessionReport.sessionId) {
+
+					<div class="border rounded p-3 mb-4">
+						<!-- Session Header -->
+						<div class="d-flex justify-content-between align-items-center mb-2">
+							<div>
+								<strong>{{ app.localize("Session") }}:</strong>
+								{{ app.formatDateTime(sessionReport.session.openedAt) }}
+								-
+								{{ app.formatDateTime(sessionReport.session.closedAt) }}
+							</div>
+							<span class="badge bg-danger">
+								{{ app.localize("Closed") }}
+							</span>
+						</div>
+
+						<!-- Sales Summary -->
+						<h6 class="fw-bold border-bottom pb-1 mb-2">
+							{{ app.localize("Sales Summary") }}
+						</h6>
+
+						<table class="table mb-0">
+							<tbody>
+								<tr>
+									<td>{{ app.localize("Total Orders") }}</td>
+									<td class="text-end">
+										{{ sessionReport.sales.totalOrders | number }}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Gross Sales") }}</td>
+									<td class="text-end">
+										{{ app.formatCurrency(sessionReport.sales.grossSales) }}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Discounts") }}</td>
+									<td class="text-end text-danger">
+										-{{ app.formatCurrency(sessionReport.sales.discounts) }}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Tax Collected") }}</td>
+									<td class="text-end">
+										{{ app.formatCurrency(sessionReport.sales.taxCollected) }}
+									</td>
+								</tr>
+								<tr>
+									<td class="fw-medium">{{ app.localize('Charges') }}</td>
+									<td class="text-end">
+										{{ app.formatCurrency(sessionReport.sales.charges) }}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Returns") }}</td>
+									<td class="text-end text-danger">
+										-{{ app.formatCurrency(sessionReport.sales.returns) }}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Processing Fees") }}</td>
+									<td class="text-end text-danger">
+										-{{
+										app.formatCurrency(sessionReport.sales.processingFees)
+										}}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Tips") }}</td>
+									<td class="text-end text-info">
+										{{ app.formatCurrency(sessionReport.sales.tips) }}
+									</td>
+								</tr>
+								<tr class="fw-bold fs-5">
+									<td>{{ app.localize("Net Sales") }}</td>
+									<td class="text-end text-success">
+										{{ app.formatCurrency(sessionReport.sales.netSales) }}
+									</td>
+								</tr>
+							</tbody>
+						</table>
+
+						<!-- Payment Breakdown -->
+						@if (sessionReport.salesByPaymentMethod?.length > 0) {
+						<h6 class="fw-bold border-bottom mt-3 pb-1">
+							{{ app.localize("Payment Breakdown") }}
+						</h6>
+
+						<table class="table table-borderless mb-0">
+							<tbody>
+								@for (pm of sessionReport.salesByPaymentMethod; track
+								pm.paymentMethod) {
+								<tr>
+									<td>{{ pm.paymentMethod }} ({{ pm.count }})</td>
+									<td class="text-end">
+										{{ app.formatCurrency(pm.amount) }}
+									</td>
+								</tr>
+								}
+							</tbody>
+						</table>
+						}
+
+						<!-- Order Type Breakdown -->
+						@if (sessionReport.ordersByType?.length > 0) {
+						<h6 class="fw-bold border-bottom mt-3 pb-1">
+							{{ app.localize("Order Type Breakdown") }}
+						</h6>
+
+						<table class="table table-borderless mb-0">
+							<tbody>
+								@for (ot of sessionReport.ordersByType; track ot.orderType) {
+								<tr>
+									<td>{{ app.localize(ot.orderType) }} ({{ ot.count }})</td>
+									<td class="text-end">
+										{{ app.formatCurrency(ot.amount) }}
+									</td>
+								</tr>
+								}
+							</tbody>
+						</table>
+						}
+
+						<!-- Cash Register -->
+						<h6 class="fw-bold border-bottom mt-3 pb-1">
+							{{ app.localize("Cash Register") }}
+						</h6>
+
+						<table class="table mb-0">
+							<tbody>
+								<tr>
+									<td>{{ app.localize("Opening Cash") }}</td>
+									<td class="text-end">
+										{{ app.formatCurrency(sessionReport.session.openingCash) }}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Closing Cash") }}</td>
+									<td class="text-end">
+										{{ app.formatCurrency(sessionReport.session.closingCash) }}
+									</td>
+								</tr>
+								<tr>
+									<td>{{ app.localize("Expected Cash") }}</td>
+									<td class="text-end">
+										{{ app.formatCurrency(sessionReport.session.expectedCash) }}
+									</td>
+								</tr>
+								<tr class="border-top fw-bold">
+									<td>{{ app.localize("Difference") }}</td>
+									<td class="text-end" [ngClass]="
+                      getCashDifferenceClass(sessionReport.session.difference)
+                    ">
+										{{ app.formatCurrency(sessionReport.session.difference) }}
+									</td>
+								</tr>
+								@if (sessionReport.session.notes) {
+								<tr>
+									<td>{{ app.localize("Notes") }}</td>
+									<td class="text-end">
+										{{ sessionReport.session.notes }}
+									</td>
+								</tr>
+								}
+							</tbody>
+						</table>
+					</div>
+					} }
+
+					<!-- ================================================= -->
+					<!-- ================= X REPORT ===================== -->
+					<!-- ================================================= -->
+					@if (reportData.reportType === 'x-report' && reportData.summary) {
+
+					<!-- Sales Summary -->
+					<h6 class="fw-bold border-bottom pb-1 mb-2">
+						{{ app.localize("Sales Summary") }}
+					</h6>
+
+					<table class="table mb-0">
+						<tbody>
+							<tr>
+								<td>{{ app.localize("Total Orders") }}</td>
+								<td class="text-end">
+									{{ reportData.summary.sales.totalOrders }}
+								</td>
+							</tr>
+							<tr>
+								<td>{{ app.localize("Gross Sales") }}</td>
+								<td class="text-end">
+									{{ app.formatCurrency(reportData.summary.sales.grossSales) }}
+								</td>
+							</tr>
+							<tr class="fw-bold fs-5">
+								<td>{{ app.localize("Net Sales") }}</td>
+								<td class="text-end text-success">
+									{{ app.formatCurrency(reportData.summary.sales.netSales) }}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+
+					<!-- Cash Register -->
+					<h6 class="fw-bold border-bottom mt-3 pb-1">
+						{{ app.localize("Cash Register") }}
+					</h6>
+
+					<table class="table mb-0">
+						<tbody>
+							<tr>
+								<td>{{ app.localize("Opening Cash") }}</td>
+								<td class="text-end">
+									{{
+									app.formatCurrency(reportData.summary.session.openingCash)
+									}}
+								</td>
+							</tr>
+							<tr>
+								<td>{{ app.localize("Expected Cash") }}</td>
+								<td class="text-end">
+									{{
+									app.formatCurrency(reportData.summary.session.expectedCash)
+									}}
+								</td>
+							</tr>
+							<tr>
+								<td>{{ app.localize("Opened By") }}</td>
+								<td class="text-end">
+									{{ reportData.summary.session.openedBy }}
+								</td>
+							</tr>
+						</tbody>
+					</table>
+
+					}
+				</div>
+			</div>
+		</div>
+
+		} @else if (!isLoading) {
+		<div class="text-center py-5">
+			<i class="ri-file-chart-line fs-1 text-muted"></i>
+			<div class="fw-semibold mt-2">
+				{{ app.localize("No Report Generated") }}
+			</div>
+		</div>
+		}
+	</div>
+</div>

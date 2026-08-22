@@ -1,0 +1,256 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('User Activities') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Users') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Activities') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <!-- Cleanup button -->
+    <div class="float-end">
+        <button (click)="showCleanupModal()" class="btn btn-warning btn-round me-2"
+            [appTooltip]="app.localize('Cleanup Old Activities')">
+            <i class="ri-delete-bin-6-line"></i>
+            {{ app.localize('Cleanup') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form #filterForm="ngForm" [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)" novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Start Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateFrom" class="form-label">
+                            {{ app.localize('From') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input [(ngModel)]="filters.dateFrom" type="date" name="dateFrom" id="dateFrom"
+                                onclick="this.showPicker()" class="form-control" />
+                            @if (filters.dateFrom) {
+                            <button (click)="filters.dateFrom = null" type="button" class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- End Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateTo" class="form-label">
+                            {{ app.localize('To') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input [(ngModel)]="filters.dateTo" type="date" name="dateTo" id="dateTo"
+                                onclick="this.showPicker()" class="form-control" />
+                            @if (filters.dateTo) {
+                            <button (click)="filters.dateTo = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex align-items-end gap-2 flex-grow-1">
+                        <button [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted" type="submit" class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button (click)="resetFilters()" type="button" [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Activities DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-container">
+    <!-- Activity Detail Modal -->
+    <div [ngClass]="{ show: detailModal.show }" [attr.inert]="!detailModal.show ? '' : null" class="modal right fade"
+        role="dialog" tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeDetailModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">
+                        {{ detailModal.title }}
+                    </h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': detailModal.loading }" class="modal-body">
+                    @if (!detailModal.loading) {
+                    <!-- Activity Header -->
+                    <div class="d-flex gap-3 flex-wrap justify-content-between align-items-start mb-3">
+                        <div class="d-flex gap-3 align-items-center flex-grow-1">
+                            <div class="avatar bg-primary-light">
+                                <i class="ri-user-settings-line"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ activity.fullName || '&mdash;' }}</div>
+                                <div class="small text-muted mb-1">@{{ activity.userName || '&mdash;' }}</div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <span class="badge badge-info">{{ activity.service || '&mdash;' }}</span>
+                                    <span class="badge badge-primary">{{ activity.action || '&mdash;' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted">
+                                {{ app.localize('Date & Time') }}
+                            </div>
+                            <div class="fw-medium">
+                                {{ activity.createdAtFormatted || '&mdash;' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Activity Details -->
+                    <div class="activity-details">
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('Description') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <p class="mb-0 small">
+                                    {{ activity.description || '&mdash;' }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('IP Address') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <p class="mb-0 text-danger small">
+                                    {{ activity.ipAddress || '&mdash;' }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('User Agent') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <p class="mb-0 small">
+                                    {{ activity.userAgent || '&mdash;' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeDetailModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Cleanup confirmation modal -->
+    <div
+        [ngClass]="{ show: cleanupModal.show }"
+        [attr.inert]="!cleanupModal.show ? '' : null"
+        class="modal fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-delete-bin-6-line me-2 text-warning"></i>
+                        {{ app.localize('Cleanup User Activities') }}
+                    </h5>
+                    <button (click)="closeCleanupModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="ri-alert-line me-2"></i>
+                        {{ app.localize('This action will permanently delete old user activities and cannot be undone.') }}
+                    </div>
+                    <form
+                        #cleanupForm="ngForm"
+                        (ngSubmit)="submitCleanup(cleanupForm)"
+                        novalidate
+                        [ngClass]="{ 'was-validated': cleanupModal.validated }">
+                        <div class="form-group">
+                            <label for="daysToKeep" class="form-label">
+                                {{ app.localize('Days to Keep') }}
+                            </label>
+                            <input
+                                [(ngModel)]="cleanupModal.daysToKeep"
+                                appIntegerOnly
+                                min="30"
+                                max="365"
+                                type="number"
+                                id="daysToKeep"
+                                name="daysToKeep"
+                                class="form-control"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                            <small class="form-text text-muted">
+                                {{ app.localize('Minimum 30 days, maximum 365 days') }}
+                            </small>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button (click)="closeCleanupModal()" type="button" class="btn btn-light btn-round">
+                                <i class="ri-close-line"></i>
+                                {{ app.localize('Cancel') }}
+                            </button>
+                            <button
+                                type="submit"
+                                [ngClass]="{ 'disabled btn-progress': cleanupModal.submitted }"
+                                class="btn btn-danger btn-round">
+                                <i class="ri-delete-bin-6-line"></i>
+                                {{ app.localize('Delete Old Activities') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Modal backdrop -->
+        <div (click)="closeCleanupModal()" class="modal-backdrop"></div>
+    </div>
+</div>

@@ -1,0 +1,371 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Campaigns') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Marketing') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Campaigns') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new campaign button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters Card -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                autocomplete="off"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Channel filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 200px">
+                        <label for="channelFilter" class="form-label">
+                            {{ app.localize('Channel') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.channel"
+                            [items]="channelOptions"
+                            bindLabel="label"
+                            bindValue="value"
+                            id="channelFilter"
+                            name="channelFilter"
+                            [clearable]="true"
+                            [placeholder]="app.localize('All')"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Status filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 200px">
+                        <label for="statusFilter" class="form-label">
+                            {{ app.localize('Status') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.status"
+                            [items]="statusOptions"
+                            bindLabel="label"
+                            bindValue="value"
+                            id="statusFilter"
+                            name="statusFilter"
+                            [clearable]="true"
+                            [placeholder]="app.localize('All')"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Campaign List Card -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Campaign DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal container -->
+    <div class="modal-container">
+        <!-- Campaign Modal (add/edit) -->
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Campaign form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="campaign.id" type="hidden" name="id" />
+
+                            <!-- Campaign Name -->
+                            <div class="form-group">
+                                <label for="campaignName" class="control-label">
+                                    {{ app.localize('Campaign Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="campaign.campaignName"
+                                    id="campaignName"
+                                    name="campaignName"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="150"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label for="description" class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="campaign.description"
+                                    id="description"
+                                    name="description"
+                                    class="form-control"
+                                    maxlength="500"
+                                    rows="2"></textarea>
+                            </div>
+
+                            <!-- Schedule: Start Date, End Date, Time -->
+                            <div class="row">
+                                <div class="form-group col-12 col-md-6">
+                                    <label for="startDate" class="control-label">
+                                        {{ app.localize('Start Date') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="campaign.startDate"
+                                        type="date"
+                                        name="startDate"
+                                        id="startDate"
+                                        class="form-control"
+                                        onclick="this.showPicker()"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                                <div class="form-group col-12 col-md-6">
+                                    <label for="endDate" class="control-label">
+                                        {{ app.localize('End Date') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="campaign.endDate"
+                                        type="date"
+                                        name="endDate"
+                                        id="endDate"
+                                        class="form-control"
+                                        onclick="this.showPicker()"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                                <div class="form-group col-12 col-md-6">
+                                    <label for="timing" class="control-label">
+                                        {{ app.localize('Time') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="campaign.timing"
+                                        type="time"
+                                        name="timing"
+                                        id="timing"
+                                        class="form-control"
+                                        onclick="this.showPicker()"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                                <!-- Channel -->
+                                <div class="form-group col-12 col-md-6">
+                                    <label for="channel" class="control-label">
+                                        {{ app.localize('Channel') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="campaign.channel"
+                                        [items]="channelOptions"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        id="channel"
+                                        name="channel"
+                                        [clearable]="false"
+                                        [required]="true"
+                                        [class.is-invalid]="mainModal.validated && !campaign.channel"
+                                        [class.is-valid]="mainModal.validated && campaign.channel"
+                                        placeholder="{{ app.localize('Choose Channel') }}"></ng-select>
+                                    @if(mainModal.validated && !campaign.channel){
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+
+                            @if (campaign.channel === 'Email') {
+                            <!-- Message -->
+                            <div class="form-group">
+                                <label for="campaignMessage" class="control-label">
+                                    {{ app.localize('Message') }}
+                                    <code>*</code>
+                                </label>
+                                <!-- Email Message with Summernote -->
+                                <textarea
+                                    [appSummernote]="{
+                                        height: 200,
+                                        toolbar: 'simple',
+                                        code: campaign.message || getDefaultEmailTemplate()
+                                    }"
+                                    id="campaignMessage"
+                                    name="campaignMessage"
+                                    class="form-control"></textarea>
+                            </div>
+                            } @else {
+                            <!-- Message -->
+                            <div class="form-group">
+                                <label for="campaignMessage" class="control-label">
+                                    {{ app.localize('Message') }}
+                                    <code>*</code>
+                                </label>
+                                <!-- SMS Message -->
+                                <textarea
+                                    [(ngModel)]="campaign.message"
+                                    id="campaignMessage"
+                                    name="campaignMessage"
+                                    class="form-control"
+                                    rows="4"
+                                    maxlength="160"
+                                    required
+                                    placeholder="{{
+                                        app.localize('Enter your SMS message (max 160 characters)')
+                                    }}"></textarea>
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                <small class="form-text text-muted">
+                                    {{ app.localize('Characters') }}: {{ campaign.message?.length || 0 }}/160
+                                </small>
+                            </div>
+                            }
+
+                            <!-- Recipients -->
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-2 d-block">
+                                    <input
+                                        [(ngModel)]="campaign.sendToAll"
+                                        type="checkbox"
+                                        id="sendToAll"
+                                        name="sendToAll"
+                                        class="form-check-input" />
+                                    <label for="sendToAll" class="form-check-label">
+                                        {{ app.localize('Send to All Customers') }}
+                                    </label>
+                                </div>
+
+                                @if (!campaign.sendToAll) {
+                                <label for="recipientIds" class="control-label">
+                                    {{ app.localize('Select Recipients') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="campaign.recipientIds"
+                                    [items]="formData.customers"
+                                    bindLabel="fullName"
+                                    bindValue="id"
+                                    id="recipientIds"
+                                    name="recipientIds"
+                                    [multiple]="true"
+                                    [clearable]="true"
+                                    [searchable]="true"
+                                    [required]="!campaign.sendToAll"
+                                    [class.is-invalid]="
+                                        mainModal.validated &&
+                                        !campaign.sendToAll &&
+                                        (!campaign.recipientIds || campaign.recipientIds.length === 0)
+                                    "
+                                    placeholder="{{ app.localize('Choose customers') }}"></ng-select>
+                                @if(mainModal.validated && !campaign.sendToAll && (!campaign.recipientIds ||
+                                campaign.recipientIds.length === 0)){
+                                <div class="invalid-feedback">
+                                    {{ app.localize('Please select at least one recipient.') }}
+                                </div>
+                                } }
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

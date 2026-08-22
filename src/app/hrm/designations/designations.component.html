@@ -1,0 +1,169 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Designations') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('HRM') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Designations') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new designation button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Designations DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Designation modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Designation form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="designation.id" type="hidden" name="id" />
+
+                            <!-- Department -->
+                            <div class="form-group">
+                                <label for="departmentId" class="control-label">
+                                    {{ app.localize('Department') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="designation.departmentId"
+                                    [items]="departments"
+                                    bindLabel="departmentName"
+                                    bindValue="id"
+                                    id="departmentId"
+                                    name="departmentId"
+                                    [clearable]="true"
+                                    [required]="true"
+                                    [class.is-invalid]="mainModal.validated && !designation.departmentId"
+                                    placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                                @if(mainModal.validated && !designation.departmentId){
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+
+                            <!-- Designation Name -->
+                            <div class="form-group">
+                                <label for="designationName" class="control-label">
+                                    {{ app.localize('Designation Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="designation.designationName"
+                                    id="designationName"
+                                    name="designationName"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Salary Grade -->
+                            <div class="form-group">
+                                <label for="salaryGrade" class="control-label">
+                                    {{ app.localize('Salary Grade') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="designation.salaryGrade"
+                                    id="salaryGrade"
+                                    name="salaryGrade"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="20" />
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label for="description" class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="designation.description"
+                                    id="description"
+                                    name="description"
+                                    class="form-control"
+                                    maxlength="255"
+                                    rows="3"></textarea>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

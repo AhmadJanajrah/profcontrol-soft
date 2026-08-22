@@ -1,0 +1,174 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('Add Attendance') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">{{ app.localize('HRM') }}</li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/hrm/attendance/list']">{{ app.localize('Attendance') }}</a>
+                </li>
+                <li class="breadcrumb-item active">{{ app.localize('Add') }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <button type="button" (click)="app.goBack()" class="btn btn-light btn-round btn-back">
+            <i class="ri-arrow-left-line"></i>
+            {{ app.localize('Back') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body">
+            <div [ngClass]="{ 'disabled loader-full': isLoading }">
+                @if (!isLoading) {
+                <form #frm="ngForm" [ngClass]="{ 'was-validated': isValidated }" (ngSubmit)="submit(frm)" novalidate>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Shift') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="form.shiftId"
+                                    [items]="shifts"
+                                    bindLabel="displayName"
+                                    bindValue="id"
+                                    name="shiftId"
+                                    [clearable]="false"
+                                    required
+                                    (change)="onShiftChange()"
+                                    placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Date') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="form.attendanceDate"
+                                    name="attendanceDate"
+                                    type="date"
+                                    class="form-control"
+                                    onclick="this.showPicker()"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    @if (employees.length === 0) {
+                    <div class="text-center text-muted py-5">
+                        <i class="ri-user-line" style="font-size: 2rem"></i>
+                        <p class="mt-2">{{ app.localize('Select shift & date') }}</p>
+                    </div>
+                    } @else {
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 50px">
+                                        <input
+                                            [(ngModel)]="allSelected"
+                                            type="checkbox"
+                                            (change)="toggleSelectAll()"
+                                            name="selectAll"
+                                            class="form-check-input" />
+                                    </th>
+                                    <th>{{ app.localize('Employee') }}</th>
+                                    <th style="width: 150px">{{ app.localize('Clock In') }}</th>
+                                    <th style="width: 150px">{{ app.localize('Clock Out') }}</th>
+                                    <th style="width: 200px">{{ app.localize('Status') }}</th>
+                                    <th style="width: 280px">{{ app.localize('Notes') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (row of employees; track row.id) {
+                                <tr>
+                                    <td class="text-center">
+                                        <input
+                                            type="checkbox"
+                                            [(ngModel)]="row.include"
+                                            name="include_{{ row.id }}"
+                                            class="form-check-input" />
+                                    </td>
+                                    <td>
+                                        {{ 'EMP' + row.id.toString().padStart(5, '0') }} - {{ row.employeeName }}
+                                        <br />
+                                        <small class="text-muted">
+                                            {{ row.departmentName }} - {{ row.designationName }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <input
+                                            [(ngModel)]="row.clockIn"
+                                            name="clockIn_{{ row.id }}"
+                                            type="time"
+                                            class="form-control"
+                                            onclick="this.showPicker()" />
+                                    </td>
+                                    <td>
+                                        <input
+                                            [(ngModel)]="row.clockOut"
+                                            name="clockOut_{{ row.id }}"
+                                            type="time"
+                                            class="form-control"
+                                            onclick="this.showPicker()" />
+                                    </td>
+                                    <td>
+                                        <select [(ngModel)]="row.status" name="status_{{ row.id }}" class="form-select">
+                                            @for (item of statusOptions; track item.value) {
+                                            <option [ngValue]="item.value">
+                                                {{ item.label }}
+                                            </option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input
+                                            [(ngModel)]="row.notes"
+                                            name="notes_{{ row.id }}"
+                                            type="text"
+                                            class="form-control"
+                                            maxlength="255" />
+                                    </td>
+                                </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div [ngClass]="{ disabled: isSubmitted }" class="d-flex gap-2 justify-content-end py-0 mt-3">
+                        <button type="button" (click)="app.goBack()" class="btn btn-light btn-round btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                            {{ app.localize('Back') }}
+                        </button>
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-save-3-line"></i>
+                            {{ app.localize('Save') }}
+                        </button>
+                    </div>
+                    }
+                </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

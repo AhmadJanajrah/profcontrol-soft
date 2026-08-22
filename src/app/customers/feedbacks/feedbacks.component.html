@@ -1,0 +1,268 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Customer Feedbacks') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Customers') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Feedbacks') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters Card -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                autocomplete="off"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- From Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateFrom" class="form-label">
+                            {{ app.localize('From') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateFrom"
+                                type="date"
+                                name="dateFrom"
+                                id="dateFrom"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateFrom) {
+                            <button
+                                (click)="filters.dateFrom = null"
+                                type="button"
+                                class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- To Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateTo" class="form-label">
+                            {{ app.localize('To') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateTo"
+                                type="date"
+                                name="dateTo"
+                                id="dateTo"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateTo) {
+                            <button (click)="filters.dateTo = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Feedback List Card -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Feedback DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal container -->
+    <div class="modal-container">
+        <!-- Feedback Detail Modal -->
+        <div
+            [ngClass]="{ show: detailModal.show }"
+            [attr.inert]="!detailModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeDetailModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ detailModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': detailModal.loading }" class="modal-body">
+                        @if (!detailModal.loading) {
+                        <div class="view-details">
+                            <div class="info-items mb-3">
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('#') }}:</span>
+                                    <span class="info-value">{{ feedback?.id ?? '—' }}</span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Customer') }}:</span>
+                                    <span class="info-value">
+                                        {{ feedback?.customerName || app.localize('Anonymous') }}
+                                    </span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Rating') }}:</span>
+                                    <span
+                                        class="info-value"
+                                        [innerHTML]="renderRatingColumn(feedback?.rating ?? 0)"></span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Type') }}:</span>
+                                    <span class="info-value">{{ feedback?.feedbackType || '—' }}</span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Submitted At') }}:</span>
+                                    <span class="info-value">{{ feedback?.submittedAtFormatted || '—' }}</span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Status') }}:</span>
+                                    <span
+                                        class="info-value"
+                                        [innerHTML]="renderStatusBadge(feedback?.isReviewed)"></span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Message') }}:</span>
+                                    <span class="info-value">{{ feedback?.message || '—' }}</span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Resolution Notes') }}:</span>
+                                    <span class="info-value">{{ feedback?.resolutionNotes || '—' }}</span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Reviewed At') }}:</span>
+                                    <span class="info-value">{{ feedback?.reviewedAtFormatted || '—' }}</span>
+                                </div>
+                                <div class="item">
+                                    <span class="info-label">{{ app.localize('Reviewed By') }}:</span>
+                                    <span class="info-value">{{ feedback?.reviewedBy || '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeDetailModal()" class="modal-backdrop"></div>
+        </div>
+
+        <!-- Review Modal -->
+        <div
+            [ngClass]="{ show: reviewModal.show }"
+            [attr.inert]="!reviewModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeReviewModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ app.localize('Review Feedback') }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': reviewModal.loading }" class="modal-body">
+                        <!-- Review form -->
+                        @if (!reviewModal.loading) {
+                        <form
+                            #reviewForm="ngForm"
+                            [ngClass]="{ 'was-validated': reviewModal.validated }"
+                            (ngSubmit)="submitReview(reviewForm)"
+                            autocomplete="off"
+                            novalidate>
+                            <ul class="list-group style-1 mb-2">
+                                <li class="list-group-item">
+                                    <div class="d-flex align-items-center">
+                                        <i class="ri-user-line me-2"></i>
+                                        <span class="fw-semibold">{{ reviewModal.customerName }}</span>
+                                    </div>
+                                </li>
+                            </ul>
+                            <!-- Resolution Notes -->
+                            <div class="form-group">
+                                <label for="resolutionNotes" class="form-label">
+                                    {{ app.localize('Resolution Notes') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="reviewModal.resolutionNotes"
+                                    id="resolutionNotes"
+                                    name="resolutionNotes"
+                                    class="form-control"
+                                    rows="5"
+                                    maxlength="1000"></textarea>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: reviewModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeReviewModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ app.localize('Cancel') }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': reviewModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-check-line"></i>
+                                    {{ app.localize('Mark as Reviewed') }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeReviewModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

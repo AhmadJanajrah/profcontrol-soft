@@ -1,0 +1,241 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('Payroll') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">{{ app.localize('HRM') }}</li>
+                <li class="breadcrumb-item active">{{ app.localize('Payroll') }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <button (click)="openGenerateModal()" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Generate Payroll') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form (ngSubmit)="applyFilters()" novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label class="form-label">{{ app.localize('Month') }}</label>
+                        <ng-select
+                            [(ngModel)]="filters.month"
+                            [items]="months"
+                            bindLabel="value"
+                            bindValue="id"
+                            [clearable]="true"
+                            [searchable]="false"
+                            name="filterMonth"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label class="form-label">{{ app.localize('Year') }}</label>
+                        <ng-select
+                            [(ngModel)]="filters.year"
+                            [items]="years"
+                            bindLabel="value"
+                            bindValue="value"
+                            [clearable]="true"
+                            [searchable]="false"
+                            name="filterYear"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generate Payroll Modal -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: generatePayrollModal.show }"
+            [attr.inert]="!generatePayrollModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeGenerateModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ app.localize('Generate Payroll') }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': generatePayrollModal.loading }" class="modal-body">
+                        @if (!generatePayrollModal.loading) {
+                        <form
+                            #genForm="ngForm"
+                            [ngClass]="{ 'was-validated': generatePayrollModal.validated }"
+                            (ngSubmit)="submitGeneratePayroll(genForm)"
+                            autocomplete="off"
+                            novalidate>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">
+                                        {{ app.localize('Month') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="generatePayroll.month"
+                                        [items]="months"
+                                        bindLabel="value"
+                                        bindValue="id"
+                                        [clearable]="false"
+                                        [searchable]="false"
+                                        name="month"
+                                        class="form-control"
+                                        required
+                                        appendTo="body"></ng-select>
+                                    <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">
+                                        {{ app.localize('Year') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="generatePayroll.year"
+                                        [items]="years"
+                                        bindLabel="value"
+                                        bindValue="value"
+                                        [clearable]="false"
+                                        [searchable]="false"
+                                        name="year"
+                                        class="form-control"
+                                        required
+                                        appendTo="body"></ng-select>
+                                    <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">
+                                        {{ app.localize('Payment Method') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="generatePayroll.paymentMethodId"
+                                        [items]="paymentMethods"
+                                        bindLabel="methodName"
+                                        bindValue="id"
+                                        [clearable]="false"
+                                        [searchable]="true"
+                                        name="paymentMethodId"
+                                        class="form-control"
+                                        required
+                                        appendTo="body"></ng-select>
+                                    <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <div [ngClass]="{ disabled: generatePayrollModal.submitted }" class="form-actions py-0">
+                                <button
+                                    (click)="closeGenerateModal()"
+                                    type="button"
+                                    class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ app.localize('Cancel') }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': generatePayrollModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-settings-3-line"></i>
+                                    {{ app.localize('Generate') }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeGenerateModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+
+    <!-- Print Payslip Modal -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: printModal.show }"
+            [attr.inert]="!printModal.show ? '' : null"
+            class="modal center fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closePrintModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">{{ app.localize('Payslip') }} #{{ orderId }}</h5>
+                        <div class="d-flex gap-2">
+                            <button type="button" (click)="printInvoice()" class="btn btn-light btn-round">
+                                <i class="ri-printer-line me-1"></i>
+                                {{ app.localize('Print') }}
+                            </button>
+                            <button type="button" (click)="downloadInvoice(orderId)" class="btn btn-primary btn-round">
+                                <i class="ri-download-2-line me-1"></i>
+                                {{ app.localize('Download') }}
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-body" [ngClass]="{ 'disabled loader-full': printModal.loading }">
+                        @if (!printModal.loading) {
+                        <iframe #invoiceIframe title="payslip" class="invoice-iframe" [attr.srcdoc]="invoice"></iframe>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closePrintModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

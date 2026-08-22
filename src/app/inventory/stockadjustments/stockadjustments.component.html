@@ -1,0 +1,617 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Stock Adjustments') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Inventory') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Stock Adjustments') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new adjustment button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Start Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 180px">
+                        <label for="dateFrom" class="form-label">
+                            {{ app.localize('From Date') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateFrom"
+                                type="date"
+                                name="dateFrom"
+                                id="dateFrom"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateFrom) {
+                            <button
+                                (click)="filters.dateFrom = null"
+                                type="button"
+                                class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- End Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 180px">
+                        <label for="dateTo" class="form-label">
+                            {{ app.localize('To Date') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateTo"
+                                type="date"
+                                name="dateTo"
+                                id="dateTo"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateTo) {
+                            <button (click)="filters.dateTo = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Adjustment Type filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 150px">
+                        <label for="adjustmentType" class="form-label">
+                            {{ app.localize('Type') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.adjustmentType"
+                            [items]="adjustmentTypes"
+                            bindLabel="label"
+                            bindValue="value"
+                            name="adjustmentType"
+                            [clearable]="true"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Status filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 150px">
+                        <label for="status" class="form-label">
+                            {{ app.localize('Status') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.status"
+                            [items]="adjustmentStatuses"
+                            bindLabel="label"
+                            bindValue="value"
+                            name="status"
+                            [clearable]="true"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stock Adjustments DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Adjustment modal (add/edit) -->
+<div class="modal-container">
+    <div
+        [ngClass]="{ show: mainModal.show }"
+        [attr.inert]="!mainModal.show ? '' : null"
+        class="modal right fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">
+                        {{ mainModal.title }}
+                    </h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                    <!-- Adjustment form -->
+                    @if (!mainModal.loading) {
+                    <form
+                        #frm="ngForm"
+                        [ngClass]="{ 'was-validated': mainModal.validated }"
+                        (ngSubmit)="submitForm(frm)"
+                        id="frm"
+                        autocomplete="off"
+                        novalidate>
+                        <input [(ngModel)]="adjustment.id" type="hidden" name="id" />
+                        <input [(ngModel)]="adjustment.locationId" type="hidden" name="locationId" />
+
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="adjustmentType" class="control-label">
+                                        {{ app.localize('Adjustment Type') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="adjustment.adjustmentType"
+                                        [items]="adjustmentTypes"
+                                        [clearable]="false"
+                                        [searchable]="false"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        id="adjustmentType"
+                                        name="adjustmentType"
+                                        [class.is-invalid]="mainModal.validated && !adjustment.adjustmentType"
+                                        placeholder="{{ app.localize('Choose an option') }}"
+                                        required></ng-select>
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="adjustmentDate" class="control-label">
+                                        {{ app.localize('Adjustment Date') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="adjustment.adjustmentDate"
+                                        type="date"
+                                        id="adjustmentDate"
+                                        name="adjustmentDate"
+                                        class="form-control"
+                                        [class.is-invalid]="mainModal.validated && !adjustment.adjustmentDate"
+                                        onclick="this.showPicker()"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="form-group">
+                            <label for="reason" class="control-label">
+                                {{ app.localize('Reason') }}
+                                <code>*</code>
+                            </label>
+                            <input
+                                [(ngModel)]="adjustment.reason"
+                                id="reason"
+                                name="reason"
+                                type="text"
+                                class="form-control"
+                                [class.is-invalid]="mainModal.validated && !adjustment.reason"
+                                maxlength="250"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="form-group">
+                            <label for="notes" class="control-label">
+                                {{ app.localize('Notes') }}
+                            </label>
+                            <textarea
+                                [(ngModel)]="adjustment.notes"
+                                id="notes"
+                                name="notes"
+                                class="form-control"
+                                maxlength="500"
+                                rows="3"></textarea>
+                        </div>
+
+                        <!-- Items Section -->
+                        <div class="heading heading-form-title mt-3">
+                            <i class="ri-list-check me-1"></i>
+                            {{ app.localize('Adjustment Items') }}
+                        </div>
+
+                        <div class="form-group">
+                            <ng-select
+                                [ngModel]="null"
+                                (ngModelChange)="addAdjustmentItem($event)"
+                                [items]="items"
+                                [clearable]="false"
+                                [searchable]="true"
+                                bindLabel="itemName"
+                                bindValue="id"
+                                name="selectItem"
+                                placeholder="{{ app.localize('Search and add item') }}"
+                                appendTo="body"></ng-select>
+                        </div>
+
+                        <!-- Items Table -->
+                        @if (adjustment.items && adjustment.items.length > 0) {
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="200">{{ app.localize('Item') }}</th>
+                                        <th width="120" class="text-center">{{ app.localize('Adjustment Qty') }}</th>
+                                        <th width="130" class="text-center">
+                                            {{ app.localize('Unit Cost') }}
+                                            ({{ app.getCurrencySymbol() }})
+                                        </th>
+                                        <th class="text-end" width="120">{{ app.localize('Total Cost') }}</th>
+                                        <th width="60" class="text-center"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (item of adjustment.items; track $index; let i = $index) {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div>
+                                                    <strong>{{ item.item?.itemName }}</strong>
+                                                    <br />
+                                                    <small class="text-muted">
+                                                        {{ app.formatCurrency(item.item?.cost) }}
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="qty-wrapper">
+                                                <button
+                                                    (click)="decreaseQuantity(i)"
+                                                    type="button"
+                                                    class="btn-minus"
+                                                    title="{{ app.localize('Decrease quantity') }}">
+                                                    <i class="ri-subtract-line"></i>
+                                                </button>
+                                                <input
+                                                    [(ngModel)]="item.adjustmentQuantity"
+                                                    (ngModelChange)="onQuantityChange(item)"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(4, false)"
+                                                    name="adj_qty_{{ i }}"
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    class="form-control form-control-sm"
+                                                    [class.is-invalid]="
+                                                        mainModal.validated &&
+                                                        (!item.adjustmentQuantity ||
+                                                            app.localeToAPINumber(item.adjustmentQuantity) === 0)
+                                                    "
+                                                    placeholder="+/-"
+                                                    required />
+                                                <span class="unit">
+                                                    {{ item.item?.unitOfMeasure || '' }}
+                                                </span>
+                                                <button
+                                                    (click)="increaseQuantity(i)"
+                                                    type="button"
+                                                    class="btn-plus"
+                                                    title="{{ app.localize('Increase quantity') }}">
+                                                    <i class="ri-add-line"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <input
+                                                [(ngModel)]="item.unitCost"
+                                                (ngModelChange)="onCostChange(item)"
+                                                [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                                [placeholder]="app.getNumberPlaceholder('0.00')"
+                                                name="unit_cost_{{ i }}"
+                                                type="text"
+                                                inputmode="decimal"
+                                                class="form-control form-control-sm"
+                                                [class.is-invalid]="
+                                                    mainModal.validated &&
+                                                    (!item.unitCost || app.localeToAPINumber(item.unitCost) < 0)
+                                                "
+                                                required />
+                                        </td>
+                                        <td>
+                                            <div class="text-end fw-medium">
+                                                {{ app.formatCurrency(getTotalCost(item)) }}
+                                            </div>
+                                        </td>
+                                        <td class="text-center">
+                                            <button
+                                                type="button"
+                                                (click)="removeAdjustmentItem(i)"
+                                                class="btn btn-icon btn-sm text-danger"
+                                                [appTooltip]="app.localize('Remove')">
+                                                <i class="ri-delete-bin-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <td colspan="3" class="text-end">
+                                            <strong>{{ app.localize('Total Cost') }}:</strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong>{{ app.formatCurrency(getTotalAdjustmentCost()) }}</strong>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        } @else {
+                        <div class="text-center text-muted py-3 border rounded bg-light">
+                            <i class="ri-box-3-line fs-2 mb-2"></i>
+                            <p class="mb-0">{{ app.localize('No Items Added') }}</p>
+                        </div>
+                        }
+
+                        <div class="pb-5"></div>
+
+                        <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions">
+                            <div class="d-flex justify-content-end gap-2 w-100">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    form="frm"
+                                    class="btn btn-primary btn-round"
+                                    [disabled]="!adjustment.items || adjustment.items.length === 0">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeMainModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- View modal for stock adjustment details -->
+    <div
+        [ngClass]="{ show: viewModal.show }"
+        [attr.inert]="!viewModal.show ? '' : null"
+        class="modal right fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeViewModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">
+                        {{ viewModal.title }}
+                    </h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': viewModal.loading }" class="modal-body">
+                    @if (!viewModal.loading && viewModal.adjustment) {
+
+                    <!-- Header Information -->
+                    <div class="d-flex gap-3 flex-wrap justify-content-between align-items-start mb-3">
+                        <div class="d-flex gap-3 align-items-center flex-grow-1">
+                            <div class="avatar bg-primary-light">
+                                <i class="ri-file-list-2-line ri-2x"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">
+                                    {{ app.localize('Adjustment') }} #{{ viewModal.adjustment.id }}
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <span class="badge badge-light">
+                                        <i class="ri-calendar-line me-1"></i>
+                                        {{ app.formatDate(viewModal.adjustment.adjustmentDate) }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="mb-1">
+                                @if (getAdjustmentStatusDisplay(viewModal.adjustment.status); as statusDisplay) {
+                                <span class="badge badge-{{ statusDisplay.badge }}">{{ statusDisplay.label }}</span>
+                                }
+                            </div>
+                            @if (getAdjustmentTypeDisplay(viewModal.adjustment.adjustmentType); as typeDisplay) {
+                            <span class="badge badge-{{ typeDisplay.badge }}">{{ typeDisplay.label }}</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="divider my-3"></div>
+
+                    <!-- Details List -->
+                    <ul class="list-group style-1 mb-4">
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ app.localize('Location') }}</div>
+                            </div>
+                            <div>
+                                <span class="badge badge-light">
+                                    <i class="ri-store-line me-1"></i>
+                                    {{ viewModal.adjustment.location?.locationName || '—' }}
+                                </span>
+                            </div>
+                        </li>
+
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ app.localize('Reason') }}</div>
+                            </div>
+                            <div>{{ viewModal.adjustment.reason || '—' }}</div>
+                        </li>
+
+                        @if (viewModal.adjustment.notes) {
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ app.localize('Notes') }}</div>
+                            </div>
+                            <div>{{ viewModal.adjustment.notes }}</div>
+                        </li>
+                        }
+
+                        <li class="list-group-item d-flex justify-content-between align-items-start">
+                            <div class="ms-2 me-auto">
+                                <div class="fw-bold">{{ app.localize('Total Cost') }}</div>
+                            </div>
+                            <div class="fw-semibold">{{ app.formatCurrency(viewModal.adjustment.totalCost || 0) }}</div>
+                        </li>
+                    </ul>
+
+                    <!-- Adjustment Items -->
+                    @if (viewModal.adjustment.stockAdjustmentItems && viewModal.adjustment.stockAdjustmentItems.length >
+                    0) {
+                    <div class="heading heading-form-title mt-4 mb-3">
+                        <i class="ri-list-check me-1"></i>
+                        {{ app.localize('Adjustment Items') }}
+                        <span class="badge badge-light ms-2">
+                            {{ viewModal.adjustment.stockAdjustmentItems.length }}
+                        </span>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{{ app.localize('Item') }}</th>
+                                    <th width="100" class="text-center">{{ app.localize('Before Qty') }}</th>
+                                    <th width="100" class="text-center">{{ app.localize('Adjustment') }}</th>
+                                    <th width="100" class="text-center">{{ app.localize('After Qty') }}</th>
+                                    <th width="120" class="text-center">{{ app.localize('Unit Cost') }}</th>
+                                    <th width="120" class="text-end">{{ app.localize('Total Cost') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (item of viewModal.adjustment.stockAdjustmentItems; track $index) {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                <strong>{{ item.item?.itemName || 'Unknown Item' }}</strong>
+                                                @if (item.item?.sku) {
+                                                <br />
+                                                <small class="text-muted">SKU: {{ item.item.sku }}</small>
+                                                } @if (item.notes) {
+                                                <br />
+                                                <small class="text-info">{{ item.notes }}</small>
+                                                }
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-light">
+                                            {{ app.formatNumber(item.quantityBefore || 0) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span
+                                            class="badge"
+                                            [ngClass]="
+                                                (item.adjustmentQuantity || 0) >= 0 ? 'badge-success' : 'badge-danger'
+                                            ">
+                                            {{ (item.adjustmentQuantity || 0) >= 0 ? '+' : ''
+                                            }}{{ app.formatNumber(item.adjustmentQuantity || 0) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge badge-primary">
+                                            {{ app.formatNumber(item.quantityAfter || 0) }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">{{ app.formatCurrency(item.unitCost || 0) }}</td>
+                                    <td class="text-end fw-medium">
+                                        {{ app.formatCurrency(getViewItemTotalCost(item)) }}
+                                    </td>
+                                </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="text-end">
+                                        <strong>{{ app.localize('Total Cost') }}:</strong>
+                                    </td>
+                                    <td class="text-end">
+                                        <strong>{{ app.formatCurrency(getViewTotalAdjustmentCost()) }}</strong>
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    } @else {
+                    <div class="text-center text-muted py-4">
+                        <i class="ri-inbox-line fs-1"></i>
+                        <p class="mt-2 mb-0">{{ app.localize('No adjustment items found') }}</p>
+                    </div>
+                    } }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeViewModal()" class="modal-backdrop"></div>
+    </div>
+</div>

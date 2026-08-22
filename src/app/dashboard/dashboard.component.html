@@ -1,0 +1,510 @@
+<!-- Page header with title and controls -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+    <div>
+        <h1 class="page-title mb-0">
+            {{ app.localize('Dashboard Overview') }}
+        </h1>
+    </div>
+
+    <!-- Dashboard Controls -->
+    <div class="d-flex align-items-center gap-2">
+        <!-- Period Selector -->
+        <div class="form-group mb-0">
+            <ng-select
+                [(ngModel)]="filters.period"
+                [items]="periodOptions"
+                [clearable]="false"
+                [searchable]="false"
+                [multiple]="false"
+                bindLabel="label"
+                bindValue="value"
+                (change)="changePeriod(filters.period)"
+                [placeholder]="app.localize('Select Period')"
+                class="period-selector"
+                appendTo="body"></ng-select>
+        </div>
+
+        <!-- Manual Refresh -->
+        <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            (click)="refreshDashboard()"
+            [disabled]="isLoading"
+            [appTooltip]="app.localize('Refresh Dashboard')">
+            <i class="ri-refresh-line" [class.fa-spin]="isLoading"></i>
+            <span class="d-none d-md-inline ms-1">{{ app.localize('Refresh') }}</span>
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Loading State -->
+    @if (isLoading) {
+    <div class="text-center py-5">
+        <div class="d-flex justify-content-center mb-3">
+            <div class="loader"></div>
+        </div>
+    </div>
+    }
+
+    <!-- Dashboard Content -->
+    @if (!isLoading && dashboardData) {
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-3">
+        <!-- Total Revenue Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card stat-1">
+                <div class="card-body">
+                    <div class="bg-left bg-primary"></div>
+                    <div class="d-flex align-items-start justify-content-between mb-1">
+                        <div>
+                            <h6 class="text-muted fw-medium">
+                                {{ app.localize('Total Revenue') }}
+                            </h6>
+                            <h3 class="fw-bold text-primary">
+                                {{ app.formatCurrency(dashboardData.kpis.revenue.total) }}
+                            </h3>
+                        </div>
+                        <div class="avatar bg-primary-light">
+                            <i class="ri-money-dollar-circle-line fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-muted small">
+                        <span class="d-flex align-items-center">
+                            <i class="ri-funds-line ri-1x me-1"></i>
+                            {{ app.localize('Profit') }}:
+                            <strong class="text-success">
+                                {{ app.formatCurrency(dashboardData.kpis.revenue.grossProfit) }}
+                            </strong>
+                        </span>
+                        <span class="d-flex align-items-center">
+                            {{ app.formatPercent(dashboardData.kpis.revenue.profitMargin) }}
+                            <i class="ri-pie-chart-line ri-1x ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Orders Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card stat-1">
+                <div class="card-body">
+                    <div class="bg-left bg-pink"></div>
+                    <div class="d-flex align-items-start justify-content-between mb-1">
+                        <div>
+                            <h6 class="text-muted fw-medium">
+                                {{ app.localize('Total Orders') }}
+                            </h6>
+                            <h3 class="fw-bold text-pink">
+                                {{ dashboardData.kpis.orders.total | number }}
+                            </h3>
+                        </div>
+                        <div class="avatar bg-pink-light">
+                            <i class="ri-shopping-cart-line fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-muted small">
+                        <span class="d-flex align-items-center">
+                            <i class="ri-wallet-line ri-1x me-1"></i>
+                            {{ app.localize('Avg Value') }}:
+                            <strong>{{ app.formatCurrency(dashboardData.kpis.orders.averageValue) }}</strong>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customers Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card stat-1">
+                <div class="card-body">
+                    <div class="bg-left bg-warning"></div>
+                    <div class="d-flex align-items-start justify-content-between mb-1">
+                        <div>
+                            <h6 class="text-muted fw-medium">
+                                {{ app.localize('Customers') }}
+                            </h6>
+                            <h3 class="fw-bold text-warning">
+                                {{ dashboardData.kpis.customers.total | number }}
+                            </h3>
+                        </div>
+                        <div class="avatar bg-warning-light">
+                            <i class="ri-user-star-line fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-muted small">
+                        <span class="d-flex align-items-center">
+                            <i class="ri-money-dollar-box-line ri-1x me-1"></i>
+                            {{ app.localize('Revenue/Customer') }}
+                        </span>
+                        <span>
+                            <strong>
+                                {{ app.formatCurrency(dashboardData.kpis.customers.revenuePerCustomer) }}
+                            </strong>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Health Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card stat-1">
+                <div class="card-body">
+                    <div class="bg-left bg-teal"></div>
+                    <div class="d-flex align-items-start justify-content-between mb-1">
+                        <div>
+                            <h6 class="text-muted fw-medium">
+                                {{ app.localize('Inventory Value') }}
+                                <span
+                                    [class]="
+                                        dashboardData.kpis.inventory.healthScore >= 80
+                                            ? 'text-success'
+                                            : dashboardData.kpis.inventory.healthScore >= 60
+                                            ? 'text-warning'
+                                            : 'text-danger'
+                                    "
+                                    class="ms-2">
+                                    <i class="ri-pulse-line ri-1x"></i>
+                                    {{ app.formatPercent(dashboardData.kpis.inventory.healthScore) }}
+                                </span>
+                            </h6>
+                            <h3 class="fw-bold text-teal">
+                                {{ app.formatCurrency(dashboardData.kpis.inventory.totalValue) }}
+                            </h3>
+                        </div>
+                        <div class="avatar bg-teal-light">
+                            <i class="ri-archive-line fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-muted small">
+                        @if (dashboardData.kpis.inventory.outOfStock > 0) {
+                        <span class="text-danger d-flex align-items-center">
+                            <i class="ri-alert-line ri-1x me-1"></i>
+                            {{ dashboardData.kpis.inventory.outOfStock }} {{ app.localize('out of stock') }}
+                        </span>
+                        } @else {
+                        <span class="text-success d-flex align-items-center">
+                            <i class="ri-checkbox-circle-line ri-1x me-1"></i>
+                            {{ app.localize('All in stock') }}
+                        </span>
+                        }
+                        <span class="d-flex align-items-center">
+                            {{ dashboardData.kpis.inventory.totalItems }}
+                            <i class="ri-box-3-line ri-1x ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary KPI Cards -->
+    <div class="row g-3 mb-3">
+        <!-- Purchases Card -->
+        <div class="col-xl-3 col-lg-6 col-md-6">
+            <div class="card stat-1">
+                <div class="card-body">
+                    <div class="bg-left bg-purple"></div>
+                    <div class="d-flex align-items-start justify-content-between mb-1">
+                        <div>
+                            <h6 class="text-muted fw-medium">
+                                {{ app.localize('Total Purchases') }}
+                            </h6>
+                            <h3 class="fw-bold text-purple">
+                                {{ app.formatCurrency(dashboardData.kpis.purchases.total) }}
+                            </h3>
+                        </div>
+                        <div class="avatar bg-purple-light">
+                            <i class="ri-shopping-bag-line fs-4"></i>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between text-muted small">
+                        <span class="d-flex align-items-center">
+                            <i class="ri-money-dollar-box-line ri-1x me-1"></i>
+                            {{ app.localize('Net Total') }}
+                            {{ app.formatCurrency(dashboardData.kpis.purchases.net) }}
+                        </span>
+                        <span>
+                            {{ app.localize('Orders') }}:
+                            <strong>
+                                {{ dashboardData.kpis.purchases.orders | number }}
+                            </strong>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-9 col-lg-6 col-md-6">
+            <div class="card stat-1">
+                <div class="card-body">
+                    <div class="bg-left bg-dark"></div>
+                    <h6 class="fw-medium text-muted mb-2">
+                        {{ app.localize('Tables by Status') }}
+                    </h6>
+                    <div class="progress-stacked mb-3">
+                        <div
+                            class="progress-bar bg-primary"
+                            role="progressbar"
+                            [style.width]="getTableStatusPercentage(1) + '%'"
+                            [attr.aria-valuenow]="getTableStatusPercentage(1)"
+                            aria-valuemin="0"
+                            aria-valuemax="100">
+                            {{ getTableStatusPercentage(1) }}%
+                        </div>
+                        <div
+                            class="progress-bar bg-warning"
+                            role="progressbar"
+                            [style.width]="getTableStatusPercentage(2) + '%'"
+                            [attr.aria-valuenow]="getTableStatusPercentage(2)"
+                            aria-valuemin="0"
+                            aria-valuemax="100">
+                            {{ getTableStatusPercentage(2) }}%
+                        </div>
+                        <div
+                            class="progress-bar bg-danger"
+                            role="progressbar"
+                            [style.width]="getTableStatusPercentage(3) + '%'"
+                            [attr.aria-valuenow]="getTableStatusPercentage(3)"
+                            aria-valuemin="0"
+                            aria-valuemax="100">
+                            {{ getTableStatusPercentage(3) }}%
+                        </div>
+                        <div
+                            class="progress-bar bg-light border"
+                            role="progressbar"
+                            [style.width]="getTableStatusPercentage(4) + '%'"
+                            [attr.aria-valuenow]="getTableStatusPercentage(4)"
+                            aria-valuemin="0"
+                            aria-valuemax="100">
+                            {{ getTableStatusPercentage(4) }}%
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center align-items-center gap-1 flex-wrap mt-2">
+                        <div class="small text-muted d-flex">
+                            <i class="ri-checkbox-blank-circle-fill text-primary"></i>
+                            <span class="ms-1">{{ getTableStatusName(1) }}</span>
+                            <span class="fw-semibold">({{ getTableStatusCount(1) }})</span>
+                        </div>
+                        <div class="small text-muted d-flex">
+                            <i class="ri-checkbox-blank-circle-fill text-warning"></i>
+                            <span class="ms-1">{{ getTableStatusName(2) }}</span>
+                            <span class="fw-semibold">({{ getTableStatusCount(2) }})</span>
+                        </div>
+                        <div class="small text-muted d-flex">
+                            <i class="ri-checkbox-blank-circle-fill text-danger"></i>
+                            <span class="ms-1">{{ getTableStatusName(3) }}</span>
+                            <span class="fw-semibold">({{ getTableStatusCount(3) }})</span>
+                        </div>
+                        <div class="small text-muted d-flex">
+                            <i class="ri-checkbox-blank-circle-fill text-light"></i>
+                            <span class="ms-1">{{ getTableStatusName(4) }}</span>
+                            <span class="fw-semibold">({{ getTableStatusCount(4) }})</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="row g-3 mb-3">
+        <!-- Sales Overview Chart -->
+        <div class="col-xxl-8 col-xl-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {{ app.localize('Sales Overview') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div #salesTrendChart></div>
+                    @if (dashboardData.charts.salesTrend?.summary) {
+                    <div class="row text-center g-0 border-dashed rounded mt-3">
+                        <div class="col-12 col-md-3 py-2">
+                            <h5 class="mb-1 fw-bold text-primary">
+                                {{ app.formatCurrency(dashboardData.charts.salesTrend.summary.totalRevenue) }}
+                            </h5>
+                            <p class="text-muted mb-0 small">{{ app.localize('Total Revenue') }}</p>
+                        </div>
+                        <div class="col-12 col-md-3 py-2">
+                            <h5 class="mb-1 fw-bold text-accent">
+                                {{ app.formatCurrency(dashboardData.charts.salesTrend.summary.totalProfit) }}
+                            </h5>
+                            <p class="text-muted mb-0 small">{{ app.localize('Total Profit') }}</p>
+                        </div>
+                        <div class="col-12 col-md-3 py-2">
+                            <h5 class="mb-1 fw-bold text-danger">
+                                {{ app.formatCurrency(dashboardData.charts.salesTrend.summary.totalRefunds) }}
+                            </h5>
+                            <p class="text-muted mb-0 small">{{ app.localize('Total Refunds') }}</p>
+                        </div>
+                        <div class="col-12 col-md-3 py-2">
+                            <h5 class="mb-1 fw-bold text-warning">
+                                {{ dashboardData.charts.salesTrend.summary.totalOrders | number }}
+                            </h5>
+                            <p class="text-muted mb-0 small">{{ app.localize('Total Orders') }}</p>
+                        </div>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <!-- Payments by Method Chart -->
+        @if (dashboardData.charts.paymentsByMethod) {
+        <div class="col-xxl-4 col-xl-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {{ app.localize('Payments by Method') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div #paymentsByMethodChart></div>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="row g-3 mb-3">
+        <!-- Orders by Status -->
+        @if (dashboardData.charts.salesByStatus) {
+        <div class="col-xxl-4 col-xl-5">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {{ app.localize('Sales Order by Status') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div #salesByStatusChart></div>
+                </div>
+            </div>
+        </div>
+        }
+
+        <!-- Purchase Trend Chart -->
+        <div class="col-xxl-8 col-xl-7">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {{ app.localize('Purchase Summary') }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div #purchaseTrendChart></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock & Recent Activities Row -->
+    <div class="row g-3 mb-3">
+        <!-- Low Stock Items -->
+        @if (dashboardData.lowStockItems) {
+        <div class="col-xxl-6 col-xl-6">
+            <div class="card h-100">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h5 class="card-title mb-0">
+                        {{ app.localize('Stock Alerts') }}
+                    </h5>
+                    <span class="badge badge-primary ms-auto">
+                        {{ dashboardData.lowStockItems.items.length || 0 }}
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    @if (dashboardData.lowStockItems.items.length > 0) {
+                    <!-- Alert Summary -->
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto">
+                        <table class="table table-sm p-0 mb-0">
+                            <thead>
+                                <tr>
+                                    <th>{{ app.localize('Item') }}</th>
+                                    <th class="text-center">{{ app.localize('Qty') }}</th>
+                                    <th class="text-end">{{ app.localize('Avg. Cost') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (item of dashboardData.lowStockItems.items; track item.id) {
+                                <tr>
+                                    <td>
+                                        {{ item.itemName }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ item.currentStock || '' }}
+                                        {{ item.unit }}
+                                    </td>
+                                    <td class="text-end">
+                                        {{ app.formatCurrency(item.averageCost) }}
+                                    </td>
+                                </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    } @else {
+                    <div class="text-center py-4">
+                        <span class="text-success"><i class="ri-checkbox-circle-line fs-2"></i></span>
+                        <h6 class="text-success mb-1 mt-2">{{ app.localize('All items are well stocked!') }}</h6>
+                        <p class="text-muted mb-0 small">{{ app.localize('No stock alerts at this time') }}</p>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        }
+        <!-- Recent Activities -->
+        @if (dashboardData.recentActivities) {
+        <div class="col-xxl-6 col-xl-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        {{ app.localize('Recent Activities') }}
+                    </h5>
+                    <span class="badge badge-primary ms-auto">
+                        {{ dashboardData.recentActivities.length || 0 }}
+                    </span>
+                </div>
+                <div class="card-body p-0">
+                    @if (dashboardData.recentActivities.length > 0) {
+                    <div class="p-3" style="max-height: 400px; overflow-y: auto">
+                        <ul class="list-unstyled recent-activity-list">
+                            @for (activity of dashboardData.recentActivities; track activity.id) {
+                            <li>
+                                <div class="recent-activity-time text-end">
+                                    <span class="fw-semibold d-block small">
+                                        {{ app.formatDate(activity.createdAt) }}
+                                    </span>
+                                    <span class="d-block text-muted small">
+                                        {{ app.formatTimeByDateTime(activity.createdAt) }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-semibold">@{{ activity.username }}</h6>
+                                    @if(activity.description){
+                                    <span class="d-block fs-13 mt-1">
+                                        {{ activity.description }}
+                                    </span>
+                                    }
+                                </div>
+                            </li>
+                            }
+                        </ul>
+                    </div>
+                    } @else {
+                    <div class="text-center py-4">
+                        <i class="ri-history-line fs-1"></i>
+                        <h6 class="text-muted mb-1 mt-2">{{ app.localize('No recent activities') }}</h6>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    }
+</div>

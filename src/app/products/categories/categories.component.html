@@ -1,0 +1,203 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Categories') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Products') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Categories') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new category button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Categories DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Category form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="category.id" type="hidden" name="id" />
+
+                            <!-- Category Name -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Category Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="category.categoryName"
+                                    name="categoryName"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="category.description"
+                                    name="description"
+                                    rows="3"
+                                    class="form-control"
+                                    maxlength="255"></textarea>
+                            </div>
+
+                            <!-- Status -->
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="category.isActive"
+                                        type="checkbox"
+                                        id="isActive"
+                                        name="isActive"
+                                        class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">
+                                        {{ app.localize('Status') }} ({{
+                                            category.isActive ? app.localize('Active') : app.localize('Inactive')
+                                        }})
+                                        <a
+                                            href="javascript:void(0)"
+                                            class="btn-link-icon"
+                                            [appTooltip]="
+                                                app.localize('Active categories will be available for menu items.')
+                                            ">
+                                            <i class="ri-information-line ms-2"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Image Upload -->
+                            <div class="form-group">
+                                <label class="form-label mb-0">
+                                    {{ app.localize('Category Image') }}
+                                </label>
+                                <div class="form-text mb-2">
+                                    {{ app.localize('Supported formats: JPG, PNG, GIF, WebP (Max 5MB)') }}
+                                </div>
+                                <!-- Upload control -->
+                                <div class="upload-single">
+                                    <input
+                                        [ngModel]
+                                        (change)="onFileSelected($event)"
+                                        type="file"
+                                        name="imageFile"
+                                        id="imageFile"
+                                        accept=".jpg,.jpeg,.png,.gif,.webp"
+                                        class="upload-single-input" />
+                                    <!-- Upload box preview -->
+                                    <label
+                                        [attr.data-url]="imagePreviewUrl"
+                                        [attr.data-form-img]="true"
+                                        for="imageFile"
+                                        class="upload-single-box">
+                                        <!-- Placeholder if no image -->
+                                        <div
+                                            [ngClass]="{ 'd-none': imagePreviewUrl }"
+                                            class="upload-single-placeholder">
+                                            <i class="ri-image-add-line fs-1 text-muted mb-2"></i>
+                                            <div class="upload-single-text">
+                                                {{ app.localize('Drop or') }}
+                                                <span class="upload-single-browse">
+                                                    {{ app.localize('browse') }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div class="upload-single-btn btn-round">
+                                            {{ app.localize('Choose File') }}
+                                        </div>
+                                    </label>
+                                    <!-- Clear image button -->
+                                    @if (imagePreviewUrl) {
+                                    <button (click)="clearImage()" type="button" class="upload-single-clear-btn">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

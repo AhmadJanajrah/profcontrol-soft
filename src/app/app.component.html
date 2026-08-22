@@ -1,0 +1,1526 @@
+﻿<!-- =========================================================
+GoRestofy POS System - Main App Template (SIMPLIFIED)
+=========================================================
+Simplified layout with backend-driven configuration:
+- sidebar-fixed: Mobile=drawer, Tablet=mini, Desktop=toggle/always-mini(POS/Kitchen)
+- collapsible: Mobile=drawer, Tablet/Desktop=collapsible
+- drawer: Always drawer with mobile auto-close
+
+Author: Golosoft Team
+Version: 1.0.0 (Simplified)
+Last Updated: 2025-10-04 15:30:00 UTC
+========================================================= -->
+
+<!-- Authenticated Layout -->
+@if (app.isAuthenticated()) {
+<div class="app-container" [attr.data-layout-mode]="baseLayout">
+  <!-- Layout Overlay for Drawer Modes -->
+  <div
+    class="layout-overlay"
+    (click)="closeSidebar()"
+    role="button"
+    tabindex="-1"
+    aria-label="Close sidebar overlay"
+  ></div>
+
+  <!-- Mini Overlay for Submenu Backdrop (sidebar-fixed mini mode only) -->
+  <div
+    class="mini-overlay"
+    [class.active]="isMiniSubmenuOpen"
+    (click)="hideSubmenu()"
+    role="button"
+    tabindex="-1"
+    aria-label="Close submenu overlay"
+  ></div>
+
+  <!-- App Navbar -->
+  <header class="app-navbar" role="banner">
+    <div class="main-header">
+      <!-- Header Left Section -->
+      <div class="header-left">
+        <!-- Menu Toggle Button -->
+        <div class="header-item">
+          <button
+            type="button"
+            class="menu-toggle btn btn-icon btn-round"
+            (click)="handleMenuToggle()"
+          >
+            <i class="ri-menu-line"></i>
+          </button>
+        </div>
+
+        <!-- Application Logo -->
+        <div class="header-item logo">
+          <a href="/" class="logo-link">
+            <img
+              [src]="
+                '/api/media/generalimage/' + app.getAppConfig('faviconUrl')
+              "
+              alt="GoRestofy Logo Mini"
+              class="logo-mini"
+              width="32"
+              height="32"
+              loading="lazy"
+              onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzM4YmRmOCIvPgo8cGF0aCBkPSJNMTAgMjJIMjJWMTBIMTBWMjJaTTEyIDEySDIwVjIwSDEyVjEyWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg=='"
+            />
+            <img
+              [src]="'/api/media/generalimage/' + app.getAppConfig('logoUrl')"
+              alt="GoRestofy Logo Full"
+              class="logo-full"
+              height="28"
+              loading="lazy"
+              onerror="this.style.display='none'"
+            />
+          </a>
+        </div>
+      </div>
+
+      <!-- Header Right Section -->
+      <div class="header-right">
+        <!-- Location Selector -->
+        @if (app.getUserLocations().length > 1) {
+        <div class="header-item">
+          <div class="dropdown">
+            <button
+              [attr.aria-label]="app.localize('Select Location')"
+              class="btn-location btn btn-light"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <div class="location-info">
+                <i class="ri-store-2-line me-2"></i>
+                <span class="location-name">
+                  {{
+                    app.getSelectedLocationName() ||
+                      app.localize("Select Location")
+                  }}
+                </span>
+              </div>
+              <i class="ri-arrow-down-s-line dropdown-icon"></i>
+            </button>
+
+            <ul class="dropdown-menu">
+              @for (location of app.getUserLocations(); track location.id) {
+              <li>
+                <a
+                  href="javascript:void(0)"
+                  (click)="ChangeLocation(location.id)"
+                  class="dropdown-item"
+                  [class.active]="location.id === app.getSelectedLocationId()"
+                >
+                  <i class="ri-store-2-line"></i>
+                  {{ location.locationName }}
+                  @if (location.id === app.getSelectedLocationId()) {
+                  <i class="ri-check-line ms-auto text-primary"></i>
+                  }
+                </a>
+              </li>
+              }
+            </ul>
+          </div>
+        </div>
+        }
+
+        <div class="header-item">
+          <!-- Language Selector -->
+          <button
+            [attr.title]="app.localize('Change Language')"
+            (click)="showLanguageModal()"
+            type="button"
+            class="btn btn-icon btn-round"
+            [disabled]="languageModal.loading"
+          >
+            <i class="ri-global-line"></i>
+            <span class="visually-hidden">{{
+              app.localize("Change Language")
+            }}</span>
+          </button>
+        </div>
+
+        <div class="header-item">
+          <!-- Dark Mode Toggle -->
+          <button
+            [attr.title]="
+              isDark
+                ? app.localize('Switch to Light Mode')
+                : app.localize('Switch to Dark Mode')
+            "
+            (click)="toggleDarkMode()"
+            type="button"
+            class="btn btn-icon btn-round"
+          >
+            <i [class]="isDark ? 'ri-sun-line' : 'ri-moon-line'"></i>
+            <span class="visually-hidden">
+              {{
+                isDark
+                  ? app.localize("Switch to Light Mode")
+                  : app.localize("Switch to Dark Mode")
+              }}
+            </span>
+          </button>
+        </div>
+
+        <!-- Notifications -->
+        <div class="header-item">
+          <div class="dropdown notification-dropdown p-0">
+            <button
+              [attr.aria-label]="app.localize('Notifications')"
+              type="button"
+              class="btn btn-icon btn-round"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              @if (notifications.length > 0) {
+              <i class="ri-notification-3-line notif-icon-animate"></i>
+              <span class="notif-badge" aria-hidden="true"></span>
+              }@else {
+              <i class="ri-notification-3-line"></i>
+              }
+            </button>
+
+            <div class="dropdown-menu dropdown-menu-end">
+              <div
+                class="d-flex justify-content-between align-items-center notification-header"
+              >
+                <div class="mb-0 fw-semibold">
+                  {{ app.localize("Notifications") }}
+                </div>
+                <a
+                  href="javascript:void(0)"
+                  [routerLink]="['/profile/notifications']"
+                  class="btn-link text-white small"
+                >
+                  {{ app.localize("View All") }}
+                </a>
+              </div>
+
+              <div class="notification-list">
+                @if (notifications.length > 0) { @for (notification of
+                notifications; track notification.id){
+                <div class="d-flex gap-2 notification-item p-2">
+                  <div class="avatar p-2 bg-primary-light">
+                    <i class="ri-notification-3-line"></i>
+                  </div>
+                  <div>
+                    <div class="d-flex justify-content-between">
+                      <div class="fw-semibold small">
+                        {{ notification["title"] }}
+                      </div>
+                      <div class="small text-muted">
+                        {{
+                          app.formatTimeByDateTime(notification["createdAt"])
+                        }}
+                      </div>
+                    </div>
+                    <div class="small fw-normal text-muted">
+                      {{ notification["message"] }}
+                    </div>
+                  </div>
+                </div>
+                } } @else {
+                <div class="text-center py-4">
+                  <i class="ri-notification-off-line fs-2 text-muted"></i>
+                  <p class="text-muted mt-2 mb-0">
+                    {{ app.localize("No new notifications") }}
+                  </p>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Profile Menu -->
+        <div class="header-item">
+          <div class="dropdown user-dropdown">
+            <button
+              class="btn btn-icon btn-round"
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <div class="user-icon">
+                <img
+                  [src]="
+                    '/api/media/userimage/' +
+                    app.getUserAttribute('profileImageUrl')
+                  "
+                  [alt]="app.getUserAttribute('fullName')"
+                  class="rounded-circle"
+                  loading="lazy"
+                  onerror="this.src='assets/images/user.png'"
+                />
+              </div>
+            </button>
+
+            <ul class="dropdown-menu dropdown-menu-end">
+              <!-- User Info Header -->
+              <li class="p-0">
+                <div class="user-info d-flex gap-2 align-items-center">
+                  <div class="user-image mt-1">
+                    <img
+                      [src]="
+                        '/api/media/userimage/' +
+                        app.getUserAttribute('profileImageUrl')
+                      "
+                      [alt]="app.getUserAttribute('fullName')"
+                      class="rounded-circle"
+                      loading="lazy"
+                      onerror="this.src='assets/images/user.png'"
+                    />
+                  </div>
+                  <div class="user-details">
+                    <div class="fw-semibold">
+                      {{ app.getUserAttribute("fullName") || "" }}
+                    </div>
+                    <div class="small">
+                      {{ app.getUserAttribute("email") || "" }}
+                    </div>
+                  </div>
+                </div>
+              </li>
+
+              <!-- Menu Items -->
+              <li>
+                <a [routerLink]="['/profile/myprofile']" class="dropdown-item">
+                  <i class="ri-user-3-line me-2"></i>
+                  {{ app.localize("Profile") }}
+                </a>
+              </li>
+
+              <li>
+                <a
+                  href="javascript:void(0)"
+                  [routerLink]="['/profile/activitylogs']"
+                  class="dropdown-item"
+                >
+                  <i class="ri-history-line"></i>
+                  {{ app.localize("Activities") }}
+                </a>
+              </li>
+
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+
+              <li>
+                <a
+                  href="javascript:void(0)"
+                  (click)="app.logout()"
+                  class="dropdown-item text-danger"
+                >
+                  <i class="ri-logout-box-r-line me-2"></i>
+                  {{ app.localize("Logout") }}
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- App Sidebar -->
+  <aside
+    class="app-sidebar"
+    role="navigation"
+  >
+    <!-- Sidebar Header -->
+    <div class="header">
+      <button
+        type="button"
+        class="menu-toggle btn btn-icon btn-round"
+        (click)="handleMenuToggle()"
+      >
+        <i class="ri-menu-line"></i>
+      </button>
+      <a
+        href="/"
+        class="logo"
+      >
+        <img
+          [src]="'/api/media/generalimage/' + app.getAppConfig('faviconUrl')"
+          alt="GoRestofy Logo Mini"
+          class="logo-mini"
+          width="32"
+          height="32"
+          loading="lazy"
+          onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzM4YmRmOCIvPgo8cGF0aCBkPSJNMTAgMjJIMjJWMTBIMTBWMjJaTTEyIDEySDIwVjIwSDEyVjEyWiIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg=='"
+        />
+        <img
+          [src]="'/api/media/generalimage/' + app.getAppConfig('logoUrl')"
+          alt="GoRestofy Logo Full"
+          class="logo-full"
+          height="28"
+          loading="lazy"
+          onerror="this.style.display='none'"
+        />
+      </a>
+    </div>
+
+    <!-- Menu System -->
+    <ul class="menu" role="menubar">
+      <!-- Home -->
+      @if (app.hasHomeAccess()) {
+      <li [class.active]="isCurrentRoute('/homemenu')">
+        <a
+          [routerLink]="['/homemenu']"
+          [routerLinkActive]="'active'"
+          [attr.aria-current]="isCurrentRoute('/homemenu') ? 'page' : null"
+        >
+          <i class="ri-home-line"></i>
+          <span>{{ app.localize("Home") }}</span>
+        </a>
+      </li>
+      } @if(app.getUserAttribute('isWaiter')){
+      <!-- Waiter -->
+      <li [class.active]="isCurrentRoute('/waiter')">
+        <a
+          [routerLink]="['/waiter']"
+          [routerLinkActive]="'active'"
+          [attr.aria-current]="isCurrentRoute('/waiter') ? 'page' : null"
+        >
+          <i class="ri-restaurant-line"></i>
+          <span>{{ app.localize("Orders") }}</span>
+        </a>
+      </li>
+      }
+
+      <!-- Dashboard -->
+      @if (app.hasSomePermission('dashboard')) {
+      <li [class.active]="isCurrentRoute('/dashboard')">
+        <a
+          [routerLink]="['/dashboard']"
+          [routerLinkActive]="'active'"
+          [attr.aria-current]="isCurrentRoute('/dashboard') ? 'page' : null"
+        >
+          <i class="ri-dashboard-line"></i>
+          <span>{{ app.localize("Dashboard") }}</span>
+        </a>
+      </li>
+      }
+
+      <!-- Sales -->
+      @if (app.hasSomePermission('sales')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-shopping-bag-3-line"></i>
+          <span>{{ app.localize("Sales") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('sales.pos')) {
+          <li>
+            <a
+              [routerLink]="['/sales/pos']"
+              [routerLinkActive]="'active'"
+              (click)="applyMiniMode()"
+            >
+              <i class="ri-cash-line"></i>
+              <span>{{ app.localize("POS") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('sales.kitchen')) {
+          <li>
+            <a
+              [routerLink]="['/sales/kitchen']"
+              [routerLinkActive]="'active'"
+              (click)="applyMiniMode()"
+            >
+              <i class="ri-restaurant-2-line"></i>
+              <span>{{ app.localize("Kitchen") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('sales.orderlist')) {
+          <li>
+            <a
+              [routerLink]="['/sales/orders/list']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-clipboard-line"></i>
+              <span>{{ app.localize("Orders") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('sales.reservations')) {
+          <li>
+            <a
+              [routerLink]="['/sales/reservations']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-calendar-check-line"></i>
+              <span>{{ app.localize("Reservations") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Floor -->
+      @if (app.hasSomePermission('floor')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-layout-grid-line"></i>
+          <span>{{ app.localize("Floor") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('floor.floorplans')) {
+          <li>
+            <a
+              [routerLink]="['/floor/floorplans']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-shape-2-line"></i>
+              <span>{{ app.localize("Floor Plans") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('floor.tables')) {
+          <li>
+            <a [routerLink]="['/floor/tables']" [routerLinkActive]="'active'">
+              <i class="ri-table-line"></i>
+              <span>{{ app.localize("Tables") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Products/Menu -->
+      @if (app.hasSomePermission('products')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-restaurant-line"></i>
+          <span>{{ app.localize("Products") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('products.categories')) {
+          <li>
+            <a
+              [routerLink]="['/products/categories']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-folders-line"></i>
+              <span>{{ app.localize("Categories") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('products.itemlist')) {
+          <li>
+            <a
+              [routerLink]="['/products/items/list']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-list-check-2"></i>
+              <span>{{ app.localize("Items") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('products.additem')) {
+          <li>
+            <a
+              [routerLink]="['/products/items/add']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-add-circle-line"></i>
+              <span>{{ app.localize("Add Item") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('products.modifiers')) {
+          <li>
+            <a
+              [routerLink]="['/products/modifiers']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-list-settings-line"></i>
+              <span>{{ app.localize("Modifiers") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Inventory -->
+      @if (app.hasSomePermission('inventory')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-box-3-line"></i>
+          <span>{{ app.localize("Inventory") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('inventory.supplierlist')) {
+          <li>
+            <a
+              [routerLink]="['/inventory/suppliers/list']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-truck-line"></i>
+              <span>{{ app.localize("Suppliers") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('inventory.addsupplier')) {
+          <li>
+            <a
+              [routerLink]="['/inventory/suppliers/add']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-user-add-line"></i>
+              <span>{{ app.localize("Add Supplier") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('inventory.purchaselist')) {
+          <li>
+            <a
+              [routerLink]="['/inventory/purchases/list']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-shopping-cart-line"></i>
+              <span>{{ app.localize("Purchases") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('inventory.addpurchase')) {
+          <li>
+            <a
+              [routerLink]="['/inventory/purchases/add']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-add-circle-line"></i>
+              <span>{{ app.localize("Add Purchase") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('inventory.stocks')) {
+          <li>
+            <a
+              [routerLink]="['/inventory/stocks']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-stack-line"></i>
+              <span>{{ app.localize("Stock Levels") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('inventory.stockmovements')) {
+          <li>
+            <a
+              [routerLink]="['/inventory/stockmovements']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-repeat-line"></i>
+              <span>{{ app.localize("Stock Movements") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('inventory.stockadjustments')) {
+          <li>
+            <a
+              [routerLink]="['/inventory/stockadjustments']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-recycle-line"></i>
+              <span>{{ app.localize("Stock Adjustments") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Customers -->
+      @if (app.hasSomePermission('customers')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-user-3-line"></i>
+          <span>{{ app.localize("Customers") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('customers.list')) {
+          <li>
+            <a [routerLink]="['/customers/list']" [routerLinkActive]="'active'">
+              <i class="ri-user-search-line"></i>
+              <span>{{ app.localize("Customers") }}</span>
+            </a>
+          </li>
+          }@if (app.hasPermission('customers.add')) {
+          <li>
+            <a [routerLink]="['/customers/add']" [routerLinkActive]="'active'">
+              <i class="ri-user-add-line"></i>
+              <span>{{ app.localize("Add Customer") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('customers.feedbacks')) {
+          <li>
+            <a
+              [routerLink]="['/customers/feedbacks']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-chat-smile-2-line"></i>
+              <span>{{ app.localize("Feedbacks") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('customers.giftcards')) {
+          <li>
+            <a
+              [routerLink]="['/customers/giftcards']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-gift-2-line"></i>
+              <span>{{ app.localize("Gift Cards") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('customers.coupons')) {
+          <li>
+            <a
+              [routerLink]="['/customers/coupons']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-ticket-line"></i>
+              <span>{{ app.localize("Coupons") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Marketing -->
+      @if (app.hasSomePermission('marketing')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-megaphone-line"></i>
+          <span>{{ app.localize("Marketing") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('marketing.campaigns')) {
+          <li>
+            <a
+              [routerLink]="['/marketing/campaigns']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-bar-chart-grouped-line"></i>
+              <span>{{ app.localize("Campaigns") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- HRM -->
+      @if (app.hasSomePermission('hrm')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-user-star-line"></i>
+          <span>{{ app.localize("HRM") }}</span>
+        </a>
+        <ul
+          class="submenu"
+        >
+          @if (app.hasPermission('hrm.employeelist')) {
+          <li>
+            <a
+              [routerLink]="['/hrm/employees/list']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-group-line"></i>
+              <span>{{ app.localize("Employees") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.addemployee')) {
+          <li>
+            <a
+              [routerLink]="['/hrm/employees/add']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-user-add-line"></i>
+              <span>{{ app.localize("Add Employee") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.attendance')) {
+          <li>
+            <a
+              [routerLink]="['/hrm/attendance/list']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-calendar-check-line"></i>
+              <span>{{ app.localize("Attendance") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.payroll')) {
+          <li>
+            <a [routerLink]="['/hrm/payroll']" [routerLinkActive]="'active'">
+              <i class="ri-money-dollar-circle-line"></i>
+              <span>{{ app.localize("Payroll") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.leaverequests')) {
+          <li>
+            <a
+              [routerLink]="['/hrm/leaverequests']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-calendar-event-line"></i>
+              <span>{{ app.localize("Leave Requests") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.holidays')) {
+          <li>
+            <a [routerLink]="['/hrm/holidays']" [routerLinkActive]="'active'">
+              <i class="ri-calendar-2-line"></i>
+              <span>{{ app.localize("Holidays") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.departments')) {
+          <li>
+            <a
+              [routerLink]="['/hrm/departments']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-building-2-line"></i>
+              <span>{{ app.localize("Departments") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.designations')) {
+          <li>
+            <a
+              [routerLink]="['/hrm/designations']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-medal-line"></i>
+              <span>{{ app.localize("Designations") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.shifts')) {
+          <li>
+            <a [routerLink]="['/hrm/shifts']" [routerLinkActive]="'active'">
+              <i class="ri-time-line"></i>
+              <span>{{ app.localize("Shifts") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('hrm.reports')) {
+          <li>
+            <a
+              [routerLink]="['/hrm/reports/attendance']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-list-3-line"></i>
+              <span>{{ app.localize("Attendance Report") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Accounting -->
+      @if (app.hasSomePermission('accounting')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-money-dollar-circle-line"></i>
+          <span>{{ app.localize("Accounting") }}</span>
+        </a>
+        <ul
+          class="submenu"
+        >
+          @if (app.hasPermission('accounting.chartofaccounts')) {
+          <li>
+            <a
+              [routerLink]="['/accounting/chartofaccounts']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-projector-line"></i>
+              <span>{{ app.localize("Chart of Accounts") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('accounting.journalentries')) {
+          <li>
+            <a
+              [routerLink]="['/accounting/journalentries']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-book-2-line"></i>
+              <span>{{ app.localize("Journal Entries") }}</span>
+            </a>
+          </li>
+          } @if(app.hasSomePermissions(['accounting.bankaccounts',
+          'accounting.deposits', 'accounting.withdrawals',
+          'accounting.transfers', 'accounting.reconciliations'])) {
+          <li class="has-submenu">
+            <a href="javascript:void(0);">
+              <i class="ri-bank-line"></i>
+              <span>{{ app.localize("Banking") }}</span>
+            </a>
+            <ul class="submenu">
+              @if(app.hasPermission('accounting.bankaccounts')) {
+              <li>
+                <a
+                  [routerLink]="['/accounting/bankaccounts']"
+                  [routerLinkActive]="'active'"
+                >
+                  <i class="ri-bank-line"></i>
+                  <span>{{ app.localize("Bank Accounts") }}</span>
+                </a>
+              </li>
+              } @if (app.hasPermission('accounting.deposits')) {
+              <li>
+                <a
+                  [routerLink]="['/accounting/deposits']"
+                  [routerLinkActive]="'active'"
+                >
+                  <i class="ri-arrow-down-circle-line"></i>
+                  <span>{{ app.localize("Deposits") }}</span>
+                </a>
+              </li>
+              } @if (app.hasPermission('accounting.withdrawals')) {
+              <li>
+                <a
+                  [routerLink]="['/accounting/withdrawals']"
+                  [routerLinkActive]="'active'"
+                >
+                  <i class="ri-arrow-up-circle-line"></i>
+                  <span>{{ app.localize("Withdrawals") }}</span>
+                </a>
+              </li>
+              } @if (app.hasPermission('accounting.transfers')) {
+              <li>
+                <a
+                  [routerLink]="['/accounting/transfers']"
+                  [routerLinkActive]="'active'"
+                >
+                  <i class="ri-swap-line"></i>
+                  <span>{{ app.localize("Transfers") }}</span>
+                </a>
+              </li>
+              } @if (app.hasPermission('accounting.reconciliations')) {
+              <li>
+                <a
+                  [routerLink]="['/accounting/reconciliations']"
+                  [routerLinkActive]="'active'"
+                >
+                  <i class="ri-shield-check-line"></i>
+                  <span>{{ app.localize("Reconciliation") }}</span>
+                </a>
+              </li>
+              }
+            </ul>
+          </li>
+          } @if (app.hasPermission('accounting.expenses')) {
+          <li>
+            <a
+              [routerLink]="['/accounting/expenses']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-money-euro-circle-line"></i>
+              <span>{{ app.localize("Expenses") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('accounting.expensecategories')) {
+          <li>
+            <a
+              [routerLink]="['/accounting/expensecategories']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-price-tag-2-line"></i>
+              <span>{{ app.localize("Expense Categories") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('accounting.reports')) {
+          <li>
+            <a
+              [routerLink]="['/accounting/reports']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-list-3-line"></i>
+              <span>{{ app.localize("Reports") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Reports -->
+      @if (app.hasSomePermission('reports')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-file-list-3-line"></i>
+          <span>{{ app.localize("Reports") }}</span>
+        </a>
+        <ul
+          class="submenu"
+        >
+          @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/salereport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Sale Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/zxreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Z/X Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/itemsalesreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Item Sales") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/salesbycategoryreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Sales by Category") }}</span>
+            </a>
+          </li>
+          } @if(app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/salesbyordertypereport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Sales by Order Type") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/paymentmethodreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Sales by Payment Method") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/taxreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Tax Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/salesreturnreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Sales Return Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/purchasereport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Purchase Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/purchasereturnreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Purchase Return Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/supplierreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Supplier Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/customerreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Customer Report") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('reports')) {
+          <li>
+            <a
+              [routerLink]="['/reports/staffreport']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-chart-2-line"></i>
+              <span>{{ app.localize("Staff Report") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Tools -->
+      @if (app.hasSomePermission('tools')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-tools-line"></i>
+          <span>{{ app.localize("Tools") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('tools.auditlogs')) {
+          <li>
+            <a
+              [routerLink]="['/tools/auditlogs']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-history-line"></i>
+              <span>{{ app.localize("Audit Logs") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('tools.database')) {
+          <li>
+            <a [routerLink]="['/tools/database']" [routerLinkActive]="'active'">
+              <i class="ri-database-2-line"></i>
+              <span>{{ app.localize("Database") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Settings -->
+      @if (app.hasSomePermission('settings')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-settings-5-line"></i>
+          <span>{{ app.localize("Settings") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('settings.systemconfig')) {
+          <li>
+            <a
+              [routerLink]="['/settings/systemconfig']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-equalizer-line"></i>
+              <span>{{ app.localize("System Config") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.locations')) {
+          <li>
+            <a
+              [routerLink]="['/settings/locations']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-store-3-line"></i>
+              <span>{{ app.localize("Locations") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.languages')) {
+          <li>
+            <a
+              [routerLink]="['/settings/languages']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-translate"></i>
+              <span>{{ app.localize("Languages") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.currencies')) {
+          <li>
+            <a
+              [routerLink]="['/settings/currencies']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-currency-line"></i>
+              <span>{{ app.localize("Currencies") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.paymentmethods')) {
+          <li>
+            <a
+              [routerLink]="['/settings/paymentmethods']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-bank-card-2-line"></i>
+              <span>{{ app.localize("Payment Methods") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.templates')) {
+          <li>
+            <a
+              [routerLink]="['/settings/templates']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-list-3-line"></i>
+              <span>{{ app.localize("Templates") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.taxrates')) {
+          <li>
+            <a
+              [routerLink]="['/settings/taxrates']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-percent-line"></i>
+              <span>{{ app.localize("Tax Rates") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.discounts')) {
+          <li>
+            <a
+              [routerLink]="['/settings/discounts']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-price-tag-2-line"></i>
+              <span>{{ app.localize("Discounts") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.charges')) {
+          <li>
+            <a
+              [routerLink]="['/settings/charges']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-money-dollar-circle-line"></i>
+              <span>{{ app.localize("Charges") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('settings.cashregisters')) {
+          <li>
+            <a
+              [routerLink]="['/settings/cashregisters']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-safe-2-line"></i>
+              <span>{{ app.localize("Cash Registers") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Users -->
+      @if (app.hasSomePermission('users')) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-team-line"></i>
+          <span>{{ app.localize("Users") }}</span>
+        </a>
+        <ul class="submenu">
+          @if (app.hasPermission('users.list')) {
+          <li>
+            <a [routerLink]="['/users/list']" [routerLinkActive]="'active'">
+              <i class="ri-user-search-line"></i>
+              <span>{{ app.localize("Users") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('users.add')) {
+          <li>
+            <a [routerLink]="['/users/add']" [routerLinkActive]="'active'">
+              <i class="ri-user-add-line"></i>
+              <span>{{ app.localize("Add User") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('users.roles')) {
+          <li>
+            <a [routerLink]="['/users/roles']" [routerLinkActive]="'active'">
+              <i class="ri-shield-keyhole-line"></i>
+              <span>{{ app.localize("Roles & Permissions") }}</span>
+            </a>
+          </li>
+          } @if (app.hasPermission('users.useractivities')) {
+          <li>
+            <a
+              [routerLink]="['/users/useractivities']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-file-list-3-line"></i>
+              <span>{{ app.localize("User Activities") }}</span>
+            </a>
+          </li>
+          }
+        </ul>
+      </li>
+      }
+
+      <!-- Profile -->
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-user-line"></i>
+          <span>{{ app.localize("Profile") }}</span>
+        </a>
+        <ul class="submenu">
+          <li>
+            <a
+              [routerLink]="['/profile/myprofile']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-user-settings-line"></i>
+              <span>{{ app.localize("My Profile") }}</span>
+            </a>
+          </li>
+          <li>
+            <a
+              [routerLink]="['/profile/activitylogs']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-history-line"></i>
+              <span>{{ app.localize("Activity Logs") }}</span>
+            </a>
+          </li>
+          <li>
+            <a
+              [routerLink]="['/profile/notifications']"
+              [routerLinkActive]="'active'"
+            >
+              <i class="ri-notification-3-line"></i>
+              <span>{{ app.localize("Notifications") }}</span>
+            </a>
+          </li>
+          <li>
+            <a href="javascript:void(0);" (click)="app.logout()">
+              <i class="ri-logout-box-r-line"></i>
+              <span>{{ app.localize("Logout") }}</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+    <div class="footer">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          {{ app.getAppConfig("copyright") || "© GoRestofy" }}
+        </div>
+        <div>
+          {{ app.getAppConfig("version") || app.getAppVersion() }}
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+</div>
+}
+
+<!-- Unauthenticated Layout -->
+@if (!app.isAuthenticated()) {
+<div class="auth-layout">
+  <!-- Authentication Top Bar -->
+  <div class="auth-top-bar">
+    <div class="d-flex justify-content-between align-items-center">
+      <div class="auth-top-left">
+        <button
+          (click)="app.goBack()"
+          class="btn btn-icon btn-light btn-round btn-back me-3"
+          id="auth-back-button"
+          type="button"
+          [attr.aria-label]="app.localize('Go Back')"
+        >
+          <i class="ri-arrow-left-line"></i>
+        </button>
+      </div>
+
+      <div class="auth-top-right">
+        <div class="d-flex align-items-center gap-2">
+          <button
+            [attr.title]="app.localize('Change Language')"
+            (click)="showLanguageModal()"
+            class="btn btn-icon btn-light btn-round"
+            type="button"
+            [disabled]="languageModal.loading"
+          >
+            <i class="ri-global-line"></i>
+            <span class="visually-hidden">{{
+              app.localize("Change Language")
+            }}</span>
+          </button>
+
+          <button
+            [attr.title]="
+              isDark
+                ? app.localize('Switch to Light Mode')
+                : app.localize('Switch to Dark Mode')
+            "
+            (click)="toggleDarkMode()"
+            class="btn btn-icon btn-light btn-round"
+            type="button"
+          >
+            <i [class]="isDark ? 'ri-sun-line' : 'ri-moon-line'"></i>
+            <span class="visually-hidden">
+              {{
+                isDark
+                  ? app.localize("Switch to Light Mode")
+                  : app.localize("Switch to Dark Mode")
+              }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Authentication Content -->
+  <div class="auth-content">
+    <div class="auth">
+      <!-- Left Panel with Image -->
+      <div
+        class="auth-left"
+        style="background-image: url('assets/images/auth/cover.svg')"
+      ></div>
+      <!-- Right Panel -->
+      <div class="auth-right d-flex flex-column justify-content-between">
+        <div class="auth-form">
+          <div class="auth-logo mb-2">
+            <img
+              [src]="'/api/media/generalimage/' + app.getAppConfig('logoUrl')"
+              alt="Logo"
+            />
+          </div>
+
+          <router-outlet></router-outlet>
+        </div>
+        <!-- Footer -->
+        <div class="auth-footer mt-auto text-center small">
+          {{ app.getAppConfig("copyright") }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+}
+
+<!-- Modal Container for System Modals -->
+<div class="modal-container" role="dialog">
+  <!-- Language Selection Modal -->
+  @if (languageModal.show) {
+  <div
+    class="modal right language show d-block"
+    tabindex="-1"
+    role="dialog"
+    aria-labelledby="languageModalLabel"
+    aria-hidden="false"
+  >
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5
+            class="modal-title d-flex align-items-center"
+            id="languageModalLabel"
+          >
+            <i class="ri-global-line text-primary me-2"></i>
+            {{ app.localize("Change Language") }}
+          </h5>
+          <button
+            [attr.aria-label]="app.localize('Close')"
+            (click)="closeLanguageModal()"
+            type="button"
+            class="btn-close"
+          >
+            <i class="ri-close-line"></i>
+          </button>
+        </div>
+
+        <div [class.disabled]="languageModal.loading" class="modal-body p-0">
+          @if (languageModal.loading) {
+          <div class="text-center py-5">
+            <div class="d-flex justify-content-center mb-3">
+              <div class="loader"></div>
+            </div>
+          </div>
+          } @else {
+          <ul class="list-group list-group-flush language-list">
+            @for (language of app.getLanguages(); track language.languageName) {
+            <li
+              class="list-group-item d-flex align-items-center gap-2"
+              (click)="ChangeLanguage(language.languageCode)"
+            >
+              <img
+                [src]="
+                  'assets/images/flags/' +
+                  GetCountry(language.languageCode) +
+                  '.svg'
+                "
+                [alt]="language.languageName + ' flag'"
+                class="avatar avatar-xs rounded-circle"
+                loading="lazy"
+              />
+              <div class="language-name flex-grow-1">
+                {{ language.nativeName }}
+              </div>
+              @if (getCurrentLanguage() === language.languageCode) {
+              <div class="language-check">
+                <i class="ri-check-line text-primary fs-5"></i>
+              </div>
+              }
+            </li>
+            }
+          </ul>
+          }
+        </div>
+      </div>
+    </div>
+    <!-- Modal Backdrop -->
+    <div class="modal-backdrop fade show" (click)="closeLanguageModal()"></div>
+  </div>
+  }
+</div>
+
+<!-- Toast Notifications Container -->
+<div
+  id="toasters"
+  class="toast-container position-fixed top-0 end-0 p-3"
+  role="region"
+  [attr.aria-label]="app.localize('Notifications')"
+  aria-live="polite"
+></div>
+
+<!-- PWA Install Banner -->
+@if(showInstallBanner) {
+<div class="pwa-install-banner">
+  <div class="pwa-banner-content">
+    <div class="pwa-left">
+      <img
+        [src]="'/api/media/generalimage/' + app.getAppConfig('faviconUrl')"
+        class="pwa-icon"
+      />
+
+      <div class="pwa-text">
+        <div class="pwa-title">{{ appName }}</div>
+        <div class="pwa-desc">{{ currentUrl }}</div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-round" (click)="installApp()">
+      <i class="ri-download-line"></i>
+      {{ app.localize("Install") }}
+    </button>
+  </div>
+</div>
+}

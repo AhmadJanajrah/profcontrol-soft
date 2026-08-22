@@ -1,0 +1,126 @@
+@if(isTwoFactorEmailSent){
+<div class="heading heading-sub">
+    <h4>
+        {{ app.localize('Verify Your Identity') }}
+    </h4>
+    <p>
+        {{ app.localize('We have sent a 6-digit verification code to your email/phone.') }}
+    </p>
+</div>
+<!-- Login form -->
+<div class="row gy-3">
+    <form
+        #frm1="ngForm"
+        [ngClass]="{ 'was-validated': isFormValidated }"
+        (ngSubmit)="submitForm1(frm1)"
+        id="frm"
+        autocomplete="off"
+        novalidate>
+        <!-- PassCode input -->
+        <div class="form-group">
+            <label for="passCode">
+                {{ app.localize('Pass Code') }}
+            </label>
+            <input
+                ngModel
+                id="passCode"
+                type="text"
+                class="form-control"
+                name="passCode"
+                tabindex="1"
+                required
+                autofocus />
+            <div class="invalid-feedback">
+                {{ app.localize('Please enter pass code.') }}
+            </div>
+        </div>
+        <!-- Verify OTP button -->
+        <div class="form-group mt-5">
+            <button
+                [ngClass]="{ 'disabled btn-progress': isFormSubmitted }"
+                type="submit"
+                class="btn btn-primary btn-lg btn-round w-100"
+                tabindex="4">
+                {{ app.localize('Verify OTP') }}
+            </button>
+        </div>
+    </form>
+</div>
+} @else {
+<!-- Login Form -->
+<div class="heading heading-sub">
+    <h4>
+        {{ app.localize('Login') }}
+    </h4>
+    <p>
+        {{ app.localize('Sign in to continue using the application') }}
+    </p>
+</div>
+<!-- Login form -->
+<div class="row gy-3">
+    <form
+        #frm="ngForm"
+        [ngClass]="{ 'was-validated': isFormValidated }"
+        (ngSubmit)="submitForm(frm)"
+        autocomplete="off"
+        id="frm"
+        novalidate>
+        <!-- Email or Username input -->
+        <div class="form-group">
+            <label for="email">
+                {{ app.localize('Email Or Username') }}
+            </label>
+            <input ngModel id="email" type="text" class="form-control" name="email" tabindex="1" required autofocus />
+            <div class="invalid-feedback">
+                {{ app.localize('Please enter email or username.') }}
+            </div>
+        </div>
+        <!-- Password input -->
+        <div class="form-group">
+            <div class="d-flex justify-content-between">
+                <label for="password" class="control-label">
+                    {{ app.localize('Password') }}
+                </label>
+                <div class="ms-auto">
+                    <a [routerLink]="['/auth/forgotpassword']" class="btn-link p-0">
+                        {{ app.localize('Forgot Password?') }}
+                    </a>
+                </div>
+            </div>
+            <div class="input-with-icon">
+                <input
+                    ngModel
+                    id="password"
+                    type="password"
+                    class="form-control"
+                    name="password"
+                    required
+                    tabindex="2" />
+                <button type="button" class="input-icon-end toggle-password me-1" tabindex="-1" data-target="#password">
+                    <i class="ri-eye-line"></i>
+                </button>
+                <div class="invalid-feedback">
+                    {{ app.localize('Please enter password.') }}
+                </div>
+            </div>
+        </div>
+        <!-- Remember Me checkbox -->
+        <div class="form-check form-switch">
+            <input ngModel type="checkbox" name="isRemember" class="form-check-input" id="isRemember" tabindex="3" />
+            <label class="text-muted my-0" for="isRemember">
+                {{ app.localize('Remember Me') }}
+            </label>
+        </div>
+        <!-- Login button -->
+        <div class="form-group mt-5">
+            <button
+                [ngClass]="{ 'disabled btn-progress': isFormSubmitted }"
+                type="submit"
+                class="btn btn-lg btn-primary btn-round w-100"
+                tabindex="4">
+                {{ app.localize('Login') }}
+            </button>
+        </div>
+    </form>
+</div>
+}

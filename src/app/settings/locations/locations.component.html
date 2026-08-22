@@ -1,0 +1,313 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Locations') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Settings') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Locations') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new location button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Locations DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Location form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="location.id" type="hidden" name="id" />
+
+                            <!-- Location Name -->
+                            <div class="form-group">
+                                <label for="locationName" class="control-label">
+                                    {{ app.localize('Location Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="location.locationName"
+                                    id="locationName"
+                                    name="locationName"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Contact Information -->
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="email" class="control-label">
+                                        {{ app.localize('Email') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="location.email"
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        class="form-control"
+                                        maxlength="100" />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('Please enter a valid email address.') }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="phone" class="control-label">
+                                        {{ app.localize('Phone') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="location.phone"
+                                        id="phone"
+                                        name="phone"
+                                        type="tel"
+                                        class="form-control"
+                                        maxlength="20"
+                                        pattern="^\+?[0-9]{7,20}$" />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('Please enter a valid phone number.') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Address -->
+                            <div class="form-group">
+                                <label for="address" class="control-label">
+                                    {{ app.localize('Address') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="location.address"
+                                    id="address"
+                                    name="address"
+                                    class="form-control"
+                                    maxlength="255"
+                                    rows="2"></textarea>
+                            </div>
+
+                            <!-- City, State -->
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="city" class="control-label">
+                                        {{ app.localize('City') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="location.city"
+                                        id="city"
+                                        name="city"
+                                        type="text"
+                                        class="form-control"
+                                        maxlength="100" />
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="state" class="control-label">
+                                        {{ app.localize('State/Province') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="location.state"
+                                        id="state"
+                                        name="state"
+                                        type="text"
+                                        class="form-control"
+                                        maxlength="100" />
+                                </div>
+                            </div>
+
+                            <!-- Postal Code, Country -->
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="postalCode" class="control-label">
+                                        {{ app.localize('Postal Code') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="location.postalCode"
+                                        id="postalCode"
+                                        name="postalCode"
+                                        type="text"
+                                        class="form-control"
+                                        maxlength="20" />
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="country" class="control-label">
+                                        {{ app.localize('Country') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="location.country"
+                                        id="country"
+                                        name="country"
+                                        type="text"
+                                        class="form-control"
+                                        maxlength="100" />
+                                </div>
+                            </div>
+
+                            <!-- Operating Hours -->
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="openingTime" class="control-label">
+                                        {{ app.localize('Opening Time') }}
+                                    </label>
+                                    <div class="input-with-icon">
+                                        <input
+                                            [(ngModel)]="location.openingTime"
+                                            type="time"
+                                            name="openingTime"
+                                            id="openingTime"
+                                            onclick="this.showPicker()"
+                                            class="form-control" />
+                                        @if (location.openingTime) {
+                                        <button
+                                            (click)="location.openingTime = null"
+                                            type="button"
+                                            class="input-icon-end"
+                                            tabindex="-1">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                        }
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6 form-group">
+                                    <label for="closingTime" class="control-label">
+                                        {{ app.localize('Closing Time') }}
+                                    </label>
+                                    <div class="input-with-icon">
+                                        <input
+                                            [(ngModel)]="location.closingTime"
+                                            type="time"
+                                            name="closingTime"
+                                            id="closingTime"
+                                            onclick="this.showPicker()"
+                                            class="form-control" />
+                                        @if (location.closingTime) {
+                                        <button
+                                            (click)="location.closingTime = null"
+                                            type="button"
+                                            class="input-icon-end"
+                                            tabindex="-1">
+                                            <i class="ri-close-line"></i>
+                                        </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tax Identification Number -->
+                            <div class="form-group">
+                                <label for="taxIdentificationNumber" class="control-label">
+                                    {{ app.localize('Tax Identification Number') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="location.taxIdentificationNumber"
+                                    id="taxIdentificationNumber"
+                                    name="taxIdentificationNumber"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="50" />
+                            </div>
+
+                            <!-- Head Office Status -->
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="location.isHeadOffice"
+                                        type="checkbox"
+                                        id="isHeadOffice"
+                                        name="isHeadOffice"
+                                        class="form-check-input" />
+                                    <label for="isHeadOffice" class="form-check-label">
+                                        {{ app.localize('Set as Head Office') }}
+                                        <a
+                                            href="javascript:void(0)"
+                                            class="btn-link-icon"
+                                            [appTooltip]="
+                                                app.localize(
+                                                    'Set as head office location (only one head office allowed)'
+                                                )
+                                            ">
+                                            <i class="ri-information-line ms-2"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,324 @@
+<!-- Page header with title and breadcrumb -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ getPageTitle() }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Sales') }}
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/sales/orders']">
+                        {{ app.localize('Orders') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Refund') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Order details and refund form -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Loading overlay -->
+            <div [ngClass]="{ 'disabled loader-full': isLoading }">
+                @if (!isLoading && order) {
+                <!-- Order Information -->
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <h5 class="mb-1">
+                            {{ app.localize('Order') }} #:
+                            <strong>{{ order.id }}</strong>
+                        </h5>
+                        <p class="text-muted mb-1">
+                            {{ app.localize('Customer') }}: {{ order.customer?.fullName || 'Walk-in' }} |
+                            {{ app.localize('Total') }}: {{ app.formatCurrency(order.totalAmount) }}
+                        </p>
+                        @if (order.taxRate) {
+                        <p class="text-muted mb-1">{{ app.localize('Tax Rate') }}: {{ getTaxInfo() }}</p>
+                        }
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span [innerHTML]="renderPaymentStatusBadge(order.paymentStatus)"></span>
+                    </div>
+                </div>
+
+                <!-- Refund form -->
+                <form
+                    #refundForm="ngForm"
+                    [ngClass]="{ 'was-validated': isValidated }"
+                    (ngSubmit)="submitRefund(refundForm)"
+                    autocomplete="off"
+                    novalidate>
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <!-- Refund Reason -->
+                            <div class="form-group">
+                                <label for="reason" class="form-label">
+                                    {{ app.localize('Refund Reason') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="refund.reason"
+                                    type="text"
+                                    name="reason"
+                                    id="reason"
+                                    class="form-control"
+                                    required
+                                    maxlength="100" />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="form-group">
+                                <label for="notes" class="form-label">
+                                    {{ app.localize('Notes') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="refund.notes"
+                                    id="notes"
+                                    name="notes"
+                                    class="form-control"
+                                    rows="3"
+                                    maxlength="500"></textarea>
+                            </div>
+
+                            <!-- Order Items -->
+                            <div class="section-card mb-2">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-stack-line me-2"></i>
+                                    {{ app.localize('Order Items') }}
+                                </div>
+
+                                @if (order.orderItems && order.orderItems.length > 0) {
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>{{ app.localize('Item') }}</th>
+                                                <th class="text-center">{{ app.localize('Price') }}</th>
+                                                <th class="text-center">{{ app.localize('Return Qty') }}</th>
+                                                <th class="text-end">{{ app.localize('Refund Amount') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @for (refundItem of refund.returnItems; track $index; let i = $index) { @let
+                                            orderItem = getOrderItemDetails(refundItem.orderItemId); @if (orderItem) {
+                                            <tr>
+                                                <td>
+                                                    <div class="table-img-text">
+                                                        <div class="text-block">
+                                                            <span class="no-wrap fw-medium">
+                                                                {{ orderItem.itemName }}
+                                                            </span>
+                                                            @if (orderItem.modifiers && orderItem.modifiers.length > 0)
+                                                            {
+                                                            <div class="modifiers-list">
+                                                                @for (modifier of orderItem.modifiers; track
+                                                                modifier.id) {
+                                                                <small class="text-muted d-block">
+                                                                    + {{ modifier.modifierOption?.optionName }} ({{
+                                                                        app.formatCurrency(modifier.unitPrice)
+                                                                    }})
+                                                                </small>
+                                                                }
+                                                            </div>
+                                                            }
+                                                            <small class="text-muted">
+                                                                {{ app.localize('Available to return') }}:
+                                                                {{ orderItem.quantity - orderItem.returnedQty }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td class="text-center">
+                                                    {{ app.formatCurrency(orderItem.unitPrice) }}
+                                                </td>
+
+                                                <td class="text-center">
+                                                    <div class="d-flex justify-content-center align-items-center">
+                                                        <div class="qty-wrapper">
+                                                            <button
+                                                                (click)="decreaseQuantity(refundItem.orderItemId)"
+                                                                type="button"
+                                                                class="btn-minus"
+                                                                [disabled]="
+                                                                    app.localeToAPINumber(refundItem.returnQuantity) <=
+                                                                    0
+                                                                "
+                                                                title="{{ app.localize('Decrease quantity') }}">
+                                                                <i class="ri-subtract-line"></i>
+                                                            </button>
+                                                            <input
+                                                                [(ngModel)]="refundItem.returnQuantity"
+                                                                (ngModelChange)="onQuantityChange()"
+                                                                [appCleaveNumber]="app.getCleaveNumberOptions(3, true)"
+                                                                name="return_quantity_{{ i }}"
+                                                                type="text"
+                                                                inputmode="numeric"
+                                                                class="form-control form-control-sm"
+                                                                placeholder="0"
+                                                                [max]="orderItem.quantity - orderItem.returnedQty" />
+                                                            <button
+                                                                (click)="increaseQuantity(refundItem.orderItemId)"
+                                                                type="button"
+                                                                class="btn-plus"
+                                                                [disabled]="
+                                                                    app.localeToAPINumber(refundItem.returnQuantity) >=
+                                                                    orderItem.quantity - orderItem.returnedQty
+                                                                "
+                                                                title="{{ app.localize('Increase quantity') }}">
+                                                                <i class="ri-add-line"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td class="text-end align-middle fw-medium">
+                                                    {{ app.formatCurrency(getRefundItemTotal(refundItem.orderItemId)) }}
+                                                </td>
+                                            </tr>
+                                            } }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                } @else {
+                                <div class="text-center py-3 bg-light border rounded">
+                                    <i class="ri-box-3-line fs-4 text-muted mb-2"></i>
+                                    <p class="mb-0">{{ app.localize('No items found in this order') }}</p>
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <!-- Refund Summary -->
+                            <div class="card-section bg-gradient-primary-light border-dashed rounded p-3 sticky-top">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-money-dollar-circle-line me-2"></i>
+                                    {{ app.localize('Refund Summary') }}
+                                </div>
+
+                                <div class="refund-calculations">
+                                    <!-- Subtotal -->
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ app.localize('Subtotal') }}:</span>
+                                        <span>{{ app.formatCurrency(calculations.subtotal) }}</span>
+                                    </div>
+
+                                    <!-- Discount (if applicable) -->
+                                    @if (shouldShowDiscount()) {
+                                    <div class="d-flex justify-content-between mb-2 text-success">
+                                        <span>{{ app.localize('Discount') }}:</span>
+                                        <span>{{ app.formatCurrency(calculations.discount) }}</span>
+                                    </div>
+                                    }
+
+                                    <!-- Coupon Discount (if applicable) -->
+                                    @if (calculations.couponDiscount > 0) {
+                                    <div class="d-flex justify-content-between mb-2 text-success">
+                                        <span>{{ app.localize('Coupon Discount') }}:</span>
+                                        <span>{{ app.formatCurrency(calculations.couponDiscount) }}</span>
+                                    </div>
+                                    }
+
+                                    <!-- Tax (if applicable) -->
+                                    @if (shouldShowTax()) {
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ getTaxInfo() }}:</span>
+                                        <span>{{ app.formatCurrency(calculations.taxAmount) }}</span>
+                                    </div>
+                                    }
+
+                                    <!-- Refund Charge Amount -->
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span>{{ app.localize('Charge Amount') }}:</span>
+                                        <div style="width: 120px">
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">{{ app.getCurrencySymbol() }}</span>
+                                                </div>
+                                                <input
+                                                    [(ngModel)]="refund.refundChargeAmount"
+                                                    (ngModelChange)="onRefundChargeChange()"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                    id="refundChargeAmount"
+                                                    name="refundChargeAmount"
+                                                    type="text"
+                                                    inputmode="numeric"
+                                                    class="form-control text-end"
+                                                    maxlength="18"
+                                                    [placeholder]="app.getNumberPlaceholder('0.00')"
+                                                    required />
+                                                <div class="invalid-feedback">
+                                                    {{ app.localize('This field is required.') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="mt-4 mb-2" />
+
+                                    <!-- Total Refund Amount -->
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <strong class="text-primary fs-5">{{ app.localize('Total Refund') }}:</strong>
+                                        <strong class="text-primary fs-5">
+                                            {{ app.formatCurrency(calculations.total) }}
+                                        </strong>
+                                    </div>
+
+                                    <!-- Original Order Charges Note -->
+                                    @if (hasOriginalCharges()) {
+                                    <div class="alert alert-info mt-3 p-2 small">
+                                        <i class="ri-information-line me-1"></i>
+                                        {{ app.localize('Original charges') }} ({{
+                                            app.formatCurrency(order.chargeAmount)
+                                        }}) {{ app.localize('are not automatically refunded') }}.
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions mt-4">
+                        <div [ngClass]="{ disabled: isSubmitted }" class="d-flex justify-content-end gap-2">
+                            <button (click)="app.goBack()" type="button" class="btn btn-light btn-round btn-back">
+                                <i class="ri-arrow-left-line"></i>
+                                {{ app.localize('Back') }}
+                            </button>
+                            <button
+                                [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                                [disabled]="!canRefund() || calculations.total <= 0"
+                                type="submit"
+                                class="btn btn-danger btn-round">
+                                <i class="ri-refund-2-line"></i>
+                                {{ app.localize('Refund') }}
+                                @if (calculations.total > 0) {
+                                <span>{{ app.formatCurrency(calculations.total) }}</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

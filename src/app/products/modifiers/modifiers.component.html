@@ -1,0 +1,406 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Modifiers') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Products') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Modifiers') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new modifier button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Modifiers DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modifier modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Modifier form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="modifier.id" type="hidden" name="id" />
+
+                            <!-- Modifier Name -->
+                            <div class="form-group">
+                                <label for="modifierName" class="control-label">
+                                    {{ app.localize('Modifier Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="modifier.modifierName"
+                                    id="modifierName"
+                                    name="modifierName"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label for="description" class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="modifier.description"
+                                    id="description"
+                                    name="description"
+                                    class="form-control"
+                                    rows="3"
+                                    maxlength="255"></textarea>
+                            </div>
+
+                            <!-- Selection Rules -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="minSelection" class="control-label">
+                                            {{ app.localize('Min Selection') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="modifier.minSelection"
+                                            appIntegerOnly
+                                            id="minSelection"
+                                            name="minSelection"
+                                            type="number"
+                                            min="0"
+                                            class="form-control"
+                                            placeholder="0"
+                                            maxlength="10"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="maxSelection" class="control-label">
+                                            {{ app.localize('Max Selection') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="modifier.maxSelection"
+                                            appIntegerOnly
+                                            id="maxSelection"
+                                            name="maxSelection"
+                                            type="number"
+                                            min="1"
+                                            class="form-control"
+                                            placeholder="1"
+                                            maxlength="10"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="modifier.isRequired"
+                                        name="isRequired"
+                                        type="checkbox"
+                                        class="form-check-input"
+                                        id="isRequired" />
+                                    <label class="form-check-label" for="isRequired">
+                                        {{ app.localize('Is Required?') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Options Section -->
+                            <div class="d-flex justify-content-between align-items-center mb-2 mt-4">
+                                <div class="d-flex align-items-center heading mb-0">
+                                    <h5 class="mb-0">
+                                        {{ app.localize('Options') }}
+                                        <code>*</code>
+                                    </h5>
+                                    <span class="badge badge-light ms-2">
+                                        {{ modifier.modifierOptions.length || 0 }}
+                                    </span>
+                                </div>
+                                <button (click)="addOption()" type="button" class="btn btn-sm btn-dark btn-round">
+                                    <i class="ri-add-line"></i>
+                                    {{ app.localize('Add Option') }}
+                                </button>
+                            </div>
+
+                            <!-- Options List -->
+                            @if (modifier.modifierOptions && modifier.modifierOptions.length > 0) { @for (option of
+                            modifier.modifierOptions; track $index; let i = $index) {
+                            <div class="rounded border-dashed p-3 mt-3">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <h6 class="mb-0 text-primary">
+                                        <i class="ri-list-check"></i>
+                                        {{ app.localize('Option') }} {{ i + 1 }}
+                                    </h6>
+                                    @if (modifier.modifierOptions.length > 1) {
+                                    <button
+                                        (click)="removeOption(i)"
+                                        type="button"
+                                        class="btn btn-icon btn-sm text-danger"
+                                        [appTooltip]="app.localize('Remove')">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                    }
+                                </div>
+
+                                <!-- Option Details -->
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="form-group">
+                                            <label for="option_name_{{ i }}" class="form-label">
+                                                {{ app.localize('Option Name') }}
+                                                <code>*</code>
+                                            </label>
+                                            <input
+                                                [(ngModel)]="option.optionName"
+                                                id="option_name_{{ i }}"
+                                                name="option_name_{{ i }}"
+                                                type="text"
+                                                class="form-control"
+                                                maxlength="100"
+                                                required />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-group">
+                                            <label for="option_price_{{ i }}" class="form-label">
+                                                {{ app.localize('Additional Price') }}
+                                                <code>*</code>
+                                            </label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">
+                                                        {{ app.getCurrencySymbol() }}
+                                                    </span>
+                                                </div>
+                                                <input
+                                                    [(ngModel)]="option.price"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                    id="option_price_{{ i }}"
+                                                    name="option_price_{{ i }}"
+                                                    type="text"
+                                                    inputmode="numeric"
+                                                    class="form-control"
+                                                    [placeholder]="app.getNumberPlaceholder('0.00')"
+                                                    maxlength="18"
+                                                    required />
+                                                <div class="invalid-feedback">
+                                                    {{ app.localize('This field is required.') }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="option.isDefault"
+                                            name="option_default_{{ i }}"
+                                            type="checkbox"
+                                            class="form-check-input"
+                                            id="default_{{ i }}" />
+                                        <label class="form-check-label" for="default_{{ i }}">
+                                            {{ app.localize('Is Default Option?') }}
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Ingredients for this option -->
+                                <div class="mt-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label mb-0">
+                                            <i class="ri-plant-line"></i>
+                                            {{ app.localize('Ingredients Consumption') }}
+                                        </label>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <ng-select
+                                            [ngModel]="null"
+                                            [items]="ingredients"
+                                            (ngModelChange)="addIngredient(i, $event)"
+                                            bindLabel="itemName"
+                                            bindValue="id"
+                                            name="ingredient_{{ i }}"
+                                            [clearable]="false"
+                                            [placeholder]="app.localize('Search and add ingredients...')"
+                                            class="form-control"></ng-select>
+                                    </div>
+
+                                    @if (option.modifierIngredients && option.modifierIngredients.length > 0) {
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>{{ app.localize('Ingredient') }}</th>
+                                                    <th width="150">{{ app.localize('Quantity') }}</th>
+                                                    <th width="80" class="text-center">
+                                                        {{ app.localize('Actions') }}
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @for (ingredient of option.modifierIngredients; track $index; let j =
+                                                $index) {
+                                                <tr>
+                                                    <td>
+                                                        <div>
+                                                            <strong>
+                                                                {{ ingredient.ingredient?.itemName }}
+                                                            </strong>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="qty-wrapper">
+                                                            <button
+                                                                (click)="decreaseQuantity(i, j)"
+                                                                type="button"
+                                                                class="btn-minus"
+                                                                title="{{ app.localize('Decrease quantity') }}">
+                                                                <i class="ri-subtract-line"></i>
+                                                            </button>
+                                                            <input
+                                                                [(ngModel)]="ingredient.quantity"
+                                                                [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                                                name="ingredient_qty_{{ i }}_{{ j }}"
+                                                                type="text"
+                                                                inputmode="numeric"
+                                                                class="form-control form-control-sm"
+                                                                placeholder="{{
+                                                                    app.getNumberPlaceholder('0.0000')
+                                                                }}" />
+                                                            <span class="unit">
+                                                                {{ ingredient.ingredient?.unitOfMeasure || '' }}
+                                                            </span>
+                                                            <button
+                                                                (click)="increaseQuantity(i, j)"
+                                                                type="button"
+                                                                class="btn-plus"
+                                                                title="{{ app.localize('Increase quantity') }}">
+                                                                <i class="ri-add-line"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <button
+                                                            (click)="removeIngredient(i, j)"
+                                                            type="button"
+                                                            class="btn btn-icon btn-sm text-danger"
+                                                            [appTooltip]="app.localize('Remove')">
+                                                            <i class="ri-delete-bin-line"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    } @else {
+                                    <div class="text-center text-muted py-2 border rounded bg-light">
+                                        <p class="mb-0 small">
+                                            {{ app.localize('No ingredients added to this option') }}
+                                        </p>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                            } } @else {
+                            <div class="text-center text-muted py-5 border rounded bg-light">
+                                <i class="ri-list-check ri-3x mb-3"></i>
+                                <h6>{{ app.localize('No Options Added') }}</h6>
+                                <p class="mb-0">
+                                    {{ app.localize('Click "Add Option" to create your first modifier option') }}
+                                </p>
+                            </div>
+                            }
+
+                            <div class="pb-5"></div>
+
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    form="frm"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,111 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Items') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Products') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Items') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new item button -->
+        <button (click)="addItem()" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Category filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 200px">
+                        <label for="categoryId" class="form-label">
+                            {{ app.localize('Category') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.categoryId"
+                            [items]="categories"
+                            bindLabel="categoryName"
+                            bindValue="id"
+                            name="categoryId"
+                            [clearable]="true"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Item Type filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 200px">
+                        <label for="itemType" class="form-label">
+                            {{ app.localize('Item Type') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.itemType"
+                            [items]="itemTypes"
+                            bindLabel="label"
+                            bindValue="value"
+                            name="itemType"
+                            [clearable]="true"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Items DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

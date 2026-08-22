@@ -1,0 +1,204 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Orders') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Sales') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Orders') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Start Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 180px">
+                        <label for="dateFrom" class="form-label">
+                            {{ app.localize('From') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateFrom"
+                                type="date"
+                                name="dateFrom"
+                                id="dateFrom"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateFrom) {
+                            <button
+                                (click)="filters.dateFrom = null"
+                                type="button"
+                                class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- End Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 180px">
+                        <label for="dateTo" class="form-label">
+                            {{ app.localize('To') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateTo"
+                                type="date"
+                                name="dateTo"
+                                id="dateTo"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateTo) {
+                            <button (click)="filters.dateTo = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Order Status filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 180px">
+                        <label for="status" class="form-label">
+                            {{ app.localize('Order Status') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.status"
+                            [items]="statusOptions"
+                            bindLabel="label"
+                            bindValue="value"
+                            name="status"
+                            [clearable]="true"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Order Type filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 180px">
+                        <label for="orderType" class="form-label">
+                            {{ app.localize('Order Type') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.orderType"
+                            [items]="orderTypeOptions"
+                            bindLabel="label"
+                            bindValue="value"
+                            name="orderType"
+                            [clearable]="true"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Payment Status filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 180px">
+                        <label for="paymentStatus" class="form-label">
+                            {{ app.localize('Payment Status') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.paymentStatus"
+                            [items]="paymentStatusOptions"
+                            bindLabel="label"
+                            bindValue="value"
+                            name="paymentStatus"
+                            [clearable]="true"
+                            placeholder="{{ app.localize('All') }}"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Orders DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Invoice Modal -->
+<div class="modal-container">
+    <div
+        [ngClass]="{ show: printModal.show }"
+        [attr.inert]="!printModal.show ? '' : null"
+        class="modal center fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closePrintModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">{{ app.localize('Invoice') }} #{{ orderId }}</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" (click)="printInvoice()" class="btn btn-light btn-round">
+                            <i class="ri-printer-line me-1"></i>
+                            {{ app.localize('Print') }}
+                        </button>
+                        <button type="button" (click)="downloadInvoice(orderId)" class="btn btn-primary btn-round">
+                            <i class="ri-download-2-line me-1"></i>
+                            {{ app.localize('Download') }}
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-body" [ngClass]="{ 'disabled loader-full': printModal.loading }">
+                    @if (!printModal.loading) {
+                    <iframe #invoiceIframe title="invoice" class="invoice-iframe" [attr.srcdoc]="invoice"></iframe>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closePrintModal()" class="modal-backdrop"></div>
+    </div>
+</div>

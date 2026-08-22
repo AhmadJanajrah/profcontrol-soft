@@ -1,0 +1,510 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('View Item') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Products') }}
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/products/items/list']">
+                        {{ app.localize('Items') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('View') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <div class="btn-group" role="group">
+            <button (click)="app.goBack()" type="button" class="btn btn-light btn-round">
+                <i class="ri-arrow-left-line"></i>
+                {{ app.localize('Back') }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Loading state -->
+    @if (loading) {
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">{{ app.localize('Loading...') }}</span>
+            </div>
+            <p class="mt-3 text-muted">{{ app.localize('Loading item details...') }}</p>
+        </div>
+    </div>
+    }
+
+    <!-- Item details content -->
+    @if (!loading && item) {
+    <div class="card">
+        <div class="card-body">
+            <div class="row">
+                <!-- Image Gallery -->
+                <div class="col-12 col-lg-5">
+                    <div class="item-gallery">
+                        <!-- Main image display -->
+                        <div class="main-image-container">
+                            <div class="main-image">
+                                @if (hasImages()) {
+                                <img
+                                    src="assets/images/default.png"
+                                    [attr.data-url]="getCurrentImage().imageUrl"
+                                    [attr.data-gallery-img]="true"
+                                    [alt]="item.itemName"
+                                    class="img-fluid rounded" />
+
+                                <!-- Navigation arrows -->
+                                @if (item.itemImages.length > 1) {
+                                <button
+                                    (click)="previousImage()"
+                                    class="gallery-nav prev"
+                                    type="button"
+                                    [appTooltip]="app.localize('Previous image')">
+                                    <i class="ri-arrow-left-s-line"></i>
+                                </button>
+                                <button
+                                    (click)="nextImage()"
+                                    class="gallery-nav next"
+                                    type="button"
+                                    [appTooltip]="app.localize('Next image')">
+                                    <i class="ri-arrow-right-s-line"></i>
+                                </button>
+                                } } @else {
+                                <div class="no-image-placeholder">
+                                    <i class="ri-image-line"></i>
+                                    <p class="text-muted">{{ app.localize('No images available') }}</p>
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Thumbnail navigation -->
+                        @if (hasImages() && item.itemImages.length > 1) {
+                        <div class="thumbnails-container">
+                            <div class="thumbnails">
+                                @for (image of item.itemImages; track image.id; let i = $index) {
+                                <button
+                                    (click)="selectImage(i)"
+                                    type="button"
+                                    class="thumbnail"
+                                    [class.active]="selectedImageIndex === i">
+                                    <img
+                                        src="assets/images/default.png"
+                                        [attr.data-url]="image.thumbnailUrl"
+                                        [attr.data-gallery-img]="true"
+                                        [alt]="item.itemName"
+                                        class="thumbnail-img" />
+                                </button>
+                                }
+                            </div>
+                        </div>
+                        }
+
+                        <!-- Image counter -->
+                        @if (hasImages()) {
+                        <div class="image-counter">{{ selectedImageIndex + 1 }} / {{ item.itemImages.length }}</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Details with tabs -->
+                <div class="col-12 col-lg-7">
+                    <div class="item-details">
+                        <!-- Item header -->
+                        <div class="item-header mb-4">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h2 class="item-title">{{ item.itemName }}</h2>
+                                    <div class="item-meta">
+                                        <span class="badge" [ngClass]="'badge-' + getItemTypeBadge(item.itemType)">
+                                            {{ getItemTypeLabel(item.itemType) }}
+                                        </span>
+                                        @if (item.category) {
+                                        <span class="badge badge-light ms-2">{{ item.category.categoryName }}</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="item-badges">
+                                    <span class="badge" [ngClass]="getStatusBadge().class">
+                                        {{ getStatusBadge().text }}
+                                    </span>
+                                    @if (getFeaturedBadge()) {
+                                    <span class="badge ms-1" [ngClass]="getFeaturedBadge()!.class">
+                                        {{ getFeaturedBadge()!.text }}
+                                    </span>
+                                    } @if (getStockBadge()) {
+                                    <span class="badge ms-1" [ngClass]="getStockBadge()!.class">
+                                        {{ getStockBadge()!.text }}
+                                    </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Price display -->
+                            <div class="item-pricing mt-3">
+                                @if (item.price > 0) {
+                                <div class="price">
+                                    <span class="price-label">{{ app.localize('Price') }}:</span>
+                                    <span class="price-value">{{ app.formatCurrency(item.price) }}</span>
+                                </div>
+                                } @if (item.cost > 0) {
+                                <div class="cost ms-4">
+                                    <span class="cost-label">{{ app.localize('Cost') }}:</span>
+                                    <span class="cost-value">{{ app.formatCurrency(item.cost) }}</span>
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Tab navigation -->
+                        <div class="item-tabs">
+                            <ul class="nav nav-tabs style-1">
+                                <li class="nav-item">
+                                    <button
+                                        (click)="setActiveTab('details')"
+                                        class="nav-link"
+                                        [class.active]="isTabActive('details')"
+                                        type="button">
+                                        {{ app.localize('Details') }}
+                                    </button>
+                                </li>
+                                @if (hasRecipeItems()) {
+                                <li class="nav-item">
+                                    <button
+                                        (click)="setActiveTab('recipe')"
+                                        class="nav-link"
+                                        [class.active]="isTabActive('recipe')"
+                                        type="button">
+                                        {{ app.localize('Recipe') }}
+                                        <span class="badge badge-light ms-1">{{ item.recipeItemItems.length }}</span>
+                                    </button>
+                                </li>
+                                } @if (hasComboItems()) {
+                                <li class="nav-item">
+                                    <button
+                                        (click)="setActiveTab('combo')"
+                                        class="nav-link"
+                                        [class.active]="isTabActive('combo')"
+                                        type="button">
+                                        {{ app.localize('Combo Items') }}
+                                        <span class="badge badge-light ms-1">
+                                            {{ item.comboItemParentItems.length }}
+                                        </span>
+                                    </button>
+                                </li>
+                                } @if (hasModifiers()) {
+                                <li class="nav-item">
+                                    <button
+                                        (click)="setActiveTab('modifiers')"
+                                        class="nav-link"
+                                        [class.active]="isTabActive('modifiers')"
+                                        type="button">
+                                        {{ app.localize('Modifiers') }}
+                                        <span class="badge badge-light ms-1">{{ item.itemModifiers.length }}</span>
+                                    </button>
+                                </li>
+                                }
+                            </ul>
+
+                            <!-- Tab content -->
+                            <div class="tab-content">
+                                <!-- Details tab -->
+                                @if (isTabActive('details')) {
+                                <div class="tab-pane active">
+                                    <div class="details-content">
+                                        <!-- Description -->
+                                        @if (item.description) {
+                                        <div class="detail-section">
+                                            <h6>{{ app.localize('Description') }}</h6>
+                                            <p>{{ item.description }}</p>
+                                        </div>
+                                        }
+
+                                        <!-- Basic details grid -->
+                                        <div class="detail-section">
+                                            <div class="row g-3">
+                                                @if (item.unitOfMeasure) {
+                                                <div class="col-sm-6">
+                                                    <div class="detail-item">
+                                                        <label>{{ app.localize('Unit of Measure') }}</label>
+                                                        <span>{{ item.unitOfMeasure }}</span>
+                                                    </div>
+                                                </div>
+                                                } @if (item.sku) {
+                                                <div class="col-sm-6">
+                                                    <div class="detail-item">
+                                                        <label>{{ app.localize('SKU') }}</label>
+                                                        <span>{{ item.sku }}</span>
+                                                    </div>
+                                                </div>
+                                                } @if (item.barcode) {
+                                                <div class="col-sm-6">
+                                                    <div class="detail-item">
+                                                        <label>{{ app.localize('Barcode') }}</label>
+                                                        <span>{{ item.barcode }}</span>
+                                                    </div>
+                                                </div>
+                                                } @if (item.preparationTime > 0) {
+                                                <div class="col-sm-6">
+                                                    <div class="detail-item">
+                                                        <label>{{ app.localize('Preparation Time') }}</label>
+                                                        <span>
+                                                            {{ item.preparationTime }} {{ app.localize('minutes') }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                }
+                                            </div>
+                                        </div>
+
+                                        <!-- Tax and Discount -->
+                                        @if (item.taxRate || item.discount) {
+                                        <div class="detail-section">
+                                            <h6>{{ app.localize('Tax & Discount') }}</h6>
+                                            <div class="row g-3">
+                                                @if (item.taxRate) {
+                                                <div class="col-sm-6">
+                                                    <div class="detail-item">
+                                                        <label>{{ app.localize('Tax Rate') }}</label>
+                                                        <span>
+                                                            {{ item.taxRate.taxName }} ({{
+                                                                item.taxRate.isPercentage
+                                                                    ? app.formatPercent(item.taxRate.taxValue)
+                                                                    : app.formatCurrency(item.taxRate.taxValue)
+                                                            }})
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                } @if (item.discount) {
+                                                <div class="col-sm-6">
+                                                    <div class="detail-item">
+                                                        <label>{{ app.localize('Discount') }}</label>
+                                                        <span>
+                                                            {{ item.discount.discountName }} ({{
+                                                                item.discount.isPercentage
+                                                                    ? app.formatPercent(item.discount.discountValue)
+                                                                    : app.formatCurrency(item.discount.discountValue)
+                                                            }})
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        }
+                                    </div>
+                                </div>
+                                }
+
+                                <!-- Recipe tab -->
+                                @if (isTabActive('recipe') && hasRecipeItems()) {
+                                <div class="tab-pane active">
+                                    <div class="recipe-content">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6>{{ app.localize('Recipe Ingredients') }}</h6>
+                                            <div class="recipe-cost">
+                                                <small class="text-muted">{{ app.localize('Total Cost') }}:</small>
+                                                <strong>{{ app.formatCurrency(getRecipeTotalCost()) }}</strong>
+                                            </div>
+                                        </div>
+
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>{{ app.localize('Ingredient') }}</th>
+                                                        <th>{{ app.localize('Quantity') }}</th>
+                                                        <th>{{ app.localize('Unit Cost') }}</th>
+                                                        <th class="text-end">{{ app.localize('Total') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (recipeItem of item.recipeItemItems; track recipeItem.id) {
+                                                    <tr>
+                                                        <td>
+                                                            <strong>
+                                                                {{ recipeItem.ingredient?.itemName || '-' }}
+                                                            </strong>
+                                                        </td>
+                                                        <td>
+                                                            {{ recipeItem.quantity }}
+                                                            {{ recipeItem.ingredient?.unitOfMeasure || '' }}
+                                                        </td>
+                                                        <td>
+                                                            {{ app.formatCurrency(recipeItem.ingredient?.cost || 0) }}
+                                                        </td>
+                                                        <td class="text-end">
+                                                            {{
+                                                                app.formatCurrency(
+                                                                    (recipeItem.ingredient?.cost || 0) *
+                                                                        recipeItem.quantity
+                                                                )
+                                                            }}
+                                                        </td>
+                                                    </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                }
+
+                                <!-- Combo tab -->
+                                @if (isTabActive('combo') && hasComboItems()) {
+                                <div class="tab-pane active">
+                                    <div class="combo-content">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h6>{{ app.localize('Combo Items') }}</h6>
+                                            <div class="combo-total">
+                                                <small class="text-muted me-1">
+                                                    {{ app.localize('Total Price') }}:
+                                                </small>
+                                                <strong>{{ app.formatCurrency(getComboTotalPrice()) }}</strong>
+                                            </div>
+                                        </div>
+
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>{{ app.localize('Item') }}</th>
+                                                        <th>{{ app.localize('Quantity') }}</th>
+                                                        <th>{{ app.localize('Unit Price') }}</th>
+                                                        <th>{{ app.localize('Price Adjustment') }}</th>
+                                                        <th class="text-end">{{ app.localize('Total') }}</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @for (comboItem of item.comboItemParentItems; track comboItem.id) {
+                                                    <tr>
+                                                        <td>
+                                                            <div>
+                                                                <strong>
+                                                                    {{ comboItem.childItem?.itemName || '-' }}
+                                                                </strong>
+                                                                <br />
+                                                                <small class="text-muted">
+                                                                    {{
+                                                                        getItemTypeLabel(comboItem.childItem?.itemType)
+                                                                    }}
+                                                                </small>
+                                                            </div>
+                                                        </td>
+                                                        <td>{{ comboItem.quantity }}</td>
+                                                        <td>
+                                                            {{ app.formatCurrency(comboItem.childItem?.price || 0) }}
+                                                        </td>
+                                                        <td>
+                                                            <span
+                                                                [ngClass]="{
+                                                                    'text-success': comboItem.priceAdjustment > 0,
+                                                                    'text-danger': comboItem.priceAdjustment < 0
+                                                                }">
+                                                                {{ comboItem.priceAdjustment > 0 ? '+' : ''
+                                                                }}{{
+                                                                    app.formatCurrency(comboItem.priceAdjustment || 0)
+                                                                }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            {{
+                                                                app.formatCurrency(
+                                                                    ((comboItem.childItem?.price || 0) +
+                                                                        (comboItem.priceAdjustment || 0)) *
+                                                                        comboItem.quantity
+                                                                )
+                                                            }}
+                                                        </td>
+                                                    </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                                }
+
+                                <!-- Modifiers tab -->
+                                @if (isTabActive('modifiers') && hasModifiers()) {
+                                <div class="tab-pane active">
+                                    <div class="modifiers-content">
+                                        <h6>{{ app.localize('Available Modifiers') }}</h6>
+
+                                        <div class="row g-3">
+                                            @for (itemModifier of item.itemModifiers; track itemModifier.id) {
+                                            <div class="col-md-6">
+                                                <div class="card border">
+                                                    <div class="card-body p-3">
+                                                        <div
+                                                            class="d-flex justify-content-between align-items-start mb-2">
+                                                            <h6 class="card-title mb-0">
+                                                                {{ itemModifier.modifier?.modifierName }}
+                                                            </h6>
+                                                            @if (itemModifier.isRequired) {
+                                                            <span class="badge badge-warning">
+                                                                {{ app.localize('Required') }}
+                                                            </span>
+                                                            }
+                                                        </div>
+
+                                                        <p class="text-muted small mb-3">
+                                                            {{ app.localize('Selection') }}:
+                                                            {{ itemModifier.minSelection }} -
+                                                            {{ itemModifier.maxSelection }}
+                                                        </p>
+
+                                                        @if (itemModifier.modifier?.modifierOptions &&
+                                                        itemModifier.modifier.modifierOptions.length > 0) {
+                                                        <div class="modifier-options">
+                                                            @for (option of itemModifier.modifier.modifierOptions; track
+                                                            option.id) {
+                                                            <div class="modifier-option">
+                                                                <div class="d-flex justify-content-between">
+                                                                    <span>{{ option.optionName }}</span>
+                                                                    @if (option.price > 0) {
+                                                                    <span class="text-muted">
+                                                                        +{{ app.formatCurrency(option.price) }}
+                                                                    </span>
+                                                                    }
+                                                                </div>
+                                                                @if (option.isDefault) {
+                                                                <small class="text-primary">
+                                                                    {{ app.localize('Default') }}
+                                                                </small>
+                                                                }
+                                                            </div>
+                                                            }
+                                                        </div>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+</div>

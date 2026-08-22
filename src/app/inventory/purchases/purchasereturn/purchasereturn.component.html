@@ -1,0 +1,322 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ getPageTitle() }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/inventory/purchases/list']">
+                        {{ app.localize('Purchases') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Purchase Return') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Main Content -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Loading overlay -->
+            <div [ngClass]="{ 'disabled loader-full': isLoading }">
+                @if (!isLoading) {
+                <!-- Purchase Order Header -->
+                <div class="row mb-4">
+                    <div class="col-md-8">
+                        <h5 class="mb-1">
+                            {{ app.localize('Purchase Order') }}:
+                            <strong>
+                                {{ '#' + purchaseOrder?.id }}
+                            </strong>
+                        </h5>
+                        <p class="text-muted mb-1">
+                            {{ app.localize('Supplier') }}: {{ purchaseOrder?.supplier?.supplierName }} —
+                            {{ app.localize('Date') }}:
+                            {{ app.formatDate(purchaseOrder?.orderDate) }}
+                        </p>
+                        <p class="text-muted mb-0">
+                            {{ app.localize('Total Amount') }}:
+                            <strong>
+                                {{ app.formatCurrency(purchaseOrder?.totalAmount) }}
+                            </strong>
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <span class="badge" [ngClass]="getPaymentStatusClass(purchaseOrder?.paymentStatus)">
+                            {{ getPaymentStatusText(purchaseOrder?.paymentStatus) }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Return Form -->
+                <form
+                    #frm="ngForm"
+                    (ngSubmit)="submitReturn(frm)"
+                    [ngClass]="{ 'was-validated': isValidated }"
+                    novalidate>
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <!-- Return Information -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            {{ app.localize('Return Reason') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="purchaseReturn.reason"
+                                            type="text"
+                                            class="form-control"
+                                            name="reason"
+                                            required
+                                            maxlength="100" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="form-label">{{ app.localize('Return Reference') }}</label>
+                                        <input
+                                            [(ngModel)]="purchaseReturn.returnReference"
+                                            type="text"
+                                            class="form-control"
+                                            name="returnReference"
+                                            maxlength="100" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="form-group">
+                                <label class="form-label">{{ app.localize('Notes') }}</label>
+                                <textarea
+                                    [(ngModel)]="purchaseReturn.notes"
+                                    class="form-control"
+                                    name="notes"
+                                    rows="3"
+                                    maxlength="500"></textarea>
+                            </div>
+
+                            <!-- Items Table -->
+                            <div class="section-card mb-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-stack-line me-2"></i>
+                                    {{ app.localize('Return Items') }}
+                                </div>
+
+                                @if (purchaseReturn.items && purchaseReturn.items.length > 0) {
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="250">{{ app.localize('Item') }}</th>
+                                                <th class="text-center" width="100">{{ app.localize('Ordered') }}</th>
+                                                <th class="text-center" width="140">
+                                                    {{ app.localize('Return Qty') }}
+                                                </th>
+                                                <th class="text-end" width="120">
+                                                    {{ app.localize('Unit Cost') }}
+                                                    ({{ app.getCurrencySymbol() }})
+                                                </th>
+                                                <th class="text-end" width="120">{{ app.localize('Total') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @for (item of purchaseReturn.items; track $index; let i = $index) {
+                                            <tr>
+                                                <td>
+                                                    <div class="table-img-text">
+                                                        <i class="ri-restaurant-2-line"></i>
+                                                        <div class="text-block">
+                                                            <span class="no-wrap fw-medium">
+                                                                {{ item?.item?.itemName || '' }}
+                                                            </span>
+                                                            @if (item?.item?.sku) {
+                                                            <small class="text-muted d-block">
+                                                                SKU: {{ item.item.sku }}
+                                                            </small>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    <span class="badge badge-light">
+                                                        {{ getItemDetails(item.itemId).orderedQuantity }}
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <div class="qty-wrapper">
+                                                        <button
+                                                            (click)="decreaseQuantity(item.itemId)"
+                                                            type="button"
+                                                            class="btn-minus"
+                                                            [disabled]="app.localeToAPINumber(item.quantity) <= 0"
+                                                            title="{{ app.localize('Decrease quantity') }}">
+                                                            <i class="ri-subtract-line"></i>
+                                                        </button>
+                                                        <input
+                                                            [(ngModel)]="item.quantity"
+                                                            (ngModelChange)="onQuantityChange()"
+                                                            [appCleaveNumber]="app.getCleaveNumberOptions(4, false)"
+                                                            name="qty_{{ i }}"
+                                                            type="text"
+                                                            inputmode="decimal"
+                                                            class="form-control form-control-sm"
+                                                            [attr.max]="getMaxReturnQuantity(item.itemId)"
+                                                            placeholder="0" />
+                                                        <span class="unit">
+                                                            {{ item?.item?.unitOfMeasure || '' }}
+                                                        </span>
+                                                        <button
+                                                            (click)="increaseQuantity(item.itemId)"
+                                                            type="button"
+                                                            class="btn-plus"
+                                                            [disabled]="
+                                                                app.localeToAPINumber(item.quantity) >=
+                                                                getMaxReturnQuantity(item.itemId)
+                                                            "
+                                                            title="{{ app.localize('Increase quantity') }}">
+                                                            <i class="ri-add-line"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td class="text-end align-middle">
+                                                    {{ app.formatCurrency(app.localeToAPINumber(item.unitCost)) }}
+                                                </td>
+                                                <td class="text-end align-middle fw-medium">
+                                                    {{ app.formatCurrency(getReturnItemTotal(item)) }}
+                                                </td>
+                                            </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                } @else {
+                                <div class="text-center py-3 bg-light border rounded">
+                                    <i class="ri-box-3-line fs-4 text-muted mb-2"></i>
+                                    <p class="mb-0">{{ app.localize('No items found in this purchase order') }}</p>
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-lg-4">
+                            <!-- Return Summary -->
+                            <div class="card-section bg-gradient-primary-light border-dashed rounded p-3 sticky-top">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-money-dollar-circle-line me-2"></i>
+                                    {{ app.localize('Return Summary') }}
+                                </div>
+
+                                <div class="return-calculations">
+                                    <!-- Return Subtotal -->
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ app.localize('Return Subtotal') }}:</span>
+                                        <span>{{ app.formatCurrency(calculations.subtotal) }}</span>
+                                    </div>
+
+                                    <!-- Allocated Discount -->
+                                    @if (shouldShowDiscount()) {
+                                    <div class="d-flex justify-content-between mb-2 text-success">
+                                        <span>{{ app.localize('Allocated Discount') }}:</span>
+                                        <span>{{ app.formatCurrency(calculations.discount) }}</span>
+                                    </div>
+                                    }
+
+                                    <!-- Allocated Tax -->
+                                    @if (shouldShowTax()) {
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ app.localize('Allocated Tax') }}:</span>
+                                        <span>{{ app.formatCurrency(calculations.tax) }}</span>
+                                    </div>
+                                    }
+
+                                    <!-- Return Charges (User Input) -->
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <div>
+                                            <span>{{ app.localize('Return Charges') }}:</span>
+                                        </div>
+                                        <div style="width: 120px">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text">{{ app.getCurrencySymbol() }}</span>
+                                                <input
+                                                    [(ngModel)]="purchaseReturn.returnChargeAmount"
+                                                    (ngModelChange)="onChargeAmountChange()"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, false)"
+                                                    name="returnChargeAmount"
+                                                    type="text"
+                                                    inputmode="decimal"
+                                                    class="form-control text-end"
+                                                    [placeholder]="app.getNumberPlaceholder('0.00')" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <hr class="my-3" />
+
+                                    <!-- Total Return Amount -->
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <strong class="text-primary fs-5">{{ app.localize('Return Total') }}:</strong>
+                                        <strong class="text-primary fs-5">
+                                            {{ app.formatCurrency(calculations.total) }}
+                                        </strong>
+                                    </div>
+
+                                    <!-- Original Order Charges Note -->
+                                    @if (purchaseOrder.shippingCost > 0) {
+                                    <div class="alert alert-info mt-3 p-2 small">
+                                        <i class="ri-information-line me-1"></i>
+                                        {{ app.localize('Original charges') }} ({{
+                                            app.formatCurrency(purchaseOrder.shippingCost)
+                                        }}) {{ app.localize('are not automatically refunded') }}.
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions mt-4">
+                        <div [ngClass]="{ disabled: isSubmitted }" class="d-flex justify-content-end gap-2">
+                            <button
+                                (click)="app.goBack()"
+                                type="button"
+                                class="btn btn-light btn-round btn-back"
+                                [disabled]="isSubmitted">
+                                <i class="ri-arrow-left-line"></i>
+                                {{ app.localize('Back') }}
+                            </button>
+                            <button
+                                [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                                [disabled]="!canReturn() || !hasItemsToReturn() || isSubmitted"
+                                type="submit"
+                                class="btn btn-primary btn-round">
+                                <i class="ri-refund-2-line"></i>
+                                {{ app.localize('Return') }}
+                                @if (calculations.total > 0) {
+                                <span>{{ app.formatCurrency(calculations.total) }}</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,125 @@
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('Purchase Return Report') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">{{ app.localize('Reports') }}</li>
+                <li class="breadcrumb-item active">{{ app.localize('Purchase Return Report') }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters()"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="startDate" class="form-label">
+                            {{ app.localize('From') }}
+                            <code>*</code>
+                        </label>
+                        <input
+                            [(ngModel)]="filters.startDate"
+                            type="date"
+                            name="startDate"
+                            id="startDate"
+                            onclick="this.showPicker()"
+                            class="form-control"
+                            required />
+                    </div>
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="endDate" class="form-label">
+                            {{ app.localize('To') }}
+                            <code>*</code>
+                        </label>
+                        <input
+                            [(ngModel)]="filters.endDate"
+                            type="date"
+                            name="endDate"
+                            id="endDate"
+                            onclick="this.showPicker()"
+                            class="form-control"
+                            required />
+                    </div>
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 150px">
+                        <label for="period" class="form-label">
+                            {{ app.localize('Period') }}
+                            <code>*</code>
+                        </label>
+                        <ng-select
+                            id="period"
+                            name="period"
+                            [(ngModel)]="filters.period"
+                            [items]="periodOptions"
+                            bindLabel="label"
+                            bindValue="value"
+                            [clearable]="false"
+                            [placeholder]="app.localize('Choose an option')"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+                    @if(hasAccessAllLocations()){
+                    <div style="min-width: 220px">
+                        <div class="form-check form-switch mb-0">
+                            <input
+                                [(ngModel)]="filters.allLocations"
+                                type="checkbox"
+                                id="isAllLocations"
+                                name="isAllLocations"
+                                class="form-check-input" />
+                            <label for="isAllLocations" class="form-check-label">
+                                {{ app.localize('All Locations') }}
+                            </label>
+                        </div>
+                    </div>
+                    }
+                    <div class="d-flex align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table
+                    [dtOptions]="dtOptions"
+                    [dtTrigger]="dtTrigger"
+                    datatable
+                    class="table table-bordered"
+                    id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

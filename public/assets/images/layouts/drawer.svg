@@ -1,0 +1,36 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#9CA3AF" stroke-width="1">
+  <!-- Outer Container -->
+  <rect x="0.5" y="0.5" width="299" height="199" rx="8" stroke="#9CA3AF" fill="white"/>
+
+  <!-- Top Bar -->
+  <rect x="0.5" y="0.5" width="299" height="30" fill="white" stroke="#9CA3AF" />
+
+  <!-- Toggle Icon (hamburger menu) -->
+  <line x1="15" y1="10" x2="35" y2="10"/>
+  <line x1="15" y1="15" x2="35" y2="15"/>
+  <line x1="15" y1="20" x2="35" y2="20"/>
+
+  <!-- Right Circle in Top Bar -->
+  <circle cx="275" cy="15" r="8"/>
+
+  <!-- Main Content Circle -->
+  <circle cx="90" cy="55" r="12"/>
+
+  <!-- Main Content Header Text Lines -->
+  <line x1="110" y1="47" x2="170" y2="47"/>
+  <line x1="110" y1="55" x2="160" y2="55"/>
+  <line x1="110" y1="63" x2="155" y2="63"/>
+
+  <!-- Body Grid -->
+  <!-- Row 1 -->
+  <line x1="80" y1="90" x2="140" y2="90"/>
+  <line x1="80" y1="98" x2="140" y2="98"/>
+  <line x1="160" y1="90" x2="220" y2="90"/>
+  <line x1="160" y1="98" x2="220" y2="98"/>
+
+  <!-- Row 2 -->
+  <line x1="80" y1="120" x2="140" y2="120"/>
+  <line x1="80" y1="128" x2="140" y2="128"/>
+  <line x1="160" y1="120" x2="220" y2="120"/>
+  <line x1="160" y1="128" x2="220" y2="128"/>
+</svg>

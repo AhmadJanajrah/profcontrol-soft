@@ -1,0 +1,293 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Notification Templates') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Settings') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Templates') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Templates DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template modal (edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Template form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="template.id" type="hidden" name="id" />
+
+                            <!-- Template Basic Info -->
+                            <div class="form-group">
+                                <label for="title" class="control-label">
+                                    {{ app.localize('Title') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="template.title"
+                                    id="title"
+                                    name="title"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="templateName" class="control-label">
+                                    {{ app.localize('Template Name') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="template.templateName"
+                                    id="templateName"
+                                    name="templateName"
+                                    type="text"
+                                    class="form-control disabled"
+                                    maxlength="50"
+                                    readonly />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="description" class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="template.description"
+                                    id="description"
+                                    name="description"
+                                    class="form-control"
+                                    maxlength="255"
+                                    rows="2"></textarea>
+                            </div>
+
+                            <!-- Enable Options -->
+                            <div class="form-group">
+                                <label class="control-label">{{ app.localize('Enable Notifications') }}</label>
+                                <div class="d-flex gap-3 mt-2">
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="template.isEmailEnabled"
+                                            type="checkbox"
+                                            id="isEmailEnabled"
+                                            name="isEmailEnabled"
+                                            class="form-check-input" />
+                                        <label for="isEmailEnabled" class="form-check-label">
+                                            {{ app.localize('Email') }}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="template.isSmsEnabled"
+                                            type="checkbox"
+                                            id="isSmsEnabled"
+                                            name="isSmsEnabled"
+                                            class="form-check-input" />
+                                        <label for="isSmsEnabled" class="form-check-label">
+                                            {{ app.localize('SMS') }}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="template.isInAppEnabled"
+                                            type="checkbox"
+                                            id="isInAppEnabled"
+                                            name="isInAppEnabled"
+                                            class="form-check-input" />
+                                        <label for="isInAppEnabled" class="form-check-label">
+                                            {{ app.localize('In-App') }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Template Content Tabs -->
+                            <div class="form-section mt-3">
+                                <div class="heading heading-form-title">{{ app.localize('Template Content') }}</div>
+                                <!-- Placeholder Information -->
+                                @if (template.placeholderInfo) {
+                                <div class="form-group">
+                                    <div class="p-2 border-dashed rounded">
+                                        <strong class="fw-semibold">
+                                            {{ app.localize('Available Placeholders') }}:
+                                        </strong>
+                                        <div [innerHTML]="getPlaceholderHtml(template.placeholderInfo)"></div>
+                                    </div>
+                                </div>
+                                }
+
+                                <!-- Tab Navigation -->
+                                <ul class="nav nav-tabs style-1 mb-2" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button
+                                            class="nav-link active"
+                                            type="button"
+                                            id="email-tab"
+                                            data-bs-toggle="tab"
+                                            data-bs-target="#emailtab">
+                                            <i class="ri-mail-line me-1"></i>
+                                            {{ app.localize('Email') }}
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button
+                                            class="nav-link"
+                                            type="button"
+                                            id="sms-tab"
+                                            data-bs-toggle="tab"
+                                            data-bs-target="#smstab">
+                                            <i class="ri-message-2-line me-1"></i>
+                                            {{ app.localize('SMS') }}
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button
+                                            class="nav-link"
+                                            type="button"
+                                            id="inapp-tab"
+                                            data-bs-toggle="tab"
+                                            data-bs-target="#inapptab">
+                                            <i class="ri-notification-2-line me-1"></i>
+                                            {{ app.localize('In-App') }}
+                                        </button>
+                                    </li>
+                                </ul>
+
+                                <!-- Tab Content -->
+                                <div class="tab-content border-dashed p-2">
+                                    <!-- Email Template -->
+                                    <div class="tab-pane show active" id="emailtab">
+                                        <div class="form-group">
+                                            <label for="emailSubject" class="control-label">
+                                                {{ app.localize('Email Subject') }}
+                                            </label>
+                                            <input
+                                                [(ngModel)]="template.emailSubject"
+                                                id="emailSubject"
+                                                name="emailSubject"
+                                                type="text"
+                                                class="form-control"
+                                                maxlength="255" />
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="emailBody" class="control-label">
+                                                {{ app.localize('Email Body') }}
+                                            </label>
+                                            <textarea
+                                                [appSummernote]="{
+                                                    height: 150,
+                                                    toolbar: 'simple',
+                                                    code: template.emailBody
+                                                }"
+                                                id="emailBody"
+                                                name="emailBody"
+                                                class="form-control"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- SMS Template -->
+                                    <div class="tab-pane" id="smstab">
+                                        <div class="form-group">
+                                            <label for="smsBody" class="control-label">
+                                                {{ app.localize('SMS Message') }}
+                                            </label>
+                                            <textarea
+                                                [(ngModel)]="template.smsBody"
+                                                id="smsBody"
+                                                name="smsBody"
+                                                class="form-control"
+                                                rows="6"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <!-- In-App Template -->
+                                    <div class="tab-pane" id="inapptab">
+                                        <div class="form-group">
+                                            <label for="inAppBody" class="control-label">
+                                                {{ app.localize('In-App Message') }}
+                                            </label>
+                                            <textarea
+                                                [(ngModel)]="template.inAppBody"
+                                                id="inAppBody"
+                                                name="inAppBody"
+                                                class="form-control"
+                                                rows="6"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

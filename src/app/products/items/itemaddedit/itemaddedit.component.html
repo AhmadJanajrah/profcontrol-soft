@@ -1,0 +1,863 @@
+<!-- Page header with title and breadcrumb -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ getPageTitle() }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Products') }}
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/products/items/list']">
+                        {{ app.localize('Items') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ isEditMode ? app.localize('Edit') : app.localize('Add') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Loading state -->
+    @if (isLoading) {
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="d-flex align-items-center justify-content-center">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Item form -->
+    @if (!isLoading) {
+    <div class="card">
+        <div class="card-body">
+            <form
+                #itemForm="ngForm"
+                [ngClass]="{ 'was-validated': isValidated }"
+                (ngSubmit)="submitForm(itemForm)"
+                autocomplete="off"
+                novalidate>
+                <!-- Hidden ID field -->
+                <input [(ngModel)]="item.id" type="hidden" name="id" />
+
+                <div class="row">
+                    <!-- Main form section -->
+                    <div class="col-12 col-lg-7">
+                        <div class="row">
+                            <!-- Item Type -->
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="itemType" class="form-label">
+                                        {{ app.localize('Item Type') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="item.itemType"
+                                        (ngModelChange)="onItemTypeChange()"
+                                        [items]="itemTypes"
+                                        [clearable]="false"
+                                        [searchable]="false"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        id="itemType"
+                                        name="itemType"
+                                        [class.is-invalid]="isValidated && !item.itemType"
+                                        placeholder="{{ app.localize('Choose an option') }}"
+                                        required></ng-select>
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Item Name -->
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="itemName" class="form-label">
+                                        {{ app.localize('Item Name') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="item.itemName"
+                                        type="text"
+                                        id="itemName"
+                                        name="itemName"
+                                        class="form-control"
+                                        maxlength="100"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Category (conditional) -->
+                            @if (categoryRequired()) {
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="categoryId" class="form-label">
+                                        {{ app.localize('Category') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="item.categoryId"
+                                        [items]="categories"
+                                        [clearable]="false"
+                                        [searchable]="true"
+                                        bindLabel="categoryName"
+                                        bindValue="id"
+                                        id="categoryId"
+                                        name="categoryId"
+                                        [class.is-invalid]="isValidated && !item.categoryId"
+                                        placeholder="{{ app.localize('Choose an option') }}"
+                                        required></ng-select>
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            }
+
+                            <!-- Unit of Measure (conditional) -->
+                            @if (requiresUnit()) {
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="unitOfMeasure" class="form-label">
+                                        {{ app.localize('Unit of Measure') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="item.unitOfMeasure"
+                                        type="text"
+                                        id="unitOfMeasure"
+                                        name="unitOfMeasure"
+                                        class="form-control"
+                                        maxlength="20"
+                                        placeholder="{{ app.localize('e.g., kg, pcs, liter') }}"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            } @else {
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="unitOfMeasure" class="form-label">
+                                        {{ app.localize('Unit of Measure') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="item.unitOfMeasure"
+                                        type="text"
+                                        id="unitOfMeasure"
+                                        name="unitOfMeasure"
+                                        class="form-control"
+                                        maxlength="20"
+                                        placeholder="{{ app.localize('Optional') }}" />
+                                </div>
+                            </div>
+                            }
+
+                            <!-- Preparation Time (Recipe only) -->
+                            @if (requiresPreparationTime()) {
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="preparationTime" class="form-label">
+                                        {{ app.localize('Prep Time (minutes)') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="item.preparationTime"
+                                        appIntegerOnly
+                                        type="number"
+                                        id="preparationTime"
+                                        name="preparationTime"
+                                        class="form-control"
+                                        min="0"
+                                        max="720"
+                                        placeholder="0"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            }
+
+                            <!-- Price (all except Ingredients) -->
+                            @if (requiresPrice()) {
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="price" class="form-label">
+                                        {{ app.localize('Price') }}
+                                        <code>*</code>
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">
+                                                {{ app.getCurrencySymbol() }}
+                                            </span>
+                                        </div>
+                                        <input
+                                            [(ngModel)]="item.price"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                            type="text"
+                                            id="price"
+                                            name="price"
+                                            class="form-control"
+                                            inputmode="decimal"
+                                            placeholder="{{ app.getNumberPlaceholder('0.00') }}"
+                                            maxlength="18"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+
+                            <!-- Cost (Ingredients and Retail) -->
+                            @if (requiresCost()) {
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="cost" class="form-label">
+                                        {{ app.localize('Cost') }}
+                                        <code>*</code>
+                                    </label>
+                                    <div class="input-group">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text">
+                                                {{ app.getCurrencySymbol() }}
+                                            </span>
+                                        </div>
+                                        <input
+                                            [(ngModel)]="item.cost"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                            type="text"
+                                            id="cost"
+                                            name="cost"
+                                            class="form-control"
+                                            inputmode="decimal"
+                                            placeholder="{{ app.getNumberPlaceholder('0.00') }}"
+                                            maxlength="18"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+
+                            <!-- Tax Rate (all except Ingredients) -->
+                            @if (requiresTaxAndDiscount()) {
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="taxRateId" class="form-label">
+                                        {{ app.localize('Tax Rate') }}
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="item.taxRateId"
+                                        [items]="taxRates"
+                                        [clearable]="true"
+                                        [searchable]="true"
+                                        bindLabel="displayName"
+                                        bindValue="id"
+                                        id="taxRateId"
+                                        name="taxRateId"
+                                        placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                                </div>
+                            </div>
+
+                            <!-- Discount (all except Ingredients) -->
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="discountId" class="form-label">
+                                        {{ app.localize('Discount') }}
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="item.discountId"
+                                        [items]="discounts"
+                                        [clearable]="true"
+                                        [searchable]="true"
+                                        bindLabel="displayName"
+                                        bindValue="id"
+                                        id="discountId"
+                                        name="discountId"
+                                        placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                                </div>
+                            </div>
+                            }
+
+                            <!-- SKU -->
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="sku" class="form-label">
+                                        {{ app.localize('SKU') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="item.sku"
+                                        type="text"
+                                        id="sku"
+                                        name="sku"
+                                        class="form-control"
+                                        maxlength="50"
+                                        placeholder="{{ app.localize('Stock keeping unit') }}" />
+                                </div>
+                            </div>
+
+                            <!-- Barcode -->
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="barcode" class="form-label">
+                                        {{ app.localize('Barcode') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="item.barcode"
+                                        type="text"
+                                        id="barcode"
+                                        name="barcode"
+                                        class="form-control"
+                                        maxlength="50" />
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label for="description" class="form-label">
+                                        {{ app.localize('Description') }}
+                                    </label>
+                                    <textarea
+                                        [(ngModel)]="item.description"
+                                        id="description"
+                                        name="description"
+                                        class="form-control"
+                                        rows="3"
+                                        maxlength="500"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Options Checkboxes -->
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <div class="form-check-group d-flex flex-wrap gap-3">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                [(ngModel)]="item.isFeatured"
+                                                type="checkbox"
+                                                id="isFeatured"
+                                                name="isFeatured"
+                                                class="form-check-input" />
+                                            <label for="isFeatured" class="form-check-label">
+                                                {{ app.localize('Featured Item') }}
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-switch">
+                                            <input
+                                                [(ngModel)]="item.isActive"
+                                                type="checkbox"
+                                                id="isActive"
+                                                name="isActive"
+                                                class="form-check-input" />
+                                            <label for="isActive" class="form-check-label">
+                                                {{ app.localize('Active') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Images Upload Section -->
+                        <div class="form-group">
+                            <label for="imageFiles" class="form-label">
+                                {{ app.localize('Images') }}
+                            </label>
+                            <small class="text-muted small d-block mb-2">
+                                {{ app.localize('Supports: JPG, PNG, WebP, GIF (Max 5MB each)') }}
+                            </small>
+                            <div class="upload-file">
+                                <div><i class="ri-upload-cloud-2-fill fs-3"></i></div>
+                                <label class="upload-label" for="imageFiles">
+                                    {{ app.localize('Drop images here, or') }}
+                                    <span class="browse">{{ app.localize('Browse') }}</span>
+                                </label>
+                                <input
+                                    (change)="onFilesSelected($event)"
+                                    type="file"
+                                    id="imageFiles"
+                                    name="imageFiles"
+                                    multiple
+                                    accept=".jpg, .jpeg, .png, .gif, .webp" />
+                            </div>
+                        </div>
+
+                        <!-- Image Preview Grid -->
+                        @if (item.itemImages.length > 0 || imagePreviewUrls.length > 0) {
+                        <div
+                            cdkDropList
+                            [cdkDropListData]="imagePreviewUrls"
+                            (cdkDropListDropped)="dropImage($event)"
+                            class="image-grid mb-3">
+                            <!-- Existing Images -->
+                            @for (image of item.itemImages; track image.id; let i = $index) {
+                            <div class="image-item" cdkDrag>
+                                <img
+                                    src="assets/images/default.png"
+                                    [attr.data-url]="image.imageUrl"
+                                    [attr.data-form-img]="true"
+                                    [alt]="item.itemName"
+                                    class="preview-image" />
+                                <button (click)="removeExistingImage(image.id, i)" type="button" class="remove-btn">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                                <div class="image-badge">{{ app.localize('Existing') }}</div>
+                            </div>
+                            }
+
+                            <!-- New Image Previews -->
+                            @for (previewUrl of imagePreviewUrls; track $index; let i = $index) {
+                            <div class="image-item" cdkDrag>
+                                <img
+                                    src="assets/images/default.png"
+                                    [attr.data-url]="previewUrl"
+                                    [attr.data-form-img]="true"
+                                    [alt]="item.itemName"
+                                    class="preview-image" />
+                                <button (click)="removeSelectedImage(i)" type="button" class="remove-btn">
+                                    <i class="ri-close-line"></i>
+                                </button>
+                                <div class="image-badge new">{{ app.localize('New') }}</div>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+
+                    <!-- Right side panel for type-specific content -->
+                    <div class="col-12 col-lg-5">
+                        <!-- Modifiers Section (Recipe & Retail) -->
+                        @if (requiresModifiers()) {
+                        <div class="section-card mb-3">
+                            <div class="heading heading-form-title">
+                                <i class="ri-settings-3-line me-2"></i>
+                                {{ app.localize('Modifiers') }}
+                            </div>
+
+                            <div class="form-group">
+                                <ng-select
+                                    [ngModel]="null"
+                                    (ngModelChange)="addModifierFromSelect($event)"
+                                    [items]="modifiers"
+                                    [clearable]="true"
+                                    [searchable]="true"
+                                    bindLabel="modifierName"
+                                    bindValue="id"
+                                    name="modifierSelect"
+                                    placeholder="{{ app.localize('Search and add modifiers...') }}"
+                                    appendTo="body"></ng-select>
+                            </div>
+
+                            @if (item.itemModifiers.length > 0) {
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th style="min-width: 120px">{{ app.localize('Modifier') }}</th>
+                                            <th>{{ app.localize('Min') }}</th>
+                                            <th>{{ app.localize('Max') }}</th>
+                                            <th class="text-center">{{ app.localize('Required') }}</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (modifier of item.itemModifiers; track $index; let i = $index) {
+                                        <tr>
+                                            <td>
+                                                <strong>
+                                                    {{ modifier.modifier?.modifierName || 'Unknown' }}
+                                                </strong>
+                                                <br />
+                                                <small class="text-muted">
+                                                    {{ getModifierOptionsText(modifier.modifier) }}
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <input
+                                                    [(ngModel)]="modifier.minSelection"
+                                                    appIntegerOnly
+                                                    name="modifier_min_{{ i }}"
+                                                    type="number"
+                                                    min="0"
+                                                    [max]="modifier.modifier?.totalOptions || 10"
+                                                    class="form-control form-control-sm"
+                                                    required />
+                                            </td>
+                                            <td>
+                                                <input
+                                                    [(ngModel)]="modifier.maxSelection"
+                                                    appIntegerOnly
+                                                    name="modifier_max_{{ i }}"
+                                                    type="number"
+                                                    min="1"
+                                                    [max]="modifier.modifier?.totalOptions || 10"
+                                                    class="form-control form-control-sm"
+                                                    required />
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="form-check form-switch">
+                                                    <input
+                                                        [(ngModel)]="modifier.isRequired"
+                                                        name="modifier_required_{{ i }}"
+                                                        type="checkbox"
+                                                        class="form-check-input"
+                                                        id="required_{{ i }}" />
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <button
+                                                    type="button"
+                                                    (click)="removeModifier(i)"
+                                                    [appTooltip]="app.localize('Remove')"
+                                                    class="btn btn-icon btn-sm text-danger">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            } @else {
+                            <div class="bg-light p-2 text-center border rounded">
+                                <i class="ri-settings-3-line fs-3 text-muted"></i>
+                                <p class="mb-0 mt-1">{{ app.localize('No modifiers added') }}</p>
+                            </div>
+                            }
+                        </div>
+                        }
+
+                        <!-- Recipe Ingredients Section -->
+                        @if (requiresIngredients()) {
+                        <div class="section-card mb-3">
+                            <div class="heading heading-form-title">
+                                <i class="ri-restaurant-2-line me-2"></i>
+                                {{ app.localize('Recipe Ingredients') }}
+                            </div>
+
+                            <!-- ng-select for adding ingredients -->
+                            <div class="form-group">
+                                <ng-select
+                                    [ngModel]="null"
+                                    (ngModelChange)="addRecipeItemFromSelect($event)"
+                                    [items]="ingredients"
+                                    [clearable]="true"
+                                    [searchable]="true"
+                                    bindLabel="itemName"
+                                    bindValue="id"
+                                    name="ingredientSelect"
+                                    placeholder="{{ app.localize('Search and add ingredients...') }}"></ng-select>
+                            </div>
+
+                            @if (item.recipeItemItems.length > 0) {
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>{{ app.localize('Ingredient') }}</th>
+                                            <th width="140">{{ app.localize('Quantity') }}</th>
+                                            <th width="40"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (recipeItem of item.recipeItemItems; track $index; let i = $index) {
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <strong>{{ recipeItem.ingredient.itemName }}</strong>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="input-group">
+                                                    <input
+                                                        [(ngModel)]="recipeItem.quantity"
+                                                        [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                                        name="recipe_quantity_{{ i }}"
+                                                        type="text"
+                                                        inputmode="decimal"
+                                                        class="form-control form-control-sm"
+                                                        [class.is-invalid]="isValidated && !recipeItem.quantity"
+                                                        placeholder="{{ app.getNumberPlaceholder('0.0000') }}"
+                                                        required />
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">
+                                                            {{ recipeItem.ingredient.unitOfMeasure || '' }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <button
+                                                    type="button"
+                                                    (click)="removeRecipeItem(i)"
+                                                    [appTooltip]="app.localize('Remove')"
+                                                    class="btn btn-icon btn-sm text-danger">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            } @else {
+                            <div class="bg-light p-2 text-center border rounded">
+                                <i class="ri-restaurant-2-line fs-3 text-muted"></i>
+                                <p class="mb-0 mt-1">{{ app.localize('No ingredients added') }}</p>
+                            </div>
+                            }
+                        </div>
+                        }
+
+                        <!-- Combo Items Section -->
+                        @if (requiresComboItems()) {
+                        <div class="section-card mb-3">
+                            <div class="heading heading-form-title">
+                                <i class="ri-stack-line me-2"></i>
+                                {{ app.localize('Combo Items') }}
+                            </div>
+
+                            <!-- ng-select for adding combo items -->
+                            <div class="form-group">
+                                <ng-select
+                                    [ngModel]="null"
+                                    (ngModelChange)="addComboItem($event)"
+                                    [items]="productItems"
+                                    [clearable]="true"
+                                    [searchable]="true"
+                                    bindLabel="displayName"
+                                    bindValue="id"
+                                    name="comboItemSelect"
+                                    placeholder="{{ app.localize('Search and add items...') }}"
+                                    appendTo="body"></ng-select>
+                            </div>
+
+                            @if (item.comboItemParentItems.length > 0) {
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>{{ app.localize('Item') }}</th>
+                                            <th width="140">{{ app.localize('Qty') }}</th>
+                                            <th width="120">
+                                                ({{ app.getCurrencySymbol() }}) {{ app.localize('Price +/-') }}
+                                            </th>
+                                            <th width="60"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (comboItem of item.comboItemParentItems; track $index; let i = $index) {
+                                        <tr>
+                                            <td>
+                                                @if (comboItem.childItem) {
+                                                <div>
+                                                    <strong>{{ comboItem.childItem.itemName }}</strong>
+                                                    <br />
+                                                    <small class="text-muted">
+                                                        {{ getItemTypeLabel(comboItem.childItem.itemType) }} -
+                                                        {{ app.formatCurrency(comboItem.childItem.price) }}
+                                                    </small>
+                                                </div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="input-group">
+                                                    <input
+                                                        [(ngModel)]="comboItem.quantity"
+                                                        [appCleaveNumber]="app.getCleaveNumberOptions(3, true)"
+                                                        name="combo_quantity_{{ i }}"
+                                                        type="text"
+                                                        inputmode="decimal"
+                                                        class="form-control form-control-sm"
+                                                        [class.is-invalid]="isValidated && !comboItem.quantity"
+                                                        placeholder="{{ app.getNumberPlaceholder('0.000') }}"
+                                                        required />
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">
+                                                            {{ comboItem.childItem?.unitOfMeasure || '' }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input
+                                                        [(ngModel)]="comboItem.priceAdjustment"
+                                                        [appCleaveNumber]="app.getCleaveNumberOptions(2, false)"
+                                                        name="combo_price_{{ i }}"
+                                                        type="text"
+                                                        inputmode="decimal"
+                                                        class="form-control"
+                                                        maxlength="18"
+                                                        placeholder="+/-" />
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <button
+                                                    type="button"
+                                                    (click)="removeComboItem(i)"
+                                                    [appTooltip]="app.localize('Remove')"
+                                                    class="btn btn-sm btn-icon text-danger">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            } @else {
+                            <div class="bg-light p-2 text-center border rounded">
+                                <i class="ri-stack-line fs-3 text-muted"></i>
+                                <p class="mb-0 mt-1">{{ app.localize('No combo items added') }}</p>
+                            </div>
+                            }
+                        </div>
+                        }
+
+                        <!-- Initial Stock Section (Create Mode Only) -->
+                        @if (showStockSection) {
+                        <div class="section-card">
+                            <div class="heading heading-form-title">
+                                <i class="ri-database-2-line me-2"></i>
+                                {{ app.localize('Initial Stock') }}
+                            </div>
+
+                            <!-- ng-select for adding combo items -->
+                            <div class="form-group">
+                                <ng-select
+                                    [ngModel]="null"
+                                    (ngModelChange)="addInitialStock($event)"
+                                    [items]="locations"
+                                    [clearable]="true"
+                                    [searchable]="true"
+                                    bindLabel="locationName"
+                                    bindValue="id"
+                                    name="locationSelect"
+                                    placeholder="{{ app.localize('Search and add locations...') }}"
+                                    appendTo="body"></ng-select>
+                            </div>
+
+                            @if (item.stocks.length === 0) {
+                            <div class="bg-light p-2 text-center border rounded">
+                                <i class="ri-stack-line fs-3 text-muted"></i>
+                                <p class="mb-0 mt-1">{{ app.localize('No initial stock added') }}</p>
+                            </div>
+                            } @else {
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>{{ app.localize('Location') }}</th>
+                                            <th>{{ app.localize('Qty') }}</th>
+                                            <th>
+                                                {{ app.localize('Cost') }}
+                                                ({{ app.getCurrencySymbol() }})
+                                            </th>
+                                            <th>{{ app.localize('Alert Qty') }}</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (stock of item.stocks; track $index; let i = $index) {
+                                        <tr>
+                                            <td>{{ getLocationName(stock.locationId) }}</td>
+                                            <td>
+                                                <input
+                                                    [(ngModel)]="stock.currentStock"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(4, false)"
+                                                    type="text"
+                                                    name="stock_quantity_{{ i }}"
+                                                    class="form-control"
+                                                    inputmode="decimal"
+                                                    [class.is-invalid]="isValidated && !stock.currentStock"
+                                                    placeholder="{{ app.getNumberPlaceholder('0.0000') }}"
+                                                    required />
+                                            </td>
+                                            <td>
+                                                <input
+                                                    [(ngModel)]="stock.averageCost"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(4, false)"
+                                                    type="text"
+                                                    name="stock_cost_{{ i }}"
+                                                    class="form-control"
+                                                    inputmode="decimal"
+                                                    [class.is-invalid]="isValidated && !stock.averageCost"
+                                                    placeholder="{{ app.getNumberPlaceholder('0.00') }}"
+                                                    required />
+                                            </td>
+                                            <td>
+                                                <input
+                                                    [(ngModel)]="stock.minLevel"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(4, false)"
+                                                    type="text"
+                                                    name="stock_min_{{ i }}"
+                                                    class="form-control"
+                                                    inputmode="decimal"
+                                                    placeholder="{{ app.getNumberPlaceholder('0.0000') }}" />
+                                            </td>
+                                            <td class="text-center">
+                                                <button
+                                                    type="button"
+                                                    (click)="removeStock(i)"
+                                                    [appTooltip]="app.localize('Remove')"
+                                                    class="btn btn-icon btn-sm text-danger">
+                                                    <i class="ri-delete-bin-line"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                            }
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button (click)="app.goBack()" type="button" class="btn btn-light btn-round">
+                            <i class="ri-arrow-left-line"></i>
+                            {{ app.localize('Back') }}
+                        </button>
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-save-3-line"></i>
+                            {{ isEditMode ? app.localize('Update') : app.localize('Save') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    }
+</div>

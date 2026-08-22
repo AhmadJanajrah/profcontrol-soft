@@ -1,0 +1,194 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Tax Rates') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Settings') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Tax Rates') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new tax rate button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Tax Rates DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tax Rate modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Tax Rate form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="taxRate.id" type="hidden" name="id" />
+
+                            <!-- Tax Name -->
+                            <div class="form-group">
+                                <label for="taxName" class="control-label">
+                                    {{ app.localize('Tax Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="taxRate.taxName"
+                                    id="taxName"
+                                    name="taxName"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Tax Value -->
+                            <div class="form-group">
+                                <label for="taxValue" class="control-label">
+                                    {{ app.localize('Tax Value') }}
+                                    <code>*</code>
+                                </label>
+                                <div class="d-flex justify-content-between align-items-start gap-1">
+                                    <div class="flex-grow-1">
+                                        <input
+                                            [(ngModel)]="taxRate.taxValue"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                            id="taxValue"
+                                            name="taxValue"
+                                            type="text"
+                                            class="form-control"
+                                            maxlength="18"
+                                            placeholder="{{ app.getNumberPlaceholder('0.0000') }}"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                    <ng-select
+                                        [(ngModel)]="taxRate.isPercentage"
+                                        [items]="[
+                                            { value: true, label: '%' },
+                                            { value: false, label: app.localize('Fixed') }
+                                        ]"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        clearable="false"
+                                        searchable="false"
+                                        id="isPercentage"
+                                        name="isPercentage"
+                                        class="form-control"
+                                        style="width: 90px"
+                                        [clearable]="false"></ng-select>
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label for="description" class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="taxRate.description"
+                                    id="description"
+                                    name="description"
+                                    class="form-control"
+                                    maxlength="255"
+                                    rows="2"></textarea>
+                            </div>
+
+                            <!-- Default Status -->
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="taxRate.isDefault"
+                                        type="checkbox"
+                                        id="isDefault"
+                                        name="isDefault"
+                                        class="form-check-input" />
+                                    <label for="isDefault" class="form-check-label">
+                                        {{ app.localize('Set as Default') }}
+                                        <a
+                                            href="javascript:void(0)"
+                                            class="btn-link-icon"
+                                            [appTooltip]="
+                                                app.localize('Make this the default tax rate for new orders')
+                                            ">
+                                            <i class="ri-information-line ms-2"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

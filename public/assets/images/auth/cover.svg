@@ -1,0 +1,205 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1365" height="768" viewBox="0 0 1365 768" role="img" aria-labelledby="title desc">
+  <title id="title">Realistic Restaurant Background — Wooden Table with Plate and Cup</title>
+  <desc id="desc">A warm, realistic-styled restaurant background: wooden tabletop texture, plate with soft highlights and shadow, metal cutlery, cloth napkin, coffee cup with steam, shallow depth-of-field bokeh and subtle grain — intended as a clean, readable cover background for POS/login screens.</desc>
+
+  <defs>
+    <!-- Wood plank base using stripes + grain -->
+    <linearGradient id="woodBase" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#4b2e19"/>
+      <stop offset="50%" stop-color="#5a3a24"/>
+      <stop offset="100%" stop-color="#3f2918"/>
+    </linearGradient>
+
+    <pattern id="planks" width="160" height="160" patternUnits="userSpaceOnUse">
+      <rect width="160" height="160" fill="url(#woodBase)"/>
+      <rect x="0" y="0" width="160" height="8" fill="rgba(255,255,255,0.02)"/>
+      <rect x="0" y="40" width="160" height="6" fill="rgba(0,0,0,0.05)"/>
+      <rect x="0" y="80" width="160" height="6" fill="rgba(255,255,255,0.01)"/>
+      <rect x="0" y="120" width="160" height="6" fill="rgba(0,0,0,0.03)"/>
+      <!-- subtle wood grain lines -->
+      <path d="M0 10 C30 8, 60 12, 90 10 S160 12, 160 10" stroke="rgba(0,0,0,0.06)" stroke-width="1" fill="none"/>
+      <path d="M0 70 C40 68, 80 72, 120 70 S160 72, 160 70" stroke="rgba(255,255,255,0.02)" stroke-width="0.7" fill="none"/>
+    </pattern>
+
+    <!-- soft vignette -->
+    <radialGradient id="vign" cx="30%" cy="35%" r="80%">
+      <stop offset="0%" stop-color="rgba(0,0,0,0)" />
+      <stop offset="100%" stop-color="rgba(0,0,0,0.45)" />
+    </radialGradient>
+
+    <!-- plate gradients and rim -->
+    <radialGradient id="plateGlow" cx="40%" cy="40%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="55%" stop-color="#fffaf7" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0.02"/>
+    </radialGradient>
+    <linearGradient id="plateRim" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f5f5f6"/>
+      <stop offset="100%" stop-color="#dfdfe1"/>
+    </linearGradient>
+
+    <!-- metal cutlery sheen -->
+    <linearGradient id="metalShine" x1="0" x2="1">
+      <stop offset="0%" stop-color="#f8f9fa"/>
+      <stop offset="50%" stop-color="#dfe6eb"/>
+      <stop offset="100%" stop-color="#aeb6bd"/>
+    </linearGradient>
+
+    <!-- napkin fabric -->
+    <linearGradient id="napkin" x1="0" x2="1">
+      <stop offset="0%" stop-color="#fffaf8"/>
+      <stop offset="100%" stop-color="#fff0ea"/>
+    </linearGradient>
+    <filter id="fabricGrain">
+      <feTurbulence baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="t"/>
+      <feColorMatrix in="t" type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.06"/>
+      </feComponentTransfer>
+      <feComposite in2="SourceGraphic" operator="over"/>
+    </filter>
+
+    <!-- coffee cup shading -->
+    <radialGradient id="cupGrad" cx="35%" cy="30%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="65%" stop-color="#f0f0f1" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#dcdcdc" stop-opacity="0.7"/>
+    </radialGradient>
+
+    <!-- steam blur -->
+    <filter id="steamBlur">
+      <feGaussianBlur stdDeviation="6"/>
+      <feComponentTransfer>
+        <feFuncA type="linear" slope="0.95"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- bokeh/gloss highlights -->
+    <filter id="bokehBlur">
+      <feGaussianBlur stdDeviation="18" result="b"/>
+      <feComposite in="b" in2="SourceGraphic" operator="over"/>
+    </filter>
+
+    <!-- overall grain -->
+    <filter id="overallGrain">
+      <feTurbulence baseFrequency="0.6" numOctaves="2" stitchTiles="stitch" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0"/>
+      <feComponentTransfer>
+        <feFuncA type="table" tableValues="0 0.06"/>
+      </feComponentTransfer>
+    </filter>
+
+    <!-- rounded canvas clip -->
+    <clipPath id="canvasClip">
+      <rect width="1365" height="768" rx="24" ry="24"/>
+    </clipPath>
+
+    <!-- shadow helper -->
+    <filter id="softShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="16" result="blur"/>
+      <feOffset dx="0" dy="10" result="off"/>
+      <feMerge>
+        <feMergeNode in="off"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g clip-path="url(#canvasClip)">
+    <!-- wooden tabletop base -->
+    <rect width="1365" height="768" fill="url(#planks)"/>
+
+    <!-- large shallow vignette for mood -->
+    <rect width="1365" height="768" fill="url(#vign)" opacity="0.7"/>
+
+    <!-- soft bokeh lights to emulate depth-of-field -->
+    <g filter="url(#bokehBlur)" opacity="0.55">
+      <circle cx="1100" cy="120" r="58" fill="#ffe8cf" opacity="0.28"/>
+      <circle cx="980" cy="200" r="36" fill="#ffd1b0" opacity="0.22"/>
+      <circle cx="1240" cy="420" r="46" fill="#fff1e6" opacity="0.18"/>
+      <circle cx="860" cy="80" r="22" fill="#ffd9b6" opacity="0.18"/>
+    </g>
+
+    <!-- left-center large plate -->
+    <g transform="translate(220,170)">
+      <!-- soft shadow under plate -->
+      <ellipse cx="260" cy="280" rx="170" ry="48" fill="rgba(0,0,0,0.45)" filter="url(#softShadow)" opacity="0.32"/>
+      <!-- plate rim -->
+      <circle cx="260" cy="200" r="140" fill="url(#plateGlow)" stroke="url(#plateRim)" stroke-width="12" />
+      <!-- inner plate shadow/shine -->
+      <circle cx="260" cy="200" r="95" fill="#fffaf7" opacity="0.9"/>
+      <circle cx="260" cy="200" r="70" fill="#fffdfc" opacity="0.98" />
+      <!-- subtle plate highlight -->
+      <ellipse cx="220" cy="160" rx="60" ry="30" fill="rgba(255,255,255,0.35)" opacity="0.35" transform="rotate(-22 220 160)"/>
+    </g>
+
+    <!-- napkin with embroidered edge under cutlery -->
+    <g transform="translate(420,340)">
+      <rect x="-20" y="-8" width="180" height="120" rx="8" fill="url(#napkin)" filter="url(#fabricGrain)" opacity="0.98" transform="rotate(-18)"/>
+      <rect x="-20" y="-8" width="180" height="120" rx="8" fill="none" stroke="rgba(0,0,0,0.06)" stroke-width="1.6" transform="rotate(-18)"/>
+      <path d="M-6 92 L152 92" stroke="rgba(0,0,0,0.03)" stroke-width="2" transform="rotate(-18)"/>
+    </g>
+
+    <!-- fork and knife next to plate -->
+    <g transform="translate(420,340) rotate(-18)">
+      <!-- fork -->
+      <g transform="translate(34,18)">
+        <rect x="0" y="0" width="10" height="84" rx="5" fill="url(#metalShine)"/>
+        <rect x="0" y="0" width="10" height="20" rx="1" fill="url(#metalShine)"/>
+        <rect x="2" y="2" width="6" height="16" rx="1" fill="rgba(255,255,255,0.06)"/>
+        <path d="M2 2 L2 -10 M5 2 L5 -10 M8 2 L8 -10" stroke="rgba(0,0,0,0.08)" stroke-width="1" stroke-linecap="round"/>
+      </g>
+      <!-- knife -->
+      <g transform="translate(58,6)">
+        <rect x="0" y="6" width="12" height="96" rx="6" fill="url(#metalShine)" transform="rotate(8)"/>
+        <rect x="-6" y="6" width="24" height="12" rx="3" fill="#cbb7a4" opacity="0.12" transform="rotate(8)"/>
+      </g>
+    </g>
+
+    <!-- coffee cup on right of plate -->
+    <g transform="translate(620,260)">
+      <!-- cup shadow -->
+      <ellipse cx="160" cy="230" rx="48" ry="16" fill="rgba(0,0,0,0.42)" opacity="0.35"/>
+      <!-- saucer -->
+      <ellipse cx="120" cy="140" rx="76" ry="22" fill="rgba(255,255,255,0.06)"/>
+      <ellipse cx="120" cy="140" rx="56" ry="14" fill="#fff" opacity="0.06"/>
+      <!-- cup body -->
+      <g transform="translate(80,50)">
+        <ellipse cx="40" cy="30" rx="42" ry="18" fill="rgba(0,0,0,0.06)"/>
+        <rect x="0" y="30" width="80" height="80" rx="20" fill="url(#cupGrad)"/>
+        <ellipse cx="40" cy="30" rx="34" ry="14" fill="#5b3a2b"/>
+        <!-- inner coffee highlight -->
+        <ellipse cx="50" cy="24" rx="16" ry="6" fill="rgba(255,255,255,0.06)"/>
+      </g>
+      <!-- cup handle -->
+      <path d="M160 100 a28 22 0 0 1 0 44" stroke="url(#cupGrad)" stroke-width="12" fill="none" stroke-linecap="round" opacity="0.95"/>
+      <!-- steam -->
+      <g transform="translate(120,18)" filter="url(#steamBlur)" opacity="0.75" stroke="rgba(255,255,255,0.85)" stroke-width="3" fill="none" stroke-linecap="round">
+        <path d="M16 28 q-6 -36 10 -58" stroke-opacity="0.9"/>
+        <path d="M36 34 q-8 -40 12 -62" stroke-opacity="0.75"/>
+        <path d="M56 30 q-4 -28 8 -44" stroke-opacity="0.65"/>
+      </g>
+    </g>
+
+    <!-- small garnish plate top-right (olive/lemon slice style) -->
+    <g transform="translate(1060,190)">
+      <circle cx="0" cy="0" r="36" fill="#fff7e8" stroke="#ffd9b0" stroke-width="2" opacity="0.9"/>
+      <path d="M-6 -2 A22 22 0 0 1 22 6" fill="#ffd9b0" opacity="0.95"/>
+      <circle cx="-10" cy="4" r="4" fill="#7fbf6b" opacity="0.95"/>
+      <ellipse cx="8" cy="-10" rx="6" ry="3" fill="#fff" opacity="0.6"/>
+      <ellipse cx="-12" cy="12" rx="10" ry="3" fill="rgba(0,0,0,0.05)" opacity="0.25"/>
+    </g>
+
+    <!-- left area soft empty space for login/controls (subtle frosted panel) -->
+    <rect x="64" y="120" width="520" height="520" rx="24" fill="#ffffff" opacity="0.02" />
+
+    <!-- faint overlay diagonal highlights for realism -->
+    <g stroke="#ffffff" stroke-opacity="0.03" stroke-width="1.8" fill="none">
+      <path d="M-100 60 L1465 -40"/>
+      <path d="M-100 160 L1465 60"/>
+    </g>
+
+    <!-- overall tactile grain -->
+    <rect width="1365" height="768" filter="url(#overallGrain)" opacity="0.12"/>
+  </g>
+</svg>

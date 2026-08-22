@@ -1,0 +1,356 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Payment Methods') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Settings') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Payment Methods') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new payment method button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Payment Methods DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Method modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Payment Method form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="paymentMethod.id" type="hidden" name="id" />
+
+                            <!-- Method Name -->
+                            <div class="form-group">
+                                <label for="methodName" class="control-label">
+                                    {{ app.localize('Method Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="paymentMethod.methodName"
+                                    [readonly]="paymentMethod.isSystem"
+                                    id="methodName"
+                                    name="methodName"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Account -->
+                            <div class="form-group">
+                                <label for="accountId" class="control-label">
+                                    {{ app.localize('Account') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="paymentMethod.accountId"
+                                    [items]="accounts"
+                                    bindLabel="displayName"
+                                    bindValue="id"
+                                    [disabled]="paymentMethod.isSystem"
+                                    id="accountId"
+                                    name="accountId"
+                                    placeholder="{{ app.localize('Choose an option') }}"
+                                    [clearable]="true"
+                                    required
+                                    [class.is-invalid]="mainModal.validated && !paymentMethod.accountId"></ng-select>
+                                @if(mainModal.validated && !paymentMethod.accountId) {
+                                <div class="invalid-feedback d-block">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+
+                            <!-- Processor Fee -->
+                            <div class="form-group">
+                                <label for="processorFee" class="control-label">
+                                    {{ app.localize('Processor Fee') }}
+                                    <code>*</code>
+                                </label>
+                                <div class="d-flex justify-content-between align-items-start gap-1">
+                                    <div class="flex-grow-1">
+                                        <input
+                                            [(ngModel)]="paymentMethod.processorFee"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                            id="processorFee"
+                                            name="processorFee"
+                                            type="text"
+                                            class="form-control"
+                                            maxlength="18"
+                                            placeholder="{{ app.getNumberPlaceholder('0.0000') }}"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                    <ng-select
+                                        [(ngModel)]="paymentMethod.isFeePercentage"
+                                        [items]="[
+                                            { value: true, label: '%' },
+                                            { value: false, label: app.localize('Fixed') }
+                                        ]"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        clearable="false"
+                                        searchable="false"
+                                        id="isFeePercentage"
+                                        name="isFeePercentage"
+                                        class="form-control"
+                                        style="width: 90px"
+                                        [clearable]="false"></ng-select>
+                                </div>
+                            </div>
+
+                            <!-- Available in POS -->
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="paymentMethod.isAvailableInPos"
+                                        type="checkbox"
+                                        id="isAvailableInPos"
+                                        name="isAvailableInPos"
+                                        class="form-check-input" />
+                                    <label for="isAvailableInPos" class="form-check-label">
+                                        {{ app.localize('Available in POS') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Available Online -->
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="paymentMethod.isAvailableOnline"
+                                        type="checkbox"
+                                        id="isAvailableOnline"
+                                        name="isAvailableOnline"
+                                        class="form-check-input" />
+                                    <label for="isAvailableOnline" class="form-check-label">
+                                        {{ app.localize('Available Online') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Active Status -->
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="paymentMethod.isActive"
+                                        type="checkbox"
+                                        id="isActive"
+                                        name="isActive"
+                                        class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">
+                                        {{ app.localize('Status') }}
+                                        ({{
+                                            paymentMethod.isActive ? app.localize('Active') : app.localize('Inactive')
+                                        }})
+                                        <a
+                                            href="javascript:void(0)"
+                                            class="btn-link-icon"
+                                            [appTooltip]="app.localize('Enable this payment method for transactions')">
+                                            <i class="ri-information-line ms-2"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Stripe Configuration -->
+                            @if (paymentMethod.methodName?.toLowerCase() === 'stripe') {
+                            <div class="form-group">
+                                <div class="heading heading-form-title">{{ app.localize('Stripe Configuration') }}</div>
+
+                                <div class="form-group">
+                                    <label for="stripePublishableKey" class="control-label">
+                                        {{ app.localize('Publishable Key') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="stripeConfig.publishableKey"
+                                        id="stripePublishableKey"
+                                        name="stripePublishableKey"
+                                        type="text"
+                                        class="form-control"
+                                        maxlength="255" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="stripeSecretKey" class="control-label">
+                                        {{ app.localize('Secret Key') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="stripeConfig.secretKey"
+                                        id="stripeSecretKey"
+                                        name="stripeSecretKey"
+                                        type="password"
+                                        class="form-control"
+                                        maxlength="255" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="stripeWebhookSecret" class="control-label">
+                                        {{ app.localize('Webhook Secret') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="stripeConfig.webhookSecret"
+                                        id="stripeWebhookSecret"
+                                        name="stripeWebhookSecret"
+                                        type="password"
+                                        class="form-control"
+                                        maxlength="255" />
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="form-check form-switch mb-0">
+                                        <input
+                                            [(ngModel)]="stripeConfig.isLive"
+                                            type="checkbox"
+                                            id="stripeIsLive"
+                                            name="stripeIsLive"
+                                            class="form-check-input" />
+                                        <label for="stripeIsLive" class="form-check-label">
+                                            {{ app.localize('Live Mode') }}
+                                            <a
+                                                href="javascript:void(0)"
+                                                class="btn-link-icon"
+                                                [appTooltip]="app.localize('Enable for production environment')">
+                                                <i class="ri-information-line ms-2"></i>
+                                            </a>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+
+                            <!-- PayPal Configuration -->
+                            @if (paymentMethod.methodName?.toLowerCase() === 'paypal') {
+                            <div class="form-group">
+                                <div class="heading heading-form-title">{{ app.localize('PayPal Configuration') }}</div>
+
+                                <div class="form-group">
+                                    <label for="paypalClientId" class="control-label">
+                                        {{ app.localize('Client ID') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="paypalConfig.clientId"
+                                        id="paypalClientId"
+                                        name="paypalClientId"
+                                        type="text"
+                                        class="form-control"
+                                        maxlength="255" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="paypalClientSecret" class="control-label">
+                                        {{ app.localize('Client Secret') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="paypalConfig.clientSecret"
+                                        id="paypalClientSecret"
+                                        name="paypalClientSecret"
+                                        type="password"
+                                        class="form-control"
+                                        maxlength="255" />
+                                </div>
+
+                                <div class="form-group">
+                                    <div class="form-check form-switch mb-0">
+                                        <input
+                                            [(ngModel)]="paypalConfig.isLive"
+                                            type="checkbox"
+                                            id="paypalIsLive"
+                                            name="paypalIsLive"
+                                            class="form-check-input" />
+                                        <label for="paypalIsLive" class="form-check-label">
+                                            {{ app.localize('Live Mode') }}
+                                            <a
+                                                href="javascript:void(0)"
+                                                class="btn-link-icon"
+                                                [appTooltip]="app.localize('Enable for production environment')">
+                                                <i class="ri-information-line ms-2"></i>
+                                            </a>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,1802 @@
+<div class="zpos">
+    <!-- Top Navigation Bar -->
+    <div class="header">
+        <div class="header-left">
+            <span [ngClass]="getSignalRStatusClass()">
+                <i class="ri-wifi-line"></i>
+                {{ getSignalRStatusText() }}
+            </span>
+        </div>
+
+        <div class="header-actions">
+            <!-- Data Sync Button -->
+            <button (click)="syncOfflineOrders()" [disabled]="offlineOrders.length === 0 || isSyncing"
+                [appTooltip]="app.localize('Sync Offline Orders')">
+                <i class="ri-refresh-line" [ngClass]="{ spinning: isSyncing }"></i>
+                {{ app.localize('Data Sync') }}
+                @if (offlineOrders.length > 0) {
+                <span class="zpos-badge">{{ offlineOrders.length }}</span>
+                }
+            </button>
+
+            <!-- Order Actions -->
+            <button (click)="holdOrder()" [appTooltip]="app.localize('Hold Order')" [disabled]="cart.length === 0">
+                <i class="ri-pause-circle-line"></i>
+                {{ app.localize('Hold') }}
+            </button>
+
+            <button (click)="recallOrder()" [appTooltip]="app.localize('Recall Order')">
+                <i class="ri-play-circle-line"></i>
+                {{ app.localize('Recall') }}
+            </button>
+
+            <!-- Cash Register Management -->
+            <button (click)="showCashRegisterModal()" [appTooltip]="app.localize('Cash Registers')">
+                <i class="ri-safe-line"></i>
+                @if(openedCashRegisters.length > 0){
+                <span class="notif-bg-green" aria-hidden="true"></span>
+                }@else{
+                <span class="notif-bg-red" aria-hidden="true"></span>
+                }
+                {{ app.localize('Cash Registers') }}
+            </button>
+
+            <!-- Active Orders -->
+            <button (click)="showActiveOrdersModal()" [appTooltip]="app.localize('Active Orders')">
+                <i class="ri-file-list-3-line"></i>
+                @if(activeOrders.length > 0){
+                <span class="notif-bg-green" aria-hidden="true"></span>
+                }
+                {{ app.localize('Active Orders') }}
+            </button>
+        </div>
+
+        <div class="header-right">
+            <button type="button" class="btn btn-primary btn-round" (click)="showOrderConfigModal(true)"
+                [appTooltip]="app.localize('New Order')">
+                <i class="ri-add-line"></i>
+                {{ app.localize('New Order') }}
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+        <div class="row g-2">
+            <!-- Left Panel: Categories & Items -->
+            <div class="col-12 col-lg-7 col-xl-8">
+                <div class="card">
+                    <div class="card-body p-0">
+                        <!-- Category Navigation -->
+                        <div class="categories p-2" appDragScroll>
+                            <div class="category-item my-1" (click)="selectCategory(null)"
+                                [ngClass]="{ active: selectedCategoryId === null }">
+                                <img src="assets/images/icons/categorize.png" alt="" />
+                                <span>{{ app.localize('All Items') }}</span>
+                            </div>
+                            @for (category of categories; track category.id) {
+                            <div class="category-item my-1" (click)="selectCategory(category.id)"
+                                [ngClass]="{ active: selectedCategoryId === category.id }"
+                                [appTooltip]="category.categoryName">
+                                <img src="assets/images/default.png" [attr.data-img]="true"
+                                    [attr.data-url]="category.imageUrl" alt="" />
+                                <span>{{ category.categoryName }}</span>
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Search & View Controls -->
+                        <div class="search-controls p-2 mt-1">
+                            <div class="search-box w-100">
+                                <input type="text" [placeholder]="app.localize('Search...')"
+                                    (input)="onSearch($any($event.target).value)"
+                                    class="form-control input-search-icon" />
+                            </div>
+
+                            <div class="view-controls d-flex gap-2">
+                                <button (click)="toggleViewMode()" [ngClass]="{ active: viewMode === 'list' }"
+                                    [appTooltip]="
+                                        viewMode === 'grid' ? app.localize('List View') : app.localize('Grid View')
+                                    " class="btn btn-icon btn-light">
+                                    <i [class]="viewMode === 'grid' ? 'ri-list-unordered' : 'ri-grid-line'"></i>
+                                </button>
+
+                                <div class="dropdown">
+                                    <button class="btn btn-light dropdown-toggle" data-bs-toggle="dropdown">
+                                        <i class="ri-sort-asc"></i>
+                                        {{ app.localize('Sort') }}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a href="javascript:void(0)" (click)="changeSort('name')"
+                                                class="dropdown-item" [ngClass]="{ active: sortBy === 'name' }">
+                                                <i class="ri-text"></i>
+                                                {{ app.localize('Name') }}
+                                                @if (sortBy === 'name') {
+                                                <i class="float-end" [class]="
+                                                        sortDirection === 'asc'
+                                                            ? 'ri-arrow-up-line'
+                                                            : 'ri-arrow-down-line'
+                                                    "></i>
+                                                }
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="javascript:void(0)" (click)="changeSort('price')"
+                                                class="dropdown-item" [ngClass]="{ active: sortBy === 'price' }">
+                                                <i class="ri-money-dollar-circle-line"></i>
+                                                {{ app.localize('Price') }}
+                                                @if (sortBy === 'price') {
+                                                <i class="float-end" [class]="
+                                                        sortDirection === 'asc'
+                                                            ? 'ri-arrow-up-line'
+                                                            : 'ri-arrow-down-line'
+                                                    "></i>
+                                                }
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a href="javascript:void(0)" (click)="changeSort('category')"
+                                                class="dropdown-item" [ngClass]="{ active: sortBy === 'category' }">
+                                                <i class="ri-folder-line"></i>
+                                                {{ app.localize('Category') }}
+                                                @if (sortBy === 'category') {
+                                                <i class="float-end" [class]="
+                                                        sortDirection === 'asc'
+                                                            ? 'ri-arrow-up-line'
+                                                            : 'ri-arrow-down-line'
+                                                    "></i>
+                                                }
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Items Display -->
+                        <div class="items p-2">
+                            @if (isLoadingItems) {
+                            <div class="text-center mt-4">
+                                <div class="d-flex justify-content-between align-items-center py-4">
+                                    <div class="loader"></div>
+                                </div>
+                            </div>
+                            } @else if (filteredItems.length === 0) {
+                            <div class="text-center mt-4">
+                                <i class="ri-inbox-line fs-2 text-muted"></i>
+                                <p class="mt-1">{{ app.localize('No Items Found') }}</p>
+                            </div>
+                            } @else {
+                            <div [ngClass]="'items-' + viewMode">
+                                @for (item of filteredItems; track item.id) {
+                                <div class="item-card" (click)="addToCart(item)">
+                                    <div class="item-image">
+                                        <img src="assets/images/default.png" [attr.data-img]="true"
+                                            [attr.data-url]="item.imageUrl" [alt]="item.itemName" loading="lazy" />
+                                        <div class="badges">
+                                            @if (item.isFeatured) {
+                                            <span class="badge badge-warning"
+                                                [appTooltip]="app.localize('Featured Item')">
+                                                <i class="ri-star-fill"></i>
+                                            </span>
+                                            } @if(item.itemModifiers && item.itemModifiers.length > 0) {
+                                            <span class="badge badge-info" [appTooltip]="app.localize('Has Modifiers')">
+                                                <i class="ri-stack-fill"></i>
+                                            </span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="item-content">
+                                        <h4 class="item-name mb-0">{{ item.itemName }}</h4>
+                                        <div class="item-meta">
+                                            <span class="item-price">{{ formatCurrency(item.price) }}</span>
+                                            @if (item.preparationTime && item.preparationTime > 0) {
+                                            <span class="prep-time">
+                                                <i class="ri-time-line"></i>
+                                                {{ item.preparationTime }}{{ app.localize('min') }}
+                                            </span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <button class="add-btn" [appTooltip]="app.localize('Add to Cart')">
+                                        <i class="ri-add-line"></i>
+                                    </button>
+                                </div>
+                                }
+                            </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Cart & Actions -->
+            <div class="col-12 col-lg-5 col-xl-4">
+                <div class="card cart"
+                    [ngClass]="{ hide: isMobileView && !showMobileCart, show: isMobileView && showMobileCart }">
+                    <!-- Cart Header -->
+                    <div class="card-header bg-primary">
+                        @if (isMobileView) {
+                        <button (click)="toggleMobileCart()" class="btn btn-icon btn-back text-on-primary me-2">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        } @if(currentOrder.id > 0){
+                        <div class="card-title text-on-primary">
+                            {{ app.localize('Order #') }}: {{ currentOrder.id }}
+                        </div>
+                        } @else {
+                        <div class="card-title text-on-primary">{{ app.localize('New Order') }}</div>
+                        }
+                        <button type="button" class="btn btn-light btn-round btn-sm ms-auto px-2"
+                            [appTooltip]="app.localize('Change Customer')" (click)="showCustomerChangeModal()">
+                            <i class="ri-user-line"></i>
+                            {{ selectedCustomer?.fullName || app.localize('Select Customer') }}
+                            <i class="ri-pencil-line"></i>
+                        </button>
+                    </div>
+
+                    <!-- Cart Body -->
+                    <div class="card-body p-0">
+                        <!-- Order Information -->
+                        <div class="order-info">
+                            <div class="flex-grow-1 d-flex gap-1 flex-wrap align-items-center">
+                                <div class="info-item">
+                                    <i class="ri-box-3-line ri-1x me-1"></i>
+                                    {{ getOrderTypeText(currentOrder.orderType) }}
+                                </div>
+                                @if (selectedTable) {
+                                <div class="info-item">
+                                    <i class="icon-table ri-1x me-1"></i>
+                                    {{ selectedTable.tableNumber }}
+                                </div>
+                                }
+                                <div class="info-item">
+                                    <i class="ri-group-3-line ri-1x me-1"></i>
+                                    {{ currentOrder.guests }} {{ app.localize('Guests') }}
+                                </div>
+                                @if (currentOrder.waiterOrDriver) {
+                                <div class="info-item">
+                                    <i class="icon-waiter ri-1x me-1"></i>
+                                    {{ currentOrder.waiterOrDriver }}
+                                </div>
+                                }
+                            </div>
+                            <div>
+                                <button (click)="showOrderConfigModal(false)"
+                                    [appTooltip]="app.localize('Order Config')" class="btn btn-icon btn-sm">
+                                    <i class="ri-settings-3-line"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Cart Items -->
+                        <div class="cart-items">
+                            @if (cart.length === 0) {
+                            <div class="align-items-center text-center p-4">
+                                <i class="ri-shopping-cart-line fs-2 text-muted"></i>
+                                <p class="mt-1">{{ app.localize('Cart is empty') }}</p>
+                            </div>
+                            } @for (cartItem of cart; track cartItem.id) {
+                            <div class="cart-item">
+                                <div class="clickable-info" tabindex="0" (click)="showCartItemDetail(cartItem)">
+                                    <div class="item-img">
+                                        <img src="assets/images/default.png" [attr.data-cart-img]="true"
+                                            [attr.data-url]="cartItem.item.imageUrl" [alt]="cartItem.item.itemName" />
+                                    </div>
+
+                                    <div class="item-info">
+                                        <div class="item-name">{{ cartItem.item.itemName }}</div>
+
+                                        @if (cartItem.modifiers.length > 0) {
+                                        <div class="modifiers">
+                                            @for (modifier of cartItem.modifiers; track modifier.modifierOptionId) {
+                                            <span class="zpos-modifier-tag">+ {{ modifier.optionName }}</span>
+                                            }
+                                        </div>
+                                        } @if (cartItem.notes) {
+                                        <div class="item-notes">
+                                            <small class="text-muted">{{ cartItem.notes }}</small>
+                                        </div>
+                                        }
+
+                                        <div class="item-price">{{ formatCurrency(cartItem.totalAmount) }}</div>
+                                    </div>
+
+                                    <i class="ri-eye-line view-icon"></i>
+                                </div>
+
+                                <div class="actions">
+                                    <button (click)="removeFromCart(cartItem.id)" type="button" class="btn-delete"
+                                        [appTooltip]="app.localize('Remove')">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+
+                                    <div class="quantity-wrapper">
+                                        <div class="plus-minus">
+                                            <button type="button" class="plus-minus-button sub"
+                                                (click)="updateCartItemQuantity(cartItem.id, cartItem.quantity - 1)">
+                                                <i class="ri-subtract-line"></i>
+                                            </button>
+
+                                            <input readonly [value]="cartItem.quantity" />
+
+                                            <button type="button" class="plus-minus-button add"
+                                                (click)="updateCartItemQuantity(cartItem.id, cartItem.quantity + 1)">
+                                                <i class="ri-add-line"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Order Totals -->
+                        <div class="order-totals">
+                            <div class="totals-left">
+                                <div class="summary-row">
+                                    <div class="title">{{ app.localize('Subtotal') }}</div>
+                                    <div class="value">{{ formatCurrency(order.subTotal) }}</div>
+                                </div>
+
+                                <div class="summary-row">
+                                    <div class="title">{{ posSettings.isTaxOrderLevel ? order.taxRate?.taxName || app.localize('Tax') : app.localize('Tax') }}</div>
+                                    <div class="value">{{ formatCurrency(order.taxAmount) }}</div>
+                                </div>
+
+                                <div class="summary-row">
+                                    <div class="title">
+                                        {{  posSettings.isDiscountOrderLevel ? order.discount?.discountName || app.localize('Discount') : app.localize('Discount') }}
+                                    </div>
+                                    <div class="value">-{{ formatCurrency(order.discountAmount) }}</div>
+                                </div>
+
+                                @if(order.couponDiscount > 0){
+                                <div class="summary-row">
+                                    <div class="title clickable" (click)="removeCoupon()">
+                                        {{ app.localize('Coupon') }}
+                                        <i class="ri-close-line"></i>
+                                    </div>
+                                    <div class="value">-{{ formatCurrency(order.couponDiscount) }}</div>
+                                </div>
+                                }
+
+                                <div class="summary-row">
+                                    <div class="title">{{ order.charge?.chargeName || app.localize('Charges') }}</div>
+                                    <div class="value">{{ formatCurrency(order.chargeAmount) }}</div>
+                                </div>
+                            </div>
+
+                            <div class="totals-right">
+                                <div class="input-group mb-2">
+                                    <input type="text" [(ngModel)]="order.couponCode" class="form-control"
+                                        placeholder="{{ app.localize('Enter Coupon Code') }}" />
+                                    <button (click)="applyCoupon()" class="btn btn-icon btn-primary" type="button"
+                                        [appTooltip]="app.localize('Apply Coupon')">
+                                        <i class="ri-check-line"></i>
+                                    </button>
+                                </div>
+
+                                <div class="summary-total">
+                                    <div class="title">{{ app.localize('Total') }}</div>
+                                    <div class="value">{{ formatCurrency(order.totalAmount) }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-2 px-3 pb-2" [ngClass]="{ disabled: cart.length === 0 }">
+                            <button (click)="printKitchenOrder()" [disabled]="cart.length === 0"
+                                class="btn btn-icon btn-light btn-round" [appTooltip]="app.localize('Print Receipt')">
+                                <i class="ri-printer-line"></i>
+                            </button>
+
+                            <button (click)="showSplitBillModal()" [disabled]="cart.length < 2"
+                                class="btn btn-icon btn-light btn-round" [appTooltip]="app.localize('Split Order')">
+                                <i class="ri-scissors-line"></i>
+                            </button>
+
+                            <button (click)="saveOrder()" [disabled]="!isOrderValid()"
+                                class="btn btn-warning btn-round flex-grow-1">
+                                <i class="ri-fire-line"></i>
+                                {{ currentOrder.id > 0 ? app.localize('Update') : app.localize('Fire') }}
+                            </button>
+
+                            <button (click)="showPaymentModal()" [disabled]="!isOrderValid()"
+                                class="btn btn-primary btn-round flex-grow-1">
+                                <i class="ri-secure-payment-line"></i>
+                                {{ app.localize('Pay Now') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Cart Toggle Button -->
+    @if (isMobileView && !showMobileCart) {
+    <div class="zpos-mobile-cart-btn">
+        <button (click)="toggleMobileCart()" class="zpos-btn zpos-btn-primary">
+            <i class="ri-shopping-cart-line"></i>
+            {{ app.localize('Cart') }} ({{ cart.length }}) @if (cart.length > 0) {
+            <span class="zpos-cart-total">{{ formatCurrency(order.totalAmount) }}</span>
+            }
+        </button>
+    </div>
+    }
+
+    <!-- Loading Overlay -->
+    @if (isLoading) {
+    <div class="zpos-loading-overlay">
+        <div class="text-center py-5">
+            <div class="d-flex justify-content-center mb-3">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+    }
+</div>
+
+<!-- Modal Container -->
+<div class="modal-container">
+    <!-- Order Configuration Modal - CASH REGISTER REMOVED -->
+    <div [ngClass]="{ show: modals.orderConfig.show }" class="modal has-footer fade" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Order Configuration') }}</h5>
+                    <button (click)="closeOrderConfigModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Order Form -->
+                        <div class="col-md-5">
+                            <form>
+                                <!-- Order Type Selection -->
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @for (orderType of orderTypeOptions; track orderType.value) {
+                                    <button type="button" class="btn btn-light btn-round"
+                                        [ngClass]="{ active: order.orderType === orderType.value }" (click)="
+                                            selectOrderType(orderType.value);
+                                            selectFloorForConfig(modals.orderConfig.selectedFloorId)
+                                        ">
+                                        <i [class]="orderType.icon"></i>
+                                        {{ orderType.label }}
+                                    </button>
+                                    }
+                                </div>
+
+                                <!-- Customer Selection -->
+                                <div class="selected-customer mb-3" (click)="showCustomerChangeModal()">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="me-2">
+                                            <i class="ri-user-line me-2"></i>
+                                            <strong>{{ order.customerName }}</strong>
+                                        </div>
+                                        <div>
+                                            <i class="ri-pencil-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Guest Counter -->
+                                <div class="guest-wrapper mb-3">
+                                    <button type="button" (click)="decrementGuests()"
+                                        class="btn btn-icon btn-light btn-round">
+                                        <i class="ri-subtract-line"></i>
+                                    </button>
+                                    <div class="w-100 text-center">
+                                        <span class="fw-semibold me-2">{{ order.guests }}</span>
+                                        <span class="text-muted small">{{ app.localize('Guests') }}</span>
+                                    </div>
+                                    <button type="button" (click)="incrementGuests()"
+                                        class="btn btn-icon btn-primary btn-round">
+                                        <i class="ri-add-line"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Tax, Discount, Charge Selection -->
+                                <div class="row">
+                                    @if (posSettings.isTaxOrderLevel) {
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="taxRateId" class="control-label">{{ app.localize('Tax') }}</label>
+                                        <ng-select [(ngModel)]="order.taxRateId" (ngModelChange)="selectTaxRate($event)"
+                                            id="taxRateId" name="taxRateId" [items]="taxRates" bindLabel="displayName"
+                                            bindValue="id" [searchable]="true" [clearable]="true"
+                                            [placeholder]="app.localize('Choose an option')"
+                                            class="form-control"></ng-select>
+                                    </div>
+                                    }
+
+                                    @if (posSettings.isDiscountOrderLevel) {
+                                    <div class="col-12 col-md-6 form-group">
+                                        <label for="discountId" class="control-label">
+                                            {{ app.localize('Discounts') }}
+                                        </label>
+                                        <ng-select [(ngModel)]="order.discountId"
+                                            (ngModelChange)="selectDiscount($event)" id="discountId" name="discountId"
+                                            [items]="discounts" bindLabel="displayName" bindValue="id"
+                                            [searchable]="true" [clearable]="true"
+                                            [placeholder]="app.localize('Choose an option')"
+                                            class="form-control"></ng-select>
+                                    </div>
+                                    }
+
+                                    <div class="col-12 form-group">
+                                        <label for="chargeId" class="control-label">
+                                            {{ app.localize('Charges') }}
+                                        </label>
+                                        <ng-select [(ngModel)]="order.chargeId" (ngModelChange)="selectCharge($event)"
+                                            id="chargeId" name="chargeId" [items]="filteredCharges"
+                                            bindLabel="displayName" bindValue="id" [searchable]="true"
+                                            [clearable]="true" [placeholder]="app.localize('Choose an option')"
+                                            class="form-control"></ng-select>
+                                    </div>
+                                </div>
+
+                                <!-- Waiter/Driver Selection -->
+                                <div class="form-group">
+                                    <label for="waiterOrDriver" class="control-label">
+                                        {{ app.localize('Waiter/Driver') }}
+                                    </label>
+                                    <ng-select [(ngModel)]="order.waiterOrDriver" id="waiterOrDriver"
+                                        name="waiterOrDriver" [items]="waiterOrDrivers" bindLabel="userName"
+                                        bindValue="userName" [searchable]="true" [clearable]="true"
+                                        [placeholder]="app.localize('Choose an option')"
+                                        class="form-control"></ng-select>
+                                </div>
+
+                                <!-- Special Instructions -->
+                                <div class="mb-3">
+                                    <label class="control-label">{{ app.localize('Special Instructions') }}</label>
+                                    <textarea [(ngModel)]="order.specialInstructions" name="specialInstructions"
+                                        class="form-control" rows="2"></textarea>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Table Selection (For Dine-In Only) -->
+                        <div class="col-md-7">
+                            @if (order.orderType === OrderType.DineIn) {
+                            <div class="floor-section">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-icon btn-light"
+                                            [ngClass]="{ active: modals.orderConfig.tableViewMode === 'floor' }"
+                                            (click)="
+                                                setTableViewMode('floor');
+                                                selectFloorForConfig(modals.orderConfig.selectedFloorId)
+                                            ">
+                                            <i class="ri-map-2-line"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-icon btn-light"
+                                            [ngClass]="{ active: modals.orderConfig.tableViewMode === 'list' }"
+                                            (click)="setTableViewMode('list')">
+                                            <i class="ri-list-unordered"></i>
+                                        </button>
+                                    </div>
+                                    <div class="vr mx-1"></div>
+                                    <!-- Floor Selection -->
+                                    <div class="floors" appDragScroll>
+                                        @for (floor of floorAreas; track floor.id) {
+                                        <button (click)="selectFloorForConfig(floor.id)" type="button"
+                                            class="btn btn-light btn-round"
+                                            [ngClass]="{ active: modals.orderConfig.selectedFloorId === floor.id }">
+                                            {{ floor.areaName }}
+                                        </button>
+                                        }
+                                    </div>
+                                </div>
+
+                                @if (modals.orderConfig.tableViewMode === 'floor' && selectedFloor) {
+                                <!-- Floor Plan View -->
+                                <div #floorCanvas class="floor-plan-canvas border rounded bg-light"
+                                    [style.aspect-ratio]="selectedFloor.width / selectedFloor.height"></div>
+                                } @else if (modals.orderConfig.tableViewMode === 'list') {
+                                <!-- Table List View -->
+                                <div class="table-list-view">
+                                    <div class="row g-3">
+                                        @for (table of tables; track table.id) {
+                                        <div class="col-md-6 col-lg-4">
+                                            <div class="table-card" [ngClass]="{
+                                                    'table-available': table.status === TableStatus.Available,
+                                                    'table-occupied': table.status === TableStatus.Occupied,
+                                                    'table-reserved': table.status === TableStatus.Reserved,
+                                                    'table-maintenance': table.status === TableStatus.Maintenance,
+                                                    'table-selected': selectedTable?.id === table.id
+                                                }" (click)="
+                                                    table.status === TableStatus.Available &&
+                                                        floorService.setSelectedTable(
+                                                            selectedTable?.id === table.id ? null : table
+                                                        )
+                                                ">
+                                                <div class="table-number">{{ table.tableNumber }}</div>
+                                                <div class="table-capacity">
+                                                    <i class="ri-group-line"></i>
+                                                    {{ table.capacity }}
+                                                </div>
+                                                <div class="table-status">
+                                                    @switch (table.status) { @case (TableStatus.Available) {
+                                                    <span class="badge badge-primary">
+                                                        {{ app.localize('Available') }}
+                                                    </span>
+                                                    } @case (TableStatus.Occupied) {
+                                                    <span class="badge badge-danger">
+                                                        {{ app.localize('Occupied') }}
+                                                    </span>
+                                                    } @case (TableStatus.Reserved) {
+                                                    <span class="badge badge-warning">
+                                                        {{ app.localize('Reserved') }}
+                                                    </span>
+                                                    } @default {
+                                                    <span class="badge badge-secondary">
+                                                        {{ app.localize('Maintenance') }}
+                                                    </span>
+                                                    } }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        }
+                                    </div>
+                                </div>
+                                } @if (selectedTable) {
+                                <div class="alert alert-info mt-2">
+                                    <strong>{{ app.localize('Selected Table') }}:</strong>
+                                    {{ selectedTable.tableNumber }}
+                                    <small class="d-block">
+                                        {{ app.localize('Capacity') }}: {{ selectedTable.capacity }}
+                                        {{ app.localize('guests') }}
+                                    </small>
+                                </div>
+                                }
+                            </div>
+                            } @else {
+                            <div class="text-center p-4">
+                                <i class="ri-information-line fs-2 text-muted"></i>
+                                <p class="mt-1">
+                                    {{ app.localize('Table selection not required') }}
+                                </p>
+                            </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-0">
+                    <button (click)="closeOrderConfigModal()" class="btn btn-light btn-round">
+                        <i class="ri-close-line"></i>
+                        {{ app.localize('Cancel') }}
+                    </button>
+                    <button (click)="closeOrderConfigModal()" class="btn btn-primary btn-round">
+                        <i class="ri-check-line"></i>
+                        {{ app.localize('Apply Configuration') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div (click)="closeOrderConfigModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Item Detail & Modifier Modal -->
+    <div [ngClass]="{ show: modals.itemDetail.show }" class="modal has-footer fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        {{ modals.itemDetail.item?.itemName }}
+                        @if (modals.itemDetail.isEdit) {
+                        <span class="badge badge-info ms-2">{{ app.localize('Edit') }}</span>
+                        }
+                    </h5>
+                    <button (click)="closeItemDetailModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (modals.itemDetail.item) {
+                    <div class="row g-3 flex-column-reverse flex-md-row">
+                        <!-- Modifiers Section -->
+                        <div class="col-md-7">
+                            @if (modals.itemDetail.item.itemModifiers && modals.itemDetail.item.itemModifiers.length >
+                            0) { @for (itemModifier of modals.itemDetail.item.itemModifiers; track itemModifier.id) {
+                            <div class="modifier-group mb-2">
+                                <div class="modifier-header" (click)="selectModifier(itemModifier.id)">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="fw-bold fs-6">{{ itemModifier.modifier.modifierName }}</div>
+                                        <div class="fw-semibold fs-6">
+                                            ({{
+                                            itemModifier.isRequired
+                                            ? app.localize('Required')
+                                            : app.localize('Optional')
+                                            }})
+                                            <i class="ri-arrow-down-s-line"></i>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modifier-options"
+                                    [ngClass]="{ active: modals.itemDetail.selectedModifierId === itemModifier.id }">
+                                    @for (option of itemModifier.modifier.modifierOptions; track option.id) {
+                                    <div class="modifier-option"
+                                        (click)="toggleModifierOption(itemModifier.modifier, option)">
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input"
+                                                [checked]="isModifierOptionSelected(option.id)" readonly />
+                                            <label class="form-check-label">
+                                                {{ option.optionName }}
+                                                @if (option.price > 0) {
+                                                <span class="text-muted">(+{{ formatCurrency(option.price) }})</span>
+                                                }
+                                            </label>
+                                        </div>
+                                    </div>
+                                    }
+                                    <small class="text-muted px-2 pt-2">
+                                        {{ app.localize('Select') }} {{ itemModifier.minSelection }} -
+                                        {{ itemModifier.maxSelection }}
+                                        <span class="ms-2">
+                                            ({{ getModifierSelectionCount(itemModifier.modifierId) }}
+                                            {{ app.localize('selected') }})
+                                        </span>
+                                    </small>
+                                </div>
+                            </div>
+                            } } @else {
+                            <div class="text-center p-4">
+                                <i class="ri-information-line fs-2 text-muted"></i>
+                                <p class="mt-1">{{ app.localize('No customization options available') }}</p>
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Item Details Section -->
+                        <div class="col-md-5">
+                            <!-- Item Image Gallery -->
+                            <div class="item-gallery">
+                                <div class="main-image-container">
+                                    <div class="main-image">
+                                        @if (modals.itemDetail.item.itemImages) {
+                                        <img src="assets/images/default.png" [attr.data-url]="getCurrentImage()"
+                                            [attr.data-gallery-img]="true" [alt]="modals.itemDetail.item.itemName"
+                                            class="img-fluid rounded" />
+
+                                        @if (modals.itemDetail.item.itemImages.length > 1) {
+                                        <button (click)="previousImage()" class="gallery-nav prev" type="button"
+                                            [appTooltip]="app.localize('Previous image')">
+                                            <i class="ri-arrow-left-s-line"></i>
+                                        </button>
+                                        <button (click)="nextImage()" class="gallery-nav next" type="button"
+                                            [appTooltip]="app.localize('Next image')">
+                                            <i class="ri-arrow-right-s-line"></i>
+                                        </button>
+                                        } } @else {
+                                        <div class="no-image-placeholder">
+                                            <i class="ri-image-line"></i>
+                                            <p class="mt-1">{{ app.localize('No images available') }}</p>
+                                        </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Item Information -->
+                            <div class="item-details">
+                                <h6>{{ modals.itemDetail.item.itemName }}</h6>
+                                @if (modals.itemDetail.item.description) {
+                                <p class="text-muted">{{ modals.itemDetail.item.description }}</p>
+                                }
+                                <div class="price h5 text-primary">
+                                    {{ formatCurrency(modals.itemDetail.item.price) }}
+                                </div>
+                            </div>
+
+                            <!-- Quantity Controls -->
+                            <div class="quantity-section mt-3">
+                                <div class="plus-minus">
+                                    <button type="button" class="plus-minus-button sub" (click)="
+                                            modals.itemDetail.quantity =
+                                                modals.itemDetail.quantity > 1 ? modals.itemDetail.quantity - 1 : 1
+                                        ">
+                                        <i class="ri-subtract-line"></i>
+                                    </button>
+                                    <input [(ngModel)]="modals.itemDetail.quantity" type="text" min="1" readonly />
+                                    <button type="button" class="plus-minus-button add"
+                                        (click)="modals.itemDetail.quantity = modals.itemDetail.quantity + 1">
+                                        <i class="ri-add-line"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+                <div class="modal-footer d-flex justify-content-center py-0">
+                    <!-- Add to Cart Button -->
+                    <button (click)="addItemWithModifiers()" type="button" class="btn btn-primary btn-round btn-lg px-3"
+                        style="min-width: 300px">
+                        <span class="price">{{ formatCurrency(getItemDetailTotal()) }}</span>
+                        <span class="label flex-grow-1">
+                            {{ modals.itemDetail.isEdit ? app.localize('Update Item') : app.localize('Add to Cart') }}
+                        </span>
+                        <span class="bg-white rounded-circle text-primary p-1">
+                            <i class="ri-arrow-right-s-line"></i>
+                        </span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div (click)="closeItemDetailModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Payment Modal - WITH CASH REGISTER SELECTION -->
+    <div [ngClass]="{ show: modals.payment.show }" class="modal has-footer fade" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Process Payment') }}</h5>
+                    <button (click)="closePaymentModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12 col-md-5">
+                            <!-- Order Totals with Processing Fees -->
+                            <div class="order-totals d-block p-0 m-0 border-0">
+                                <div class="totals-left w-100">
+                                    <div class="summary-row">
+                                        <div class="title">{{ app.localize('Subtotal') }}</div>
+                                        <div class="value">{{ formatCurrency(this.order.subTotal) }}</div>
+                                    </div>
+
+                                    <div class="summary-row">
+                                        <div class="title">{{ posSettings.isTaxOrderLevel ? order.taxRate?.taxName || app.localize('Tax') : app.localize('Tax') }}</div>
+                                        <div class="value">{{ formatCurrency(this.order.taxAmount) }}</div>
+                                    </div>
+
+                                    <div class="summary-row">
+                                        <div class="title">
+                                            {{ posSettings.isDiscountOrderLevel ? order.discount?.discountName || app.localize('Discount') : app.localize('Discount') }}
+                                        </div>
+                                        <div class="value text-danger">
+                                            -{{ formatCurrency(this.order.discountAmount) }}
+                                        </div>
+                                    </div>
+
+                                    @if(order.couponDiscount > 0){
+                                    <div class="summary-row">
+                                        <div class="title clickable" (click)="removeCoupon()">
+                                            {{ app.localize('Coupon') }}
+                                            <i class="ri-close-line"></i>
+                                        </div>
+                                        <div class="value text-danger">
+                                            -{{ formatCurrency(this.order.couponDiscount) }}
+                                        </div>
+                                    </div>
+                                    }
+
+                                    <div class="summary-row">
+                                        <div class="title">
+                                            {{ order.charge?.chargeName || app.localize('Charges') }}
+                                        </div>
+                                        <div class="value">{{ formatCurrency(this.order.chargeAmount) }}</div>
+                                    </div>
+
+                                    <div class="divider my-1"></div>
+
+                                    <div class="summary-row">
+                                        <div class="title fw-semibold">{{ app.localize('Order Total') }}</div>
+                                        <div class="value fw-semibold">
+                                            {{ formatCurrency(this.order.totalAmount) }}
+                                        </div>
+                                    </div>
+
+                                    <div class="summary-row">
+                                        <div class="title">
+                                            {{ app.localize('Tip Amount') }}
+                                        </div>
+                                        <div class="value" style="width: 120px">
+                                            <input [(ngModel)]="modals.payment.tipAmount"
+                                                (ngModelChange)="selectPaymentMethod(selectedPaymentMethod)"
+                                                [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                [placeholder]="app.getNumberPlaceholder('0.00')" id="tipAmount"
+                                                name="tipAmount" type="text" inputmode="numeric"
+                                                class="form-control text-end" />
+                                        </div>
+                                    </div>
+
+                                    @if (selectedPaymentMethod && modals.payment.processingFee > 0) {
+                                    <div class="summary-row">
+                                        <div class="title">
+                                            {{ app.localize('Processing Fee') }}
+                                            <small class="d-block text-muted">
+                                                @if (selectedPaymentMethod.isFeePercentage) { ({{
+                                                selectedPaymentMethod.processorFee
+                                                }}%) }
+                                            </small>
+                                        </div>
+                                        <div class="value">{{ formatCurrency(modals.payment.processingFee) }}</div>
+                                    </div>
+                                    }
+                                </div>
+
+                                <div class="totals-right w-100 mt-3 mb-3">
+                                    <div class="summary-total mt-2 bg-primary-light rounded p-2">
+                                        <div class="title fw-bold text-primary">
+                                            {{ app.localize('Total Payable') }}
+                                        </div>
+                                        <div class="value fw-bold text-primary">
+                                            {{ formatCurrency(modals.payment.totalPayable) }}
+                                        </div>
+                                    </div>
+                                    @if (modals.payment.changeAmount > 0) {
+                                    <div class="summary-row bg-success-light rounded mt-2 p-2">
+                                        <div class="title fw-semibold text-success">{{ app.localize('Change') }}</div>
+                                        <div class="value fw-semibold text-success">
+                                            {{ formatCurrency(modals.payment.changeAmount) }}
+                                        </div>
+                                    </div>
+                                    } @else if (modals.payment.remainingAmount > 0) {
+                                    <div class="summary-row bg-warning-light rounded mt-2 p-2">
+                                        <div class="title fw-semibold text-warning">
+                                            {{ app.localize('Due Amount') }}
+                                        </div>
+                                        <div class="value fw-semibold text-warning">
+                                            {{ formatCurrency(modals.payment.remainingAmount) }}
+                                        </div>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-7">
+                            <!-- Payment Method Selection -->
+                            <div class="form-group">
+                                <label class="control-label mb-2">{{ app.localize('Payment Method') }}</label>
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    @for (method of paymentMethods; track method.id) {
+                                    <button (click)="selectPaymentMethod(method)"
+                                        [ngClass]="{ active: selectedPaymentMethod?.id === method.id }"
+                                        class="btn btn-light btn-round">
+                                        {{ method.methodName }}
+                                        @if (method.processorFee > 0) {
+                                        <small class="d-block text-muted">
+                                            +{{
+                                            method.isFeePercentage
+                                            ? method.processorFee + '%'
+                                            : formatCurrency(method.processorFee)
+                                            }}
+                                            {{ app.localize('fee') }}
+                                        </small>
+                                        }
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <!-- Cash Register Selection - ONLY for Cash Payments -->
+                                @if (selectedPaymentMethod?.id === 3) {
+                                <div class="col-12 col-md-6 form-group">
+                                    <label class="control-label">
+                                        {{ app.localize('Cash Register') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select [(ngModel)]="order.registerId" id="cashRegisterSelect"
+                                        name="cashRegisterSelect" [items]="openedCashRegisters" bindLabel="registerName"
+                                        bindValue="id" [searchable]="true" [clearable]="false"
+                                        [placeholder]="app.localize('Choose an option')"
+                                        class="form-control"></ng-select>
+                                </div>
+                                }
+                                <!-- Payment Reference (conditional for Gift Card) -->
+                                @if (selectedPaymentMethod) {
+                                <div class="col-12 col-md-6 form-group">
+                                    <label>
+                                        {{
+                                        selectedPaymentMethod.id === 4
+                                        ? app.localize('Gift Card Number')
+                                        : app.localize('Payment Reference')
+                                        }}
+                                    </label>
+                                    <input [(ngModel)]="modals.payment.paymentReference" id="paymentReference"
+                                        name="paymentReference" type="text" class="form-control" placeholder="{{
+                                            selectedPaymentMethod.id === 4
+                                                ? app.localize('Enter gift card number')
+                                                : app.localize('Optional reference')
+                                        }}" />
+                                </div>
+                                }
+                            </div>
+
+                            <!-- Payment Keypad -->
+                            <div class="payment-keypad mt-3" [ngClass]="{
+                                    disabled: selectedPaymentMethod?.id == 4 || selectedPaymentMethod?.id == 5
+                                }">
+                                <label class="control-label mb-2">{{ app.localize('Amount Received') }}</label>
+                                <input [(ngModel)]="modals.payment.paidAmount" (ngModelChange)="updatePaidAmount()"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                    [placeholder]="app.getNumberPlaceholder('0.00')" id="paidAmount" name="paidAmount"
+                                    type="text" inputmode="numeric" maxlength="18"
+                                    class="form-control form-control-lg" />
+                                <div class="keypad-grid">
+                                    <button (click)="keypadInput('1')" class="btn btn-light">{{app.localize('1')}}</button>
+                                    <button (click)="keypadInput('2')" class="btn btn-light">{{app.localize('2')}}</button>
+                                    <button (click)="keypadInput('3')" class="btn btn-light">{{app.localize('3')}}</button>
+                                    <button (click)="keypadInput('4')" class="btn btn-light">{{app.localize('4')}}</button>
+                                    <button (click)="keypadInput('5')" class="btn btn-light">{{app.localize('5')}}</button>
+                                    <button (click)="keypadInput('6')" class="btn btn-light">{{app.localize('6')}}</button>
+                                    <button (click)="keypadInput('7')" class="btn btn-light">{{app.localize('7')}}</button>
+                                    <button (click)="keypadInput('8')" class="btn btn-light">{{app.localize('8')}}</button>
+                                    <button (click)="keypadInput('9')" class="btn btn-light">{{app.localize('9')}}</button>
+                                    <button (click)="keypadInput(app.getNumberFormat().decimalSeparator)"
+                                        class="btn btn-light">
+                                        {{ app.getNumberFormat().decimalSeparator }}
+                                    </button>
+                                    <button (click)="keypadInput('0')" class="btn btn-light">{{app.localize('0')}}</button>
+                                    <button (click)="keypadInput('backspace')" class="btn btn-light">
+                                        <i class="ri-arrow-left-line"></i>
+                                    </button>
+                                    <button (click)="keypadInput('clear')" class="btn btn-danger keypad-clear">
+                                        {{ app.localize('Clear') }}
+                                    </button>
+                                    <button (click)="exactCash()" class="btn btn-warning keypad-exact">
+                                        {{ app.localize('Exact') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-0" [ngClass]="{ disabled: modals.payment.loading }">
+                    <button (click)="closePaymentModal()" class="btn btn-light btn-round">
+                        <i class="ri-close-line"></i>
+                        {{ app.localize('Cancel') }}
+                    </button>
+                    <button (click)="processPayment()" [disabled]="!validatePayment()"
+                        [ngClass]="{ 'disabled btn-progress': modals.payment.loading }"
+                        class="btn btn-primary btn-round">
+                        <i class="ri-secure-payment-line"></i>
+                        {{ app.localize('Pay') }}
+                        @if (modals.payment.totalPayable > 0) {
+                        <span>{{ formatCurrency(modals.payment.totalPayable) }}</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div (click)="closePaymentModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Customer Change Modal -->
+    <div [ngClass]="{ show: modals.customerChange.show }" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Customer Selection') }}</h5>
+                    <button (click)="closeCustomerChangeModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <ul class="nav nav-pills mb-3">
+                        <li class="nav-item flex-grow-1">
+                            <a href="javascript:void(0)" (click)="modals.customerChange.activeTab = 'search'"
+                                [ngClass]="{ active: modals.customerChange.activeTab === 'search' }" class="nav-link">
+                                <i class="ri-search-line"></i>
+                                {{ app.localize('Search Customer') }}
+                            </a>
+                        </li>
+                        <li class="nav-item flex-grow-1">
+                            <a href="javascript:void(0)" (click)="modals.customerChange.activeTab = 'add'"
+                                [ngClass]="{ active: modals.customerChange.activeTab === 'add' }" class="nav-link">
+                                <i class="ri-user-add-line"></i>
+                                {{ app.localize('Add New Customer') }}
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        @if (modals.customerChange.activeTab === 'search') {
+                        <div class="tab-pane active">
+                            <div class="mb-3">
+                                <input type="text" [(ngModel)]="modals.customerChange.searchValue"
+                                    (ngModelChange)="searchCustomers()" class="form-control input-search-icon"
+                                    placeholder="{{ app.localize('Search by name or phone...') }}" />
+                            </div>
+
+                            @if (modals.customerChange.loading) {
+                            <div class="d-flex justify-content-center py-4">
+                                <div class="loader"></div>
+                            </div>
+                            } @else {
+                            <div class="list-group selectable style-1">
+                                <div (click)="
+                                        selectCustomer({
+                                            id: 1,
+                                            fullName: 'Walk-in Customer',
+                                            loyaltyPoints: 0,
+                                            totalSpent: 0,
+                                            isActive: true
+                                        })
+                                    " class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="fs-6 fw-bold">{{ app.localize('Walk-in Customer') }}</div>
+                                            <small class="text-muted">{{ app.localize('Default customer') }}</small>
+                                        </div>
+                                        <span class="badge badge-primary">{{ app.localize('Default') }}</span>
+                                    </div>
+                                </div>
+
+                                @for (customer of modals.customerChange.searchResults; track customer.id) {
+                                <div (click)="selectCustomer(customer)" class="list-group-item list-group-item-action">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <div class="fs-6 fw-bold">{{ customer.fullName }}</div>
+                                            <small class="text-muted">{{ customer.phone || customer.email }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="badge badge-primary mb-1">
+                                                <i class="ri-medal-line"></i>
+                                                {{ customer.loyaltyPoints }}
+                                            </div>
+                                            <small class="d-block text-muted">
+                                                {{ app.localize('Spent') }}:
+                                                {{ formatCurrency(customer.totalSpent) }}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                }
+                            </div>
+                            }
+                        </div>
+                        } @if (modals.customerChange.activeTab === 'add') {
+                        <div class="tab-pane active">
+                            <form #customerForm="ngForm"
+                                [ngClass]="{ 'was-validated': modals.customerChange.validated }"
+                                (ngSubmit)="addNewCustomer(customerForm)" autocomplete="off" novalidate>
+                                <!-- Hidden ID field -->
+                                <input [(ngModel)]="modals.customerChange.newCustomer.id" type="hidden" name="id" />
+
+                                <div class="row">
+                                    <!-- Customer Type -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="customerType" class="form-label">
+                                                {{ app.localize('Customer Type') }}
+                                                <code>*</code>
+                                            </label>
+                                            <ng-select [(ngModel)]="modals.customerChange.newCustomer.customerType"
+                                                [items]="[
+                                                    { id: 'Regular', name: app.localize('Regular') },
+                                                    { id: 'VIP', name: app.localize('VIP') },
+                                                    { id: 'Corporate', name: app.localize('Corporate') }
+                                                ]" [clearable]="false" [searchable]="false"
+                                                [placeholder]="app.localize('Choose an option')" bindLabel="name"
+                                                bindValue="id" [bindValue]="'Regular'" name="customerType"
+                                                class="form-control"></ng-select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Full Name -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="fullName" class="form-label">
+                                                {{ app.localize('Full Name') }}
+                                                <code>*</code>
+                                            </label>
+                                            <input [(ngModel)]="modals.customerChange.newCustomer.fullName" type="text"
+                                                id="fullName" name="fullName" class="form-control" maxlength="100"
+                                                required />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Email -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="email" class="form-label">
+                                                {{ app.localize('Email') }}
+                                            </label>
+                                            <input [(ngModel)]="modals.customerChange.newCustomer.email" type="email"
+                                                id="email" name="email" class="form-control" maxlength="100" />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('Please enter a valid email address.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Phone -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="phone" class="form-label">
+                                                {{ app.localize('Phone') }}
+                                            </label>
+                                            <input [(ngModel)]="modals.customerChange.newCustomer.phone" type="tel"
+                                                id="phone" name="phone" class="form-control" maxlength="20"
+                                                pattern="^\+?[0-9]{7,20}$" />
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('Please enter a valid phone number.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Birth Date -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="birthDate" class="form-label">
+                                                {{ app.localize('Birth Date') }}
+                                            </label>
+                                            <div class="input-with-icon">
+                                                <input [(ngModel)]="modals.customerChange.newCustomer.birthDate"
+                                                    type="date" name="birthDate" id="birthDate"
+                                                    onclick="this.showPicker()" class="form-control" />
+                                                @if (modals.customerChange.newCustomer.birthDate) {
+                                                <button (click)="modals.customerChange.newCustomer.birthDate = null"
+                                                    type="button" class="input-icon-end" tabindex="-1">
+                                                    <i class="ri-close-line"></i>
+                                                </button>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Address Fields -->
+                                    <div class="col-md-12">
+                                        <div class="form-group">
+                                            <label for="address" class="form-label">
+                                                {{ app.localize('Address') }}
+                                            </label>
+                                            <textarea [(ngModel)]="modals.customerChange.newCustomer.address"
+                                                id="address" name="address" class="form-control" rows="2"
+                                                maxlength="255"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3 d-flex justify-content-end">
+                                    <button [ngClass]="{ 'disabled btn-progress': modals.customerChange.submitted }"
+                                        type="submit" class="btn btn-primary btn-round">
+                                        <i class="ri-save-3-line"></i>
+                                        {{ app.localize('Save') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div (click)="closeCustomerChangeModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Cash Register Modal -->
+    <div [ngClass]="{ show: modals.cashRegister.show }" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Cash Registers') }}</h5>
+                    <button (click)="closeCashRegisterModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (modals.cashRegister.loading) {
+                    <div class="text-center py-4">
+                        <div class="spinner-border"></div>
+                        <p>{{ app.localize('Loading registers...') }}</p>
+                    </div>
+                    } @else {
+                    <div class="row g-3">
+                        @for (register of cashRegisters; track register.id) {
+                        <div class="col-md-6">
+                            <div class="cash-register p-3" [ngClass]="{ opened: isCashRegisterOpen(register) }">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <div>
+                                        <div class="fs-5 fw-bold">
+                                            {{ register.registerName || '-' }}
+                                        </div>
+                                        <small class="text-muted">{{ register.description }}</small>
+                                    </div>
+                                    <div>
+                                        @if(!isCashRegisterOpen(register)){
+                                        <span class="badge badge-warning">{{ app.localize('Closed') }}</span>
+                                        }@else {
+                                        <span class="badge badge-primary">{{ app.localize('Open') }}</span>
+                                        }
+                                    </div>
+                                </div>
+                                @if(!isCashRegisterOpen(register)){
+                                <form #openRegisterForm="ngForm"
+                                    (ngSubmit)="openCashRegister(openRegisterForm, register.id)" autocomplete="off"
+                                    novalidate>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group">
+                                            <label class="form-label">
+                                                {{ app.localize('Opening Cash') }}
+                                                <code>*</code>
+                                            </label>
+                                            <input [ngModel]="null"
+                                                [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                [placeholder]="app.getNumberPlaceholder('0.00')" type="text"
+                                                inputmode="numeric" name="openingCash" class="form-control" required />
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label class="form-label">
+                                                {{ app.localize('Note') }}
+                                            </label>
+                                            <input [ngModel]="null" type="text" maxlength="255" name="notes"
+                                                class="form-control" />
+                                        </div>
+                                    </div>
+                                    <button [ngClass]="{ disabled: register.submitted }" type="submit"
+                                        class="btn btn-primary btn-round btn-sm mt-1">
+                                        <i class="ri-lock-unlock-line"></i>
+                                        {{ app.localize('Open Register') }}
+                                    </button>
+                                </form>
+                                }@else {
+                                <form #closeRegisterForm="ngForm"
+                                    (ngSubmit)="closeCashRegister(closeRegisterForm, register.id)" autocomplete="off"
+                                    novalidate>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group">
+                                            <label class="form-label">
+                                                {{ app.localize('Closing Cash') }}
+                                                <code>*</code>
+                                            </label>
+                                            <input [ngModel]="null"
+                                                [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                [placeholder]="app.getNumberPlaceholder('0.00')" type="text"
+                                                inputmode="numeric" name="closingCash" class="form-control" required />
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label class="form-label">
+                                                {{ app.localize('Note') }}
+                                            </label>
+                                            <input [ngModel]="null" type="text" maxlength="255" name="notes"
+                                                class="form-control" />
+                                        </div>
+                                    </div>
+                                    <button [ngClass]="{ disabled: register.submitted }" type="submit"
+                                        class="btn btn-warning btn-round btn-sm mt-1">
+                                        <i class="ri-lock-line"></i>
+                                        {{ app.localize('Close Register') }}
+                                    </button>
+                                </form>
+                                }
+                            </div>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeCashRegisterModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Active Orders Modal -->
+    <div [ngClass]="{ show: modals.activeOrders.show }" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Active Orders') }}</h5>
+                    <button (click)="closeActiveOrdersModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (modals.activeOrders.loading) {
+                    <div class="d-flex align-items-center justify-content-center py-4">
+                        <div class="loader"></div>
+                    </div>
+                    } @else if (activeOrders.length === 0) {
+                    <div class="text-center py-4">
+                        <i class="ri-file-list-3-line fs-2 text-muted"></i>
+                        <p class="mt-1">{{ app.localize('No Active Orders') }}</p>
+                    </div>
+                    } @else {
+                    <div class="row g-3">
+                        @for (order of activeOrders; track order.id) {
+                        <div class="col-md-6">
+                            <div class="card order-card" (click)="openOrderForEdit(order.id)">
+                                <div class="card-body p-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="fs-6 fw-bold">{{ app.localize('Order #') }}{{ order.id }}</div>
+                                        <div [innerHTML]="getOrderStatusBadge(order.status)"></div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between gap-1 mt-2">
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @if(order.table){
+                                            <div class="text-muted small d-flex gap-1 align-items-center">
+                                                <i class="icon-table ri-1x"></i>
+                                                {{ order.table.tableNumber }}
+                                            </div>
+                                            }
+                                            <div class="text-muted small d-flex gap-1 align-items-center">
+                                                <i class="ri-user-line ri-1x"></i>
+                                                {{ order.customer?.fullName }}
+                                            </div>
+                                            @if(order.waiterOrDriver){
+                                            <div class="text-muted small d-flex gap-1 align-items-center">
+                                                <i class="icon-waiter ri-1x"></i>
+                                                {{ order.waiterOrDriver }}
+                                            </div>
+                                            }
+                                        </div>
+                                        <div>
+                                            <div class="text-muted small d-flex gap-1 align-items-center">
+                                                <i class="ri-time-line ri-1x"></i>
+                                                {{ app.formatTimeByDateTime(order.orderDate) }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <div [innerHTML]="getOrderTypeBadge(order.orderType)"></div>
+                                        <div class="fs-6 fw-bold text-primary">
+                                            {{ formatCurrency(order.totalAmount) }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeActiveOrdersModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Split Bill Modal -->
+    <div [ngClass]="{ show: modals.splitBill.show }" class="modal has-footer fade" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Split Bill') }}</h5>
+                    <button (click)="closeSplitBillModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body" [ngClass]="{ 'disabled loader-full': modals.splitBill.loading }">
+                    @if (!modals.splitBill.loading) {
+                    <div class="row">
+                        <!-- Split Configuration -->
+                        <div class="col-md-12 mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="splitCustomer" class="form-label">
+                                        {{ app.localize('Customer for New Order') }}
+                                    </label>
+                                    <ng-select [(ngModel)]="modals.splitBill.newCustomerId"
+                                        [items]="[{ id: order.customerId, fullName: order.customerName }]"
+                                        bindLabel="fullName" bindValue="id" [searchable]="false" [clearable]="false"
+                                        class="form-control"></ng-select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="splitGuests" class="form-label">
+                                        {{ app.localize('Guests for New Order') }}
+                                    </label>
+                                    <input appIntegerOnly type="number" [(ngModel)]="modals.splitBill.guestCount"
+                                        min="1" max="255" class="form-control" id="splitGuests" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Original Order Items -->
+                        <div class="col-md-6">
+                            <div class="heading heading-form-title">
+                                {{ app.localize('Select Items to Split') }}
+                            </div>
+                            <div class="split-items-list">
+                                @for (cartItem of cart; track cartItem.id) {
+                                <div class="card mb-2">
+                                    <div class="card-body p-2">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="item-info flex-grow-1">
+                                                <h6 class="mb-1">{{ cartItem.item.itemName }}</h6>
+                                                <small class="text-muted d-block">
+                                                    {{ formatCurrency(cartItem.unitPrice) }} × {{ cartItem.quantity }} =
+                                                    {{ formatCurrency(cartItem.totalAmount) }}
+                                                </small>
+                                                @if (cartItem.modifiers.length > 0) {
+                                                <div class="modifiers mt-1">
+                                                    <small class="text-muted">
+                                                        {{ getCombinedModifierNames(cartItem) }}
+                                                    </small>
+                                                </div>
+                                                }
+                                            </div>
+                                            <div class="split-controls ms-2">
+                                                <div class="d-flex gap-0">
+                                                    <button type="button"
+                                                        class="btn btn-icon btn-light rounded-end-0 px-2"
+                                                        (click)="decrementSplitQuantity(cartItem)" [disabled]="
+                                                            !getSplitQuantity(cartItem) ||
+                                                            getSplitQuantity(cartItem) <= 0
+                                                        ">
+                                                        <i class="ri-subtract-line"></i>
+                                                    </button>
+                                                    <input type="text" class="form-control rounded-0 text-center"
+                                                        style="width: 40px" [value]="getSplitQuantity(cartItem)"
+                                                        (change)="setSplitQuantity(cartItem, $any($event.target).value)"
+                                                        min="0" [max]="cartItem.quantity" readonly />
+                                                    <button type="button"
+                                                        class="btn btn-icon btn-primary rounded-start-0 px-2"
+                                                        (click)="incrementSplitQuantity(cartItem)"
+                                                        [disabled]="getSplitQuantity(cartItem) >= cartItem.quantity">
+                                                        <i class="ri-add-line"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Split Summary -->
+                        <div class="col-md-6">
+                            <div class="heading heading-form-title">
+                                {{ app.localize('Split Summary') }}
+                            </div>
+                            <div class="card">
+                                <div class="card-body p-3">
+                                    <h6>{{ app.localize('Items for New Order') }}</h6>
+                                    @if (getSplitItems().length === 0) {
+                                    <div class="alert alert-info">
+                                        {{
+                                        app.localize(
+                                        'Use the quantity controls to select items for the new split order'
+                                        )
+                                        }}
+                                    </div>
+                                    } @else {
+                                    <ul class="list-group list-group-flush">
+                                        @for (splitItem of getSplitItems(); track splitItem.cartItemId) {
+                                        <li
+                                            class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                            <div>
+                                                <div>{{ splitItem.itemName }}</div>
+                                                <small class="text-muted">
+                                                    {{ app.localize('Qty') }}: {{ splitItem.quantity }}
+                                                    @if (splitItem.modifiers) {
+                                                    <span class="d-block">{{ splitItem.modifiers }}</span>
+                                                    }
+                                                </small>
+                                            </div>
+                                            <span>{{ formatCurrency(splitItem.totalAmount) }}</span>
+                                        </li>
+                                        }
+                                    </ul>
+
+                                    <div class="divider my-2"></div>
+
+                                    <div class="d-flex justify-content-between fw-bold">
+                                        <div>{{ app.localize('Split Items Total') }}:</div>
+                                        <div>{{ formatCurrency(getSplitTotal()) }}</div>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    }
+                </div>
+                <div class="modal-footer py-0">
+                    <button (click)="closeSplitBillModal()" class="btn btn-secondary btn-round">
+                        <i class="ri-close-line"></i>
+                        {{ app.localize('Cancel') }}
+                    </button>
+                    <button (click)="processSplitBill()" [disabled]="!canProcessSplit()"
+                        class="btn btn-primary btn-round">
+                        <i class="ri-scissors-line"></i>
+                        {{ app.localize('Split Order') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div (click)="closeSplitBillModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Kitchen Print Modal -->
+    <div [ngClass]="{ show: modals.kitchenPrint.show }" class="modal has-footer fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Kitchen Order') }}</h5>
+                    <button (click)="closeKitchenPrintModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (modals.kitchenPrint.orderData) {
+                    <div class="kitchen-invoice" id="kitchen-invoice">
+                        <div class="header">
+                            <h4>{{ app.localize('KITCHEN ORDER') }}</h4>
+                            <small>{{ modals.kitchenPrint.orderData.branchName }}</small>
+                        </div>
+
+                        <div class="order-info">
+                            <div class="d-flex justify-content-between mb-1">
+                                <div>
+                                    @if(modals.kitchenPrint.orderData.orderNumber){
+                                    {{ app.localize('Order #') + modals.kitchenPrint.orderData.orderNumber }}
+                                    }@else{
+                                    {{ app.localize('New Order') }}
+                                    }
+                                </div>
+                                <div class="text-end">
+                                    {{ modals.kitchenPrint.orderData.orderDate }}
+                                </div>
+                            </div>
+                            <div class="mb-1">
+                                {{ app.localize('Order Type') }}:
+                                {{ modals.kitchenPrint.orderData.orderType }}
+                            </div>
+                            @if(modals.kitchenPrint.orderData.table){
+                            <div class="mb-1">
+                                {{ app.localize('Table') }}: {{ modals.kitchenPrint.orderData.table }}
+                            </div>
+                            } @if(modals.kitchenPrint.orderData.waiterOrDriver){
+                            <div class="mb-1">
+                                {{ app.localize('Waiter/Driver') }}:
+                                {{ modals.kitchenPrint.orderData.waiterOrDriver }}
+                            </div>
+                            }
+                        </div>
+
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>{{ app.localize('Item') }}</th>
+                                    <th class="text-end">{{ app.localize('Qty') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (item of modals.kitchenPrint.orderData.items; track $index) {
+                                <tr>
+                                    <td>
+                                        {{ item.name }}
+                                        @if (item.modifiers?.length > 0) { @for (modifier of item.modifiers; track
+                                        $index) {
+                                        <span class="modifier">+ {{ modifier }}</span>
+                                        } }
+                                    </td>
+                                    <td class="text-end">{{ item.quantity }}</td>
+                                </tr>
+                                }
+                            </tbody>
+                        </table>
+
+                        @if (modals.kitchenPrint.orderData.specialInstructions) {
+                        <div class="footer">*** {{ modals.kitchenPrint.orderData.specialInstructions }} ***</div>
+                        }
+                    </div>
+                    }
+                </div>
+                <div class="modal-footer py-0">
+                    <button (click)="closeKitchenPrintModal()" class="btn btn-secondary btn-round">
+                        <i class="ri-close-line"></i>
+                        {{ app.localize('Close') }}
+                    </button>
+                    <button class="btn btn-primary btn-round" (click)="printKitchenOrderDocument()">
+                        <i class="ri-printer-line"></i>
+                        {{ app.localize('Print') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div (click)="closeKitchenPrintModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Data Sync Modal -->
+    <div [ngClass]="{ show: modals.dataSync.show }" class="modal has-footer fade" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ app.localize('Data Synchronization') }}</h5>
+                    <button (click)="closeDataSyncModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (offlineOrders.length === 0) {
+                    <div class="text-center py-4">
+                        <i class="ri-check-double-line fs-2 text-success"></i>
+                        <h4>{{ app.localize('All Synced!') }}</h4>
+                        <p class="text-muted">{{ app.localize('No offline orders to sync.') }}</p>
+                    </div>
+                    } @else {
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6>{{ app.localize('Offline Orders') }} ({{ offlineOrders.length }})</h6>
+                            <div>
+                                <button class="btn btn-sm btn-round btn-outline-primary me-2"
+                                    (click)="selectAllOrders()">
+                                    {{ app.localize('Select All') }}
+                                </button>
+                                <button class="btn btn-sm btn-round btn-light text-danger"
+                                    (click)="clearOrderSelection()">
+                                    {{ app.localize('Clear') }}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="list-group mt-3">
+                            @for (order of offlineOrders; track order.id) {
+                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                        [checked]="modals.dataSync.selectedOrderIds.includes(order.id)"
+                                        (change)="toggleOrderSelection(order.id)" [disabled]="
+                                            modals.dataSync.loading &&
+                                            modals.dataSync.syncingOrderIds.includes(order.id)
+                                        " />
+                                    <label class="form-check-label ms-2">
+                                        <strong>{{ app.localize('Order') }} #{{ order.id }}</strong>
+                                        <small class="d-block text-muted">
+                                            {{ formatDateTime(order.createdAt) }}
+                                        </small>
+                                    </label>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    @if (modals.dataSync.syncingOrderIds.includes(order.id)) {
+                                    <span class="badge badge-warning">
+                                        <i class="ri-loader-4-line spinning me-1"></i>
+                                        {{ app.localize('Syncing...') }}
+                                    </span>
+                                    } @else if (modals.dataSync.successIds.includes(order.id)) {
+                                    <span class="badge badge-success">
+                                        <i class="ri-check-line me-1"></i>
+                                        {{ app.localize('Synced') }}
+                                    </span>
+                                    } @else if (modals.dataSync.failedIds.includes(order.id)) {
+                                    <span class="badge badge-danger">
+                                        <i class="ri-close-line me-1"></i>
+                                        {{ app.localize('Failed') }}
+                                    </span>
+                                    } @else {
+                                    <button class="btn btn-icon btn-sm btn-danger"
+                                        (click)="deleteOfflineOrder(order.id)" [appTooltip]="app.localize('Remove')"
+                                        [disabled]="modals.dataSync.loading">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+                            }
+                        </div>
+                    </div>
+                    }
+                </div>
+                <div class="modal-footer py-0">
+                    <button (click)="closeDataSyncModal()" class="btn btn-secondary btn-round">
+                        <i class="ri-close-line"></i>
+                        {{ app.localize('Close') }}
+                    </button>
+                    <button (click)="syncSelectedOrders()" class="btn btn-primary btn-round"
+                        [disabled]="modals.dataSync.loading || modals.dataSync.selectedOrderIds.length === 0">
+                        <i class="ri-refresh-line" [ngClass]="{ spinning: modals.dataSync.loading }"></i>
+                        {{ app.localize('Sync Selected') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div (click)="closeDataSyncModal()" class="modal-backdrop"></div>
+    </div>
+</div>

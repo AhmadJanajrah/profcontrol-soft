@@ -1,0 +1,46 @@
+<svg width="300" height="200" viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#9CA3AF" stroke-width="1">
+  <!-- Outer Container -->
+  <rect x="0.5" y="0.5" width="299" height="199" rx="8" fill="white" stroke="#9CA3AF"/>
+
+  <!-- Top Bar -->
+  <rect x="0.5" y="0.5" width="299" height="30" fill="white" stroke="#9CA3AF" />
+
+  <!-- Collapse/Expand Icon (Chevron) -->
+  <polyline points="20,10 28,15 20,20" stroke="#9CA3AF" fill="none" stroke-width="2" />
+
+  <!-- Profile Circle -->
+  <circle cx="275" cy="15" r="8" />
+
+  <!-- Collapsible Sidebar -->
+  <rect x="0.5" y="30.5" width="60" height="169" fill="white" stroke="#9CA3AF" />
+
+  <!-- Sidebar Menu Items -->
+  <rect x="10" y="40" width="40" height="10" rx="2" />
+  <rect x="10" y="60" width="40" height="10" rx="2" />
+  <rect x="10" y="80" width="40" height="10" rx="2" />
+  <rect x="10" y="100" width="40" height="10" rx="2" />
+
+  <!-- Main Content Area -->
+  <rect x="60.5" y="30.5" width="239" height="169" fill="white" stroke="#9CA3AF" />
+
+  <!-- Main Content Circle -->
+  <circle cx="90" cy="60" r="12"/>
+
+  <!-- Main Content Header Text Lines -->
+  <line x1="110" y1="52" x2="170" y2="52"/>
+  <line x1="110" y1="60" x2="160" y2="60"/>
+  <line x1="110" y1="68" x2="155" y2="68"/>
+
+  <!-- Body Grid -->
+  <!-- Row 1 -->
+  <line x1="80" y1="95" x2="140" y2="95"/>
+  <line x1="80" y1="103" x2="140" y2="103"/>
+  <line x1="160" y1="95" x2="220" y2="95"/>
+  <line x1="160" y1="103" x2="220" y2="103"/>
+
+  <!-- Row 2 -->
+  <line x1="80" y1="125" x2="140" y2="125"/>
+  <line x1="80" y1="133" x2="140" y2="133"/>
+  <line x1="160" y1="125" x2="220" y2="125"/>
+  <line x1="160" y1="133" x2="220" y2="133"/>
+</svg>

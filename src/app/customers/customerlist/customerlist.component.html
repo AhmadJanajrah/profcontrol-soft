@@ -1,0 +1,44 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Customers') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Customers') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        @if (permissions.canAdd) {
+        <!-- Add new customer button -->
+        <a [routerLink]="['/customers/add']" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </a>
+        }
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Customers List Card -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Customers DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

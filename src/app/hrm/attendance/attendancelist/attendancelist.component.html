@@ -1,0 +1,252 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('Attendance') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">{{ app.localize('HRM') }}</li>
+                <li class="breadcrumb-item active">{{ app.localize('Attendance') }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <a [routerLink]="['/hrm/attendance/add']" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add Attendance') }}
+        </a>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card mb-2">
+        <div class="card-body">
+            <form (ngSubmit)="applyFilters()" novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label class="form-label">{{ app.localize('From') }}</label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateFrom"
+                                type="date"
+                                name="dateFrom"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateFrom) {
+                            <button
+                                (click)="filters.dateFrom = null"
+                                type="button"
+                                class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label class="form-label">{{ app.localize('To') }}</label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateTo"
+                                type="date"
+                                name="dateTo"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateTo) {
+                            <button (click)="filters.dateTo = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Attendance Modal -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: modal.show }"
+            [attr.inert]="!modal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ modal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': modal.loading }" class="modal-body">
+                        @if (!modal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': modal.validated }"
+                            (ngSubmit)="submitEdit(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <table class="table table-bordered mb-3">
+                                <tr>
+                                    <th class="bg-light">{{ app.localize('Employee') }}</th>
+                                    <td>
+                                        {{ 'EMP' + editAttendance.employeeId.toString().padStart(5, '0') }} -
+                                        {{ editAttendance.employeeName }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light">{{ app.localize('Shift') }}</th>
+                                    <td>{{ editAttendance.shiftName }}</td>
+                                </tr>
+                                <tr>
+                                    <th class="bg-light">{{ app.localize('Date') }}</th>
+                                    <td>{{ editAttendance.attendanceDate }}</td>
+                                </tr>
+                            </table>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            {{ app.localize('Clock In') }}
+                                            <code>*</code>
+                                        </label>
+                                        <div class="input-with-icon">
+                                            <input
+                                                [(ngModel)]="editAttendance.clockIn"
+                                                name="clockIn"
+                                                type="time"
+                                                class="form-control"
+                                                onclick="this.showPicker()"
+                                                required />
+                                            @if (editAttendance.clockIn) {
+                                            <button
+                                                (click)="editAttendance.clockIn = null"
+                                                type="button"
+                                                class="input-icon-end"
+                                                tabindex="-1">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                            }
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            {{ app.localize('Clock Out') }}
+                                            <code>*</code>
+                                        </label>
+                                        <div class="input-with-icon">
+                                            <input
+                                                [(ngModel)]="editAttendance.clockOut"
+                                                name="clockOut"
+                                                type="time"
+                                                class="form-control"
+                                                onclick="this.showPicker()"
+                                                required />
+                                            @if (editAttendance.clockOut) {
+                                            <button
+                                                (click)="editAttendance.clockOut = null"
+                                                type="button"
+                                                class="input-icon-end"
+                                                tabindex="-1">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                            }
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Status') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="editAttendance.status"
+                                    [items]="statusOptions"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    name="status"
+                                    [clearable]="false"></ng-select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">{{ app.localize('Notes') }}</label>
+                                <textarea
+                                    [(ngModel)]="editAttendance.notes"
+                                    name="notes"
+                                    rows="2"
+                                    class="form-control"
+                                    maxlength="255"></textarea>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <div [ngClass]="{ disabled: modal.submitted }" class="form-actions py-0">
+                                <button (click)="closeModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ app.localize('Cancel') }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': modal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ app.localize('Update') }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

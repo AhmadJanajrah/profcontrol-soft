@@ -1,0 +1,150 @@
+<div class="page-header">
+    <!-- Header Section -->
+    <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+        <div class="flex-grow-1 status-indicator">
+            <i [class]="getSignalRStatusIcon() + ' me-1 ' + getSignalRStatusClass()"></i>
+            <span [class]="getSignalRStatusClass()">{{ app.localize(signalRState) }}</span>
+        </div>
+
+        <!-- Filter Buttons -->
+        <div class="flex-grow-1 d-flex flex-wrap gap-2">
+            @for (filter of filterOptions; track filter.key) {
+            <button
+                (click)="applyFilters(filter.key)"
+                [ngClass]="activeFilter === filter.key ? 'active' : ''"
+                class="btn btn-light btn-round">
+                <i class="{{ filter.icon }}"></i>
+                {{ app.localize(filter.label) }}
+            </button>
+            }
+        </div>
+
+        <div class="flex-grow-1" style="max-width: 300px">
+            <!-- Search Box -->
+            <input
+                [(ngModel)]="searchTerm"
+                (ngModelChange)="searchOrders()"
+                type="text"
+                class="form-control input-search-icon input-round"
+                [placeholder]="app.localize('Search orders...')" />
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="main-content">
+    <!-- Loading State -->
+    @if (isLoading) {
+    <div class="text-center py-5">
+        <div class="d-flex justify-content-center mb-3">
+            <div class="loader"></div>
+        </div>
+    </div>
+    }
+
+    <!-- Empty State -->
+    @if (!isLoading && filteredOrders.length === 0) {
+    <div class="d-flex flex-column justify-content-center align-items-center py-4 text-center">
+        <i class="ri-restaurant-line fs-2 text-muted"></i>
+        <p class="text-muted mt-1">
+            @if (activeFilter === 0) {
+            {{ app.localize('No order found') }}
+            } @else {
+            {{ app.localize('No orders match the current filter') }}
+            }
+        </p>
+    </div>
+    }
+
+    <!-- Orders Grid -->
+    @if (!isLoading && filteredOrders.length > 0) {
+    <div class="row g-2">
+        @for (order of filteredOrders; track order.id) {
+        <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+            <div class="kitchen-order">
+                <!-- Order Header -->
+                <div class="header">
+                    <div>
+                        <div class="fw-bold mb-1">{{ app.localize('Order #:') }}{{ order.id }}</div>
+                        <div class="flex-grow-1 d-flex flex-wrap align-items-center">
+                            <div class="info-item me-2">
+                                <i class="ri-box-3-line ri-1x"></i>
+                                {{ getOrderTypeDisplayName(order.orderType) }}
+                            </div>
+                            @if (order.table) {
+                            <div class="info-item me-2">
+                                <i class="icon-table ri-1x"></i>
+                                {{ order.table?.tableNumber }}
+                            </div>
+                            }
+                            <div class="info-item me-2">
+                                <i class="ri-group-3-line ri-1x"></i>
+                                {{ order.guests }} {{ app.localize('Guests') }}
+                            </div>
+                            @if (order.waiterOrDriver) {
+                            <div class="info-item me-2">
+                                <i class="icon-waiter ri-1x"></i>
+                                {{ order.waiterOrDriver }}
+                            </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="text-end">
+                        <div>
+                            <span class="badge mb-1" [ngClass]="getStatusBadgeClass(order.status)">
+                                {{ getStatusDisplayName(order.status) }}
+                            </span>
+                        </div>
+                        <div class="small">{{ app.formatTimeByDateTime(order.orderDate) }}</div>
+                    </div>
+                </div>
+
+                <!-- Order Items -->
+                <div class="body">
+                    <div class="items-container">
+                        @for (item of order.orderItems; track item.id) {
+                        <div class="order-item">
+                            <div class="item-details">
+                                <div class="item-name">{{ item.item.itemName }}</div>
+                                @if (item.orderItemModifiers?.length) {
+                                <small class="text-muted small">
+                                    {{ formatModifiers(item.orderItemModifiers) }}
+                                </small>
+                                }
+                            </div>
+                            <span class="badge badge-primary">{{ item.quantity }}</span>
+                        </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Order Footer -->
+                <div class="footer">
+                    <div class="d-flex gap-2 justify-content-between align-items-center">
+                        <!-- Special Instructions -->
+                        <div>
+                            <i class="ri-information-line ri-1x me-1"></i>
+                            <small>{{ order.specialInstructions }}</small>
+                        </div>
+                        <div>
+                            @if (order.status === OrderStatus.InProgress) {
+                            <button
+                                [appTooltip]="app.localize('Mark as Ready')"
+                                (click)="markOrderReady(order.id)"
+                                [ngClass]="{ 'disable btn-progress': order.isUpdating }"
+                                class="btn btn-icon btn-success btn-sm"
+                                type="button">
+                                <i class="ri-check-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+                    <div class="priority"></div>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+    }
+</div>

@@ -1,0 +1,1899 @@
+<!-- Page header -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('System Configuration') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">{{ app.localize('Settings') }}</li>
+                <li class="breadcrumb-item active">{{ app.localize('System Configuration') }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body p-2">
+            <!-- Tabs -->
+            <ul class="nav nav-tabs style-1" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [class.active]="activeTab === 'general'"
+                        type="button"
+                        (click)="switchTab('general')">
+                        <i class="ri-building-line me-1"></i>
+                        {{ app.localize('General') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [class.active]="activeTab === 'pos'"
+                        type="button"
+                        (click)="switchTab('pos')">
+                        <i class="ri-shopping-cart-line me-1"></i>
+                        {{ app.localize('POS') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [class.active]="activeTab === 'receipt'"
+                        type="button"
+                        (click)="switchTab('receipt')">
+                        <i class="ri-receipt-line me-1"></i>
+                        {{ app.localize('Receipt') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [class.active]="activeTab === 'integration'"
+                        type="button"
+                        (click)="switchTab('integration')">
+                        <i class="ri-plug-line me-1"></i>
+                        {{ app.localize('Integration') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [class.active]="activeTab === 'payroll'"
+                        type="button"
+                        (click)="switchTab('payroll')">
+                        <i class="ri-money-dollar-circle-line me-1"></i>
+                        {{ app.localize('Payroll') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [class.active]="activeTab === 'accounting'"
+                        type="button"
+                        (click)="switchTab('accounting')">
+                        <i class="ri-calculator-line me-1"></i>
+                        {{ app.localize('Accounting') }}
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button
+                        class="nav-link"
+                        [class.active]="activeTab === 'theme'"
+                        type="button"
+                        (click)="switchTab('theme')">
+                        <i class="ri-palette-line me-1"></i>
+                        {{ app.localize('Theme') }}
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content border-dashed p-3 mt-2">
+                <!-- General -->
+                <div class="tab-pane fade show" [class.active]="activeTab === 'general'">
+                    @if (loading.general) {
+                    <div class="text-center py-5">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    } @else {
+                    <form
+                        #generalForm="ngForm"
+                        [ngClass]="{ 'was-validated': validated.general }"
+                        (ngSubmit)="submitGeneral(generalForm)"
+                        novalidate>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-apps-line me-2"></i>
+                                    {{ app.localize('Application Information') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4 form-group">
+                                <label for="appName" class="form-label">
+                                    {{ app.localize('Application Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.appName"
+                                    id="appName"
+                                    name="appName"
+                                    class="form-control"
+                                    required
+                                    maxlength="100"
+                                    type="text" />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4 form-group d-none">
+                                <label for="appVersion" class="form-label">
+                                    {{ app.localize('Application Version') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.appVersion"
+                                    id="appVersion"
+                                    name="appVersion"
+                                    class="form-control"
+                                    maxlength="20"
+                                    type="text"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4 form-group">
+                                <label for="timezone" class="form-label">
+                                    {{ app.localize('Time Zone') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="general.timezone"
+                                    [items]="timezones"
+                                    bindLabel="displayName"
+                                    bindValue="id"
+                                    [clearable]="false"
+                                    [searchable]="true"
+                                    id="timezone"
+                                    name="timezone"
+                                    [class.is-invalid]="validated.general && !general.timezone"
+                                    class="form-control"
+                                    required></ng-select>
+                                @if (validated.general && (!general.timezone)) {
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                                }
+                            </div>
+
+                            <div class="col-md-6 col-lg-4 form-group">
+                                <label for="copyright" class="form-label">
+                                    {{ app.localize('Copyright Text') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.copyright"
+                                    id="copyright"
+                                    name="copyright"
+                                    class="form-control"
+                                    maxlength="200"
+                                    type="text"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-building-2-line me-2"></i>
+                                    {{ app.localize('Company Information') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyName" class="form-label">
+                                    {{ app.localize('Company Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.companyName"
+                                    id="companyName"
+                                    name="companyName"
+                                    class="form-control"
+                                    required
+                                    maxlength="200"
+                                    type="text" />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyEmail" class="form-label">
+                                    {{ app.localize('Company Email') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.companyEmail"
+                                    id="companyEmail"
+                                    name="companyEmail"
+                                    class="form-control"
+                                    type="email"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyPhone" class="form-label">
+                                    {{ app.localize('Company Phone') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="general.companyPhone"
+                                    id="companyPhone"
+                                    name="companyPhone"
+                                    class="form-control"
+                                    type="tel" />
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyTaxNumber" class="form-label">
+                                    {{ app.localize('Company Tax Number') }}
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('Your business tax or VAT number')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.companyTaxNumber"
+                                    id="companyTaxNumber"
+                                    name="companyTaxNumber"
+                                    class="form-control"
+                                    maxlength="100"
+                                    type="text" />
+                            </div>
+
+                            <div class="col-12 form-group">
+                                <label for="companyAddress" class="form-label">
+                                    {{ app.localize('Company Address') }}
+                                    <code>*</code>
+                                </label>
+                                <textarea
+                                    [(ngModel)]="general.companyAddress"
+                                    id="companyAddress"
+                                    name="companyAddress"
+                                    class="form-control"
+                                    rows="3"
+                                    maxlength="250"
+                                    required></textarea>
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyCity" class="form-label">{{ app.localize('City') }}</label>
+                                <input
+                                    [(ngModel)]="general.companyCity"
+                                    id="companyCity"
+                                    name="companyCity"
+                                    class="form-control"
+                                    maxlength="100"
+                                    type="text" />
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyState" class="form-label">
+                                    {{ app.localize('State/Province') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="general.companyState"
+                                    id="companyState"
+                                    name="companyState"
+                                    class="form-control"
+                                    maxlength="100"
+                                    type="text" />
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyPostalCode" class="form-label">
+                                    {{ app.localize('Postal Code') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="general.companyPostalCode"
+                                    id="companyPostalCode"
+                                    name="companyPostalCode"
+                                    class="form-control"
+                                    maxlength="20"
+                                    type="text" />
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="companyCountry" class="form-label">{{ app.localize('Country') }}</label>
+                                <input
+                                    [(ngModel)]="general.companyCountry"
+                                    id="companyCountry"
+                                    name="companyCountry"
+                                    class="form-control"
+                                    maxlength="100"
+                                    type="text" />
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-pen-nib-line me-2"></i>
+                                    {{ app.localize('Branding') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4 form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Company Logo') }}
+                                </label>
+                                <small class="text-muted small d-block mb-2">
+                                    {{ app.localize('Supported: JPG, PNG, GIF, SVG, ICO, WebP (Max 2MB)') }}
+                                </small>
+                                <div class="upload-single mt-1">
+                                    <input
+                                        (change)="onLogoSelected($event)"
+                                        id="logoFile"
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,.gif,.svg,.ico,.webp"
+                                        class="upload-single-input" />
+                                    <label
+                                        [attr.data-url]="logoPreviewUrl"
+                                        data-form-image="true"
+                                        for="logoFile"
+                                        class="upload-single-box">
+                                        <div [ngClass]="{ 'd-none': logoPreviewUrl }" class="upload-single-placeholder">
+                                            <i class="icon-addimage"></i>
+                                            <div class="upload-single-text">
+                                                {{ app.localize('Drop or') }}
+                                                <span class="upload-single-browse">{{ app.localize('browse') }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="upload-single-btn btn-round">{{ app.localize('Choose Logo') }}</div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4 form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Favicon') }}
+                                </label>
+                                <small class="text-muted small d-block mb-2">
+                                    {{ app.localize('Supported: JPG, PNG, GIF, SVG, ICO, WebP (Max 2MB)') }}
+                                </small>
+                                <div class="upload-single mt-1">
+                                    <input
+                                        (change)="onFaviconSelected($event)"
+                                        id="faviconFile"
+                                        type="file"
+                                        accept=".jpg,.jpeg,.png,.gif,.svg,.ico,.webp"
+                                        class="upload-single-input" />
+                                    <label
+                                        [attr.data-url]="faviconPreviewUrl"
+                                        data-form-image="true"
+                                        for="faviconFile"
+                                        class="upload-single-box">
+                                        <div
+                                            [ngClass]="{ 'd-none': faviconPreviewUrl }"
+                                            class="upload-single-placeholder">
+                                            <i class="icon-addimage"></i>
+                                            <div class="upload-single-text">
+                                                {{ app.localize('Drop or') }}
+                                                <span class="upload-single-browse">{{ app.localize('browse') }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="upload-single-btn btn-round">
+                                            {{ app.localize('Choose Favicon') }}
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="heading heading-form-title mt-3">
+                                    <i class="ri-function-line me-2"></i>
+                                    {{ app.localize('Features') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Audit Log Retention Days') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.auditLogRetentionDays"
+                                    appIntegerOnly
+                                    name="auditLogRetentionDays"
+                                    class="form-control"
+                                    type="number"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">
+                                    {{ app.localize('User Activity Log Retention Days') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.userActivityLogRetentionDays"
+                                    appIntegerOnly
+                                    name="userActivityLogRetentionDays"
+                                    class="form-control"
+                                    type="number"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-12 form-group mt-2">
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div class="form-check form-switch d-none">
+                                        <input
+                                            [(ngModel)]="general.websiteEnabled"
+                                            name="websiteEnabled"
+                                            id="websiteEnabled"
+                                            type="checkbox"
+                                            class="form-check-input" />
+                                        <label for="websiteEnabled" class="form-check-label">
+                                            {{ app.localize('Website Enabled') }}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch d-none">
+                                        <input
+                                            [(ngModel)]="general.enableReservation"
+                                            name="enableReservation"
+                                            id="enableReservation"
+                                            type="checkbox"
+                                            class="form-check-input" />
+                                        <label for="enableReservation" class="form-check-label">
+                                            {{ app.localize('Enable Reservation') }}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="general.enableCustomerLoyalty"
+                                            name="enableCustomerLoyalty"
+                                            id="enableCustomerLoyalty"
+                                            type="checkbox"
+                                            class="form-check-input" />
+                                        <label for="enableCustomerLoyalty" class="form-check-label">
+                                            {{ app.localize('Enable Customer Loyalty') }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (general.enableCustomerLoyalty) {
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Points Per Currency Unit') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('How many points are awarded per 1.00 in currency')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.pointsPerCurrencyUnit"
+                                    name="pointsPerCurrencyUnit"
+                                    class="form-control"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                    type="text"
+                                    inputmode="numeric"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Redemption Value Per Point') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('How much one point is worth in currency')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="general.redemptionValuePerPoint"
+                                    name="redemptionValuePerPoint"
+                                    class="form-control"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                    type="text"
+                                    inputmode="numeric"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+                            }
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-round"
+                                [ngClass]="{ 'disabled btn-progress': submitting.general }">
+                                <i class="ri-save-3-line me-1"></i>
+                                {{ app.localize('Save Changes') }}
+                            </button>
+                        </div>
+                    </form>
+                    }
+                </div>
+
+                <!-- POS -->
+                <div class="tab-pane fade show" [class.active]="activeTab === 'pos'">
+                    @if (loading.pos) {
+                    <div class="text-center py-5">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    } @else {
+                    <form
+                        #posForm="ngForm"
+                        [ngClass]="{ 'was-validated': validated.pos }"
+                        (ngSubmit)="submitPOS(posForm)"
+                        novalidate>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-file-text-line me-2"></i>
+                                    {{ app.localize('Invoice Settings') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="invoiceTemplate" class="form-label">
+                                    {{ app.localize('Invoice Template') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.invoiceTemplate"
+                                    [items]="invoiceTemplates"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="invoiceTemplate"
+                                    name="invoiceTemplate"
+                                    [class.is-invalid]="validated.pos && !pos.invoiceTemplate"
+                                    class="form-control"
+                                    required></ng-select>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="qrType" class="form-label">
+                                    {{ app.localize('QR Code Type') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('ZATCA or EMV-CO formats for compliant regions')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.qrType"
+                                    [items]="qrTypes"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="qrType"
+                                    name="qrType"
+                                    [class.is-invalid]="validated.pos && !pos.qrType"
+                                    class="form-control"
+                                    required></ng-select>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-printer-line me-2"></i>
+                                    {{ app.localize('Printing Options') }}
+                                </div>
+                            </div>
+
+                            <div class="col-12 form-group">
+                                <div class="d-flex gap-3 flex-wrap">
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="pos.isKitchenPrinting"
+                                            name="isKitchenPrinting"
+                                            id="isKitchenPrinting"
+                                            type="checkbox"
+                                            class="form-check-input" />
+                                        <label for="isKitchenPrinting" class="form-check-label">
+                                            {{ app.localize('Kitchen Printing') }}
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="pos.includeQRCode"
+                                            name="includeQRCode"
+                                            id="includeQRCode"
+                                            type="checkbox"
+                                            class="form-check-input" />
+                                        <label for="includeQRCode" class="form-check-label">
+                                            {{ app.localize('Include QR Code') }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="heading heading-form-title mt-3">
+                                    <i class="ri-percent-line me-2"></i>
+                                    {{ app.localize('Tax & Discount') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="taxType" class="form-label">
+                                    {{ app.localize('Tax Type') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.taxType"
+                                    [items]="taxTypes"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="taxType"
+                                    name="taxType"
+                                    [class.is-invalid]="validated.pos && !pos.taxType"
+                                    class="form-control"></ng-select>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="taxCalculationOrder" class="form-label">
+                                    {{ app.localize('Tax Calculation Order') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('Apply tax before or after discount')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.taxCalculationOrder"
+                                    [items]="taxCalculationOrders"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="taxCalculationOrder"
+                                    name="taxCalculationOrder"
+                                    [class.is-invalid]="validated.pos && !pos.taxCalculationOrder"
+                                    class="form-control"></ng-select>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="taxApplication" class="form-label">
+                                    {{ app.localize('Tax Application') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.taxApplication"
+                                    [items]="applicationTypes"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="taxApplication"
+                                    name="taxApplication"
+                                    [class.is-invalid]="validated.pos && !pos.taxApplication"
+                                    class="form-control"></ng-select>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="discountApplication" class="form-label">
+                                    {{ app.localize('Discount Application') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.discountApplication"
+                                    [items]="applicationTypes"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="discountApplication"
+                                    name="discountApplication"
+                                    [class.is-invalid]="validated.pos && !pos.discountApplication"
+                                    class="form-control"></ng-select>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-round"
+                                [ngClass]="{ 'disabled btn-progress': submitting.pos }">
+                                <i class="ri-save-3-line me-1"></i>
+                                {{ app.localize('Save Changes') }}
+                            </button>
+                        </div>
+                    </form>
+                    }
+                </div>
+
+                <!-- Receipt -->
+                <div class="tab-pane fade show" [class.active]="activeTab === 'receipt'">
+                    @if (loading.receipt) {
+                    <div class="text-center py-5">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    } @else {
+                    <form
+                        #receiptForm="ngForm"
+                        [ngClass]="{ 'was-validated': validated.receipt }"
+                        (ngSubmit)="submitReceipt(receiptForm)"
+                        novalidate>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-shopping-bag-line me-2"></i>
+                                    {{ app.localize('Sales Invoice Settings') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="saleInvoicePrefix" class="form-label">
+                                    {{ app.localize('Sales Invoice Prefix') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="receipt.saleInvoicePrefix"
+                                    id="saleInvoicePrefix"
+                                    name="saleInvoicePrefix"
+                                    class="form-control"
+                                    maxlength="10"
+                                    type="text"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="saleReturnInvoicePrefix" class="form-label">
+                                    {{ app.localize('Sales Return Prefix') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="receipt.saleReturnInvoicePrefix"
+                                    id="saleReturnInvoicePrefix"
+                                    name="saleReturnInvoicePrefix"
+                                    class="form-control"
+                                    maxlength="10"
+                                    type="text"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="saleInvoiceNote" class="form-label">
+                                    {{ app.localize('Sales Invoice Note') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="receipt.saleInvoiceNote"
+                                    id="saleInvoiceNote"
+                                    name="saleInvoiceNote"
+                                    class="form-control"
+                                    rows="2"
+                                    maxlength="500"></textarea>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="saleReturnInvoiceNote" class="form-label">
+                                    {{ app.localize('Sales Return Note') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="receipt.saleReturnInvoiceNote"
+                                    id="saleReturnInvoiceNote"
+                                    name="saleReturnInvoiceNote"
+                                    class="form-control"
+                                    rows="2"
+                                    maxlength="500"></textarea>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-shopping-cart-line me-2"></i>
+                                    {{ app.localize('Purchase Invoice Settings') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="purchaseInvoicePrefix" class="form-label">
+                                    {{ app.localize('Purchase Invoice Prefix') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="receipt.purchaseInvoicePrefix"
+                                    id="purchaseInvoicePrefix"
+                                    name="purchaseInvoicePrefix"
+                                    class="form-control"
+                                    maxlength="10"
+                                    type="text"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="purchaseReturnInvoicePrefix" class="form-label">
+                                    {{ app.localize('Purchase Return Prefix') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="receipt.purchaseReturnInvoicePrefix"
+                                    id="purchaseReturnInvoicePrefix"
+                                    name="purchaseReturnInvoicePrefix"
+                                    class="form-control"
+                                    maxlength="10"
+                                    type="text"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">{{ app.localize('Purchase Invoice Note') }}</label>
+                                <textarea
+                                    [(ngModel)]="receipt.purchaseInvoiceNote"
+                                    name="purchaseInvoiceNote"
+                                    class="form-control"
+                                    rows="2"
+                                    maxlength="500"></textarea>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label class="form-label">{{ app.localize('Purchase Return Note') }}</label>
+                                <textarea
+                                    [(ngModel)]="receipt.purchaseReturnInvoiceNote"
+                                    name="purchaseReturnInvoiceNote"
+                                    class="form-control"
+                                    rows="2"
+                                    maxlength="500"></textarea>
+                            </div>
+
+                            <div class="col-12 mt-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-settings-line me-2"></i>
+                                    {{ app.localize('Other Settings') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="payrollInvoicePrefix" class="form-label">
+                                    {{ app.localize('Payroll Invoice Prefix') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="receipt.payrollInvoicePrefix"
+                                    id="payrollInvoicePrefix"
+                                    name="payrollInvoicePrefix"
+                                    class="form-control"
+                                    maxlength="10"
+                                    type="text"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="invoiceNumberLength" class="form-label">
+                                    {{ app.localize('Invoice Number Length') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('Number of digits for invoice sequence')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="receipt.invoiceNumberLength"
+                                    [items]="[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="invoiceNumberLength"
+                                    name="invoiceNumberLength"
+                                    class="form-control"
+                                    [class.is-invalid]="validated.receipt && !receipt.invoiceNumberLength"></ng-select>
+                                @if(!receipt.invoiceNumberLength && validated.receipt) {
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+
+                            <div class="col-12 form-group">
+                                <label class="form-label">{{ app.localize('Payroll Invoice Note') }}</label>
+                                <textarea
+                                    [(ngModel)]="receipt.payrollInvoiceNote"
+                                    name="payrollInvoiceNote"
+                                    class="form-control"
+                                    rows="2"
+                                    maxlength="500"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-2">
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-round"
+                                [ngClass]="{ 'disabled btn-progress': submitting.receipt }">
+                                <i class="ri-save-3-line me-1"></i>
+                                {{ app.localize('Save Changes') }}
+                            </button>
+                        </div>
+                    </form>
+                    }
+                </div>
+
+                <!-- Integration (Email + SMS) -->
+                <div class="tab-pane fade show" [class.active]="activeTab === 'integration'">
+                    @if (loading.integration) {
+                    <div class="text-center py-5">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    } @else {
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="heading heading-form-title">
+                                <i class="ri-mail-settings-line me-2"></i>
+                                {{ app.localize('Email (SMTP)') }}
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <form
+                                #emailForm="ngForm"
+                                [ngClass]="{ 'was-validated': validated.integrationEmail }"
+                                (ngSubmit)="submitEmail(emailForm)"
+                                novalidate>
+                                <div class="row">
+                                    <div class="col-12 form-group">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                [(ngModel)]="email.isActive"
+                                                name="emailIsctive"
+                                                id="emailIsctive"
+                                                type="checkbox"
+                                                class="form-check-input" />
+                                            <label for="emailIsctive" class="form-check-label">
+                                                {{ app.localize('Enable Email Service') }}
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="smtpHost" class="form-label">
+                                            {{ app.localize('SMTP Host') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="email.smtpHost"
+                                            id="smtpHost"
+                                            name="smtpHost"
+                                            class="form-control"
+                                            maxlength="255"
+                                            required
+                                            type="text" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3 form-group">
+                                        <label for="smtpPort" class="form-label">
+                                            {{ app.localize('SMTP Port') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="email.smtpPort"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(0, true)"
+                                            [appCleaveNumberMin]="1"
+                                            [appCleaveNumberMax]="65535"
+                                            id="smtpPort"
+                                            name="smtpPort"
+                                            type="text"
+                                            inputmode="numeric"
+                                            maxlength="5"
+                                            class="form-control"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-3 form-group">
+                                        <label class="form-label d-block">
+                                            {{ app.localize('Enable SSL/TLS') }}
+                                        </label>
+                                        <div class="form-check form-switch mb-0 mt-1">
+                                            <input
+                                                [(ngModel)]="email.enableSsl"
+                                                name="enableSsl"
+                                                id="enableSsl"
+                                                type="checkbox"
+                                                class="form-check-input" />
+                                            <label for="enableSsl" class="form-check-label">
+                                                {{ app.localize('Enable SSL/TLS') }}
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="smtpUser" class="form-label">
+                                            {{ app.localize('SMTP Username') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="email.smtpUser"
+                                            id="smtpUser"
+                                            name="smtpUser"
+                                            class="form-control"
+                                            maxlength="255"
+                                            required
+                                            type="text" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="smtpPassword" class="form-label">
+                                            {{ app.localize('SMTP Password') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="email.smtpPassword"
+                                            id="smtpPassword"
+                                            name="smtpPassword"
+                                            class="form-control"
+                                            maxlength="255"
+                                            required
+                                            type="password" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="fromAddress" class="form-label">
+                                            {{ app.localize('From Email Address') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="email.fromAddress"
+                                            id="fromAddress"
+                                            name="fromAddress"
+                                            class="form-control"
+                                            maxlength="255"
+                                            required
+                                            type="email" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="fromName" class="form-label">{{ app.localize('From Name') }}</label>
+                                        <input
+                                            [(ngModel)]="email.fromName"
+                                            id="fromName"
+                                            name="fromName"
+                                            class="form-control"
+                                            maxlength="255"
+                                            type="text" />
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-2">
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary btn-round"
+                                        [ngClass]="{ 'disabled btn-progress': submitting.integrationEmail }">
+                                        <i class="ri-save-3-line me-1"></i>
+                                        {{ app.localize('Save Changes') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="divider"></div>
+
+                        <div class="col-12">
+                            <div class="heading heading-form-title">
+                                <i class="ri-message-2-line me-2"></i>
+                                {{ app.localize('SMS (Twilio)') }}
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <form
+                                #smsForm="ngForm"
+                                [ngClass]="{ 'was-validated': validated.integrationSms }"
+                                (ngSubmit)="submitSMS(smsForm)"
+                                novalidate>
+                                <div class="row">
+                                    <div class="col-12 form-group">
+                                        <div class="form-check form-switch">
+                                            <input
+                                                [(ngModel)]="sms.isActive"
+                                                name="smsIsActive"
+                                                id="smsIsActive"
+                                                type="checkbox"
+                                                class="form-check-input" />
+                                            <label for="smsIsActive" class="form-check-label">
+                                                {{ app.localize('Enable SMS Service') }}
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="twilioAccountSID" class="form-label">
+                                            {{ app.localize('Twilio Account SID') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="sms.twilioAccountSID"
+                                            id="twilioAccountSID"
+                                            name="twilioAccountSID"
+                                            class="form-control"
+                                            maxlength="255"
+                                            required
+                                            type="text" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('Twilio Account SID is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="twilioAuthToken" class="form-label">
+                                            {{ app.localize('Twilio Auth Token') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="sms.twilioAuthToken"
+                                            id="twilioAuthToken"
+                                            name="twilioAuthToken"
+                                            class="form-control"
+                                            maxlength="255"
+                                            required
+                                            type="password" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6 form-group">
+                                        <label for="twilioFromNumber" class="form-label">
+                                            {{ app.localize('Twilio From Number') }}
+                                            <code>*</code>
+                                            <a
+                                                href="javascript:void(0)"
+                                                class="btn-link-icon ms-2"
+                                                [appTooltip]="
+                                                    app.localize('Enter a valid E.164 number like +15555555555')
+                                                ">
+                                                <i class="ri-information-line"></i>
+                                            </a>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="sms.twilioFromNumber"
+                                            id="twilioFromNumber"
+                                            name="twilioFromNumber"
+                                            class="form-control"
+                                            maxlength="20"
+                                            required
+                                            type="tel" />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12 mt-2">
+                                        <div class="alert alert-info mb-0">
+                                            <i class="ri-information-line me-2"></i>
+                                            {{ app.localize('To use SMS services, you need a Twilio account.') }}
+                                            {{ app.localize('Sign up at') }}
+                                            <a href="https://www.twilio.com" target="_blank" class="alert-link">
+                                                twilio.com
+                                            </a>
+                                            {{ app.localize('to get your credentials.') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-3">
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary btn-round"
+                                        [ngClass]="{ 'disabled btn-progress': submitting.integrationSms }">
+                                        <i class="ri-save-3-line me-1"></i>
+                                        {{ app.localize('Save Changes') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    }
+                </div>
+
+                <!-- Payroll -->
+                <div class="tab-pane fade show" [class.active]="activeTab === 'payroll'">
+                    @if (loading.payroll) {
+                    <div class="text-center py-5">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    } @else {
+                    <form
+                        #payrollForm="ngForm"
+                        [ngClass]="{ 'was-validated': validated.payroll }"
+                        (ngSubmit)="submitPayroll(payrollForm)"
+                        novalidate>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-calendar-line me-2"></i>
+                                    {{ app.localize('Payroll Configuration') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="cycleStartDay" class="form-label">
+                                    {{ app.localize('Cycle Start Day') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('Day of month when payroll cycle starts (1-28)')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="payroll.cycleStartDay"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(0, true)"
+                                    [appCleaveNumberMin]="1"
+                                    [appCleaveNumberMax]="28"
+                                    id="cycleStartDay"
+                                    name="cycleStartDay"
+                                    type="text"
+                                    inputmode="numeric"
+                                    class="form-control"
+                                    required />
+                                <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="overtimeMultiplier" class="form-label">
+                                    {{ app.localize('Overtime Multiplier') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="
+                                            app.localize('Multiplier applied to hourly pay for overtime (e.g., 1.5)')
+                                        ">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="payroll.overtimeMultiplier"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                    id="overtimeMultiplier"
+                                    name="overtimeMultiplier"
+                                    type="text"
+                                    inputmode="numeric"
+                                    maxlength="5"
+                                    class="form-control" />
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="graceMinutes" class="form-label">
+                                    {{ app.localize('Grace Minutes') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('Late under this many minutes is ignored')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="payroll.graceMinutes"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(0, false)"
+                                    [appCleaveNumberMin]="0"
+                                    [appCleaveNumberMax]="60"
+                                    name="graceMinutes"
+                                    type="text"
+                                    inputmode="numeric"
+                                    maxlength="2"
+                                    class="form-control"
+                                    required />
+                                <div class="invalid-feedback"></div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-3 form-group">
+                                <label for="latePerMonthToLeave" class="form-label">
+                                    {{ app.localize('Late per Month to Leave') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('Number of late marks that convert to 1 leave')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="payroll.latePerMonthToLeave"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(0, true)"
+                                    [appCleaveNumberMin]="1"
+                                    [appCleaveNumberMax]="28"
+                                    id="latePerMonthToLeave"
+                                    name="latePerMonthToLeave"
+                                    type="text"
+                                    inputmode="numeric"
+                                    maxlength="2"
+                                    class="form-control" />
+                            </div>
+
+                            <div class="col-12 form-group d-flex align-items-center gap-4 mt-2">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="payroll.isLeavePaid"
+                                        name="isLeavePaid"
+                                        id="isLeavePaid"
+                                        type="checkbox"
+                                        class="form-check-input" />
+                                    <label for="isLeavePaid" class="form-check-label">
+                                        {{ app.localize('Leave is Paid') }}
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="payroll.isHalfDayCountAsLeave"
+                                        name="isHalfDayCountAsLeave"
+                                        id="isHalfDayCountAsLeave"
+                                        type="checkbox"
+                                        class="form-check-input" />
+                                    <label for="isHalfDayCountAsLeave" class="form-check-label">
+                                        {{ app.localize('Half-day counts as Leave') }}
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="payroll.enableOvertime"
+                                        name="enableOvertime"
+                                        id="enableOvertime"
+                                        type="checkbox"
+                                        class="form-check-input" />
+                                    <label for="enableOvertime" class="form-check-label">
+                                        {{ app.localize('Enable Overtime') }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-round"
+                                [ngClass]="{ 'disabled btn-progress': submitting.payroll }">
+                                <i class="ri-save-3-line me-1"></i>
+                                {{ app.localize('Save Changes') }}
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="divider"></div>
+
+                    <!-- Salary Components -->
+                    <div class="col-12 mt-4">
+                        <div class="heading heading-form-title">
+                            <i class="ri-money-dollar-circle-line me-2"></i>
+                            {{ app.localize('Salary Components') }}
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        <form
+                            #compForm="ngForm"
+                            (ngSubmit)="saveComponent(compForm)"
+                            [ngClass]="{ 'was-validated': validatedComponent }"
+                            novalidate>
+                            <div class="row g-2">
+                                <div class="col-md-6 col-lg-3 form-group">
+                                    <label class="form-label">
+                                        {{ app.localize('Component Name') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="newSalaryComponent.componentName"
+                                        name="componentName"
+                                        class="form-control"
+                                        required
+                                        maxlength="100"
+                                        type="text" />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 form-group">
+                                    <label class="form-label">
+                                        {{ app.localize('Type') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select
+                                        [(ngModel)]="newSalaryComponent.componentType"
+                                        [items]="salaryComponentTypes"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        [clearable]="false"
+                                        [searchable]="false"
+                                        name="componentType"
+                                        class="form-control"></ng-select>
+                                </div>
+                                <div class="col-md-6 col-lg-3 form-group">
+                                    <label for="defaultValue" class="form-label">
+                                        {{ app.localize('Default Value') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="newSalaryComponent.defaultValue"
+                                        [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                        [placeholder]="app.getNumberPlaceholder('0.00')"
+                                        id="defaultValue"
+                                        name="defaultValue"
+                                        class="form-control"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6 col-lg-3 form-group">
+                                    <label for="description" class="form-label">
+                                        {{ app.localize('Description') }}
+                                    </label>
+                                    <input
+                                        [(ngModel)]="newSalaryComponent.description"
+                                        id="description"
+                                        name="description"
+                                        class="form-control"
+                                        maxlength="255"
+                                        type="text" />
+                                </div>
+                                <div class="col-12 form-group">
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="newSalaryComponent.isPercentage"
+                                            name="isPercentage"
+                                            id="isPercentage"
+                                            type="checkbox"
+                                            class="form-check-input" />
+                                        <label for="isPercentage" class="form-check-label">
+                                            {{ app.localize('Is Percentage?') }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-start">
+                                <button
+                                    type="submit"
+                                    class="btn btn-warning btn-round"
+                                    [ngClass]="{ 'btn-progress': submittingComponent }"
+                                    [disabled]="submittingComponent">
+                                    <i class="ri-save-3-line me-1"></i>
+                                    {{ app.localize('Save Component') }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        @if (salaryComponents.length === 0) {
+                        <div class="text-center py-4 text-muted">
+                            <i class="ri-money-dollar-circle-line mb-2" style="font-size: 2rem"></i>
+                            <p>{{ app.localize('No salary components configured.') }}</p>
+                        </div>
+                        } @else {
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>{{ app.localize('Component') }}</th>
+                                        <th>{{ app.localize('Type') }}</th>
+                                        <th>{{ app.localize('Default Value') }}</th>
+                                        <th class="text-center">{{ app.localize('Actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (c of salaryComponents; track c.id) {
+                                    <tr>
+                                        <td>{{ c.componentName }}</td>
+                                        <td>
+                                            <span
+                                                [class]="
+                                                    'badge ' +
+                                                    (c.componentType === 1 ? 'badge-success' : 'badge-danger')
+                                                ">
+                                                {{
+                                                    c.componentType === 1
+                                                        ? app.localize('Earning')
+                                                        : app.localize('Deduction')
+                                                }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (c.isPercentage) { {{ app.formatNumber(c.defaultValue, 2) }}% } @else {
+                                            {{ app.formatCurrency(c.defaultValue) }} }
+                                        </td>
+                                        <td class="text-center">
+                                            <button
+                                                type="button"
+                                                class="btn btn-icon btn-sm text-danger"
+                                                (click)="deleteComponent(c)">
+                                                <i class="ri-delete-bin-6-line"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+
+                <!-- Accounting -->
+                <div class="tab-pane fade show" [class.active]="activeTab === 'accounting'">
+                    @if (loading.accounting) {
+                    <div class="text-center py-5">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    } @else {
+                    <form
+                        #accountingForm="ngForm"
+                        [ngClass]="{ 'was-validated': validated.accounting }"
+                        (ngSubmit)="submitAccounting(accountingForm)"
+                        novalidate>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-money-dollar-circle-line me-2"></i>
+                                    {{ app.localize('Accounting Configuration') }}
+                                </div>
+                            </div>
+
+                            <div class="col-12 form-group">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="accounting.isAccountingEnabled"
+                                        name="isAccountingEnabled"
+                                        id="isAccountingEnabled"
+                                        type="checkbox"
+                                        class="form-check-input" />
+                                    <label for="isAccountingEnabled" class="form-check-label">
+                                        {{ app.localize('Enable Accounting') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="accountingMethod" class="form-label">
+                                    {{ app.localize('Accounting Method') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="accounting.accountingMethod"
+                                    [items]="[
+                                        { value: 'Accrual', label: app.localize('Accrual') },
+                                        { value: 'Cash', label: app.localize('Cash') }
+                                    ]"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="accountingMethod"
+                                    name="accountingMethod"
+                                    class="form-control"></ng-select>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="fiscalYearStartMonth" class="form-label">
+                                    {{ app.localize('Fiscal Year Start Month') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="accounting.fiscalYearStartMonth"
+                                    [items]="fiscalMonths"
+                                    bindLabel="value"
+                                    bindValue="id"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="fiscalYearStartMonth"
+                                    name="fiscalYearStartMonth"
+                                    class="form-control"></ng-select>
+                            </div>
+
+                            <div class="col-12 form-group">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="accounting.enablePeriodLocking"
+                                        name="enablePeriodLocking"
+                                        id="enablePeriodLocking"
+                                        type="checkbox"
+                                        class="form-check-input" />
+                                    <label for="enablePeriodLocking" class="form-check-label">
+                                        {{ app.localize('Enable Period Locking') }}
+                                    </label>
+                                </div>
+                            </div>
+
+                            @if (accounting.enablePeriodLocking) {
+                            <div class="col-md-6 form-group">
+                                <label for="lockDate" class="form-label">
+                                    {{ app.localize('Lock Date') }}
+                                    <code>*</code>
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon ms-2"
+                                        [appTooltip]="app.localize('Transactions before this date will be locked')">
+                                        <i class="ri-information-line"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="accounting.lockDate"
+                                    id="lockDate"
+                                    name="lockDate"
+                                    class="form-control"
+                                    type="date"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+                            }
+
+                            <div class="col-12 mt-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-bank-line me-2"></i>
+                                    {{ app.localize('Chart of Accounts Mapping') }}
+                                </div>
+                            </div>
+
+                            <div class="col-12 form-group">
+                                @if (accounting.accountMappings.length === 0) {
+                                <div class="text-center py-4 text-muted">
+                                    <i class="ri-calculator-line fs-1"></i>
+                                    <p>{{ app.localize('No account mappings configured yet.') }}</p>
+                                </div>
+                                } @else {
+                                <div class="row">
+                                    @for (m of accounting.accountMappings; track m.key) {
+                                    <div class="col-12 col-md-6">
+                                        <div class="form-group mb-3">
+                                            <label for="acct_{{ m.key }}" class="form-label">
+                                                {{ app.localize(m.title) }}
+                                                <a
+                                                    href="javascript:void(0)"
+                                                    class="btn-link-icon ms-2"
+                                                    [appTooltip]="app.localize(m.info)">
+                                                    <i class="ri-information-line"></i>
+                                                </a>
+                                            </label>
+                                            <ng-select
+                                                [(ngModel)]="m.accountCode"
+                                                id="acct_{{ m.key }}"
+                                                name="acct_{{ m.key }}"
+                                                [items]="accounts"
+                                                bindLabel="displayName"
+                                                bindValue="accountCode"
+                                                [clearable]="false"
+                                                [searchable]="true"
+                                                [placeholder]="app.localize('Choose an option')"></ng-select>
+                                        </div>
+                                    </div>
+                                    }
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-3">
+                            <button
+                                type="submit"
+                                class="btn btn-primary btn-round"
+                                [ngClass]="{ 'disabled btn-progress': submitting.accounting }">
+                                <i class="ri-save-3-line me-1"></i>
+                                {{ app.localize('Save Changes') }}
+                            </button>
+                        </div>
+                    </form>
+                    }
+                </div>
+
+                <!-- Theme -->
+                <div class="tab-pane fade show" [class.active]="activeTab === 'theme'">
+                    @if (loading.theme) {
+                    <div class="text-center py-5">
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="loader"></div>
+                        </div>
+                    </div>
+                    } @else {
+                    <form
+                        #themeForm="ngForm"
+                        [ngClass]="{ 'was-validated': validated.theme }"
+                        (ngSubmit)="submitTheme(themeForm)"
+                        novalidate>
+                        <div class="theme-customizer">
+                            <div class="heading heading-form-title">
+                                <i class="ri-layout-line me-2"></i>
+                                {{ app.localize('Layout') }}
+                            </div>
+                            <div class="d-flex gap-3 flex-wrap form-group">
+                                <label class="layout-item">
+                                    <input
+                                        type="radio"
+                                        name="themeLayout"
+                                        [(ngModel)]="theme.themeLayout"
+                                        value="sidebar-fixed" />
+                                    <img src="assets/images/layouts/fixed-sidebar.svg" alt="Sidebar Fixed" />
+                                    <span>{{ app.localize('Fixed Sidebar') }}</span>
+                                </label>
+                                <label class="layout-item">
+                                    <input
+                                        type="radio"
+                                        name="themeLayout"
+                                        [(ngModel)]="theme.themeLayout"
+                                        value="collapsible" />
+                                    <img src="assets/images/layouts/collapsible.svg" alt="Collapsible Sidebar" />
+                                    <span>{{ app.localize('Collapsible') }}</span>
+                                </label>
+                                <label class="layout-item">
+                                    <input
+                                        type="radio"
+                                        name="themeLayout"
+                                        [(ngModel)]="theme.themeLayout"
+                                        value="drawer" />
+                                    <img src="assets/images/layouts/drawer.svg" alt="Drawer Sidebar" />
+                                    <span>{{ app.localize('Drawer') }}</span>
+                                </label>
+                            </div>
+
+                            <div class="heading heading-form-title mt-4">
+                                <i class="ri-brush-line me-2"></i>
+                                {{ app.localize('Mode') }}
+                            </div>
+                            <div class="d-flex gap-3 flex-wrap form-group">
+                                <label class="theme-style-item">
+                                    <input
+                                        type="radio"
+                                        name="themeMode"
+                                        [(ngModel)]="theme.themeMode"
+                                        value="general" />
+                                    <i class="ri-layout-2-line"></i>
+                                    <span>{{ app.localize('General') }}</span>
+                                </label>
+                                <label class="theme-style-item">
+                                    <input type="radio" name="themeMode" [(ngModel)]="theme.themeMode" value="glass" />
+                                    <i class="ri-drop-line"></i>
+                                    <span>{{ app.localize('Glass') }}</span>
+                                </label>
+                                <label class="theme-style-item">
+                                    <input type="radio" name="themeMode" [(ngModel)]="theme.themeMode" value="soft" />
+                                    <i class="ri-brush-line"></i>
+                                    <span>{{ app.localize('Soft') }}</span>
+                                </label>
+                            </div>
+
+                            <div class="heading heading-form-title mt-4">
+                                <i class="ri-palette-line me-2"></i>
+                                {{ app.localize('Theme') }}
+                            </div>
+                            <div class="d-flex gap-2 align-items-center flex-wrap form-group">
+                                @for (t of themes; track t) {
+                                <div [attr.data-theme]="t">
+                                    <label class="color-swatch bg-primary">
+                                        <input type="radio" name="themeName" [(ngModel)]="theme.theme" [value]="t" />
+                                        <i class="ri-check-line"></i>
+                                    </label>
+                                </div>
+                                }
+                            </div>
+
+                            <div class="heading heading-form-title mt-4">
+                                <i class="ri-window-line me-2"></i>
+                                {{ app.localize('Header Background') }}
+                            </div>
+                            <div class="d-flex gap-2 align-items-center form-group">
+                                <label class="color-swatch" style="background: #f8f9fa">
+                                    <input
+                                        type="radio"
+                                        name="headerBackground"
+                                        [(ngModel)]="theme.headerBackground"
+                                        value="light" />
+                                    <i class="ri-check-line"></i>
+                                </label>
+                                <label class="color-swatch" style="background: #212529">
+                                    <input
+                                        type="radio"
+                                        name="headerBackground"
+                                        [(ngModel)]="theme.headerBackground"
+                                        value="dark" />
+                                    <i class="ri-check-line"></i>
+                                </label>
+                                <label class="color-swatch bg-primary">
+                                    <input
+                                        type="radio"
+                                        name="headerBackground"
+                                        [(ngModel)]="theme.headerBackground"
+                                        value="primary" />
+                                    <i class="ri-check-line"></i>
+                                </label>
+                            </div>
+
+                            <div class="heading heading-form-title mt-4">
+                                <i class="ri-menu-line me-2"></i>
+                                {{ app.localize('Menu Background') }}
+                            </div>
+                            <div class="d-flex gap-2 align-items-center form-group">
+                                <label class="color-swatch" style="background: #f8f9fa">
+                                    <input
+                                        type="radio"
+                                        name="menuBackground"
+                                        [(ngModel)]="theme.menuBackground"
+                                        value="light" />
+                                    <i class="ri-check-line"></i>
+                                </label>
+                                <label class="color-swatch" style="background: #212529">
+                                    <input
+                                        type="radio"
+                                        name="menuBackground"
+                                        [(ngModel)]="theme.menuBackground"
+                                        value="dark" />
+                                    <i class="ri-check-line"></i>
+                                </label>
+                                <label class="color-swatch bg-primary">
+                                    <input
+                                        type="radio"
+                                        name="menuBackground"
+                                        [(ngModel)]="theme.menuBackground"
+                                        value="primary" />
+                                    <i class="ri-check-line"></i>
+                                </label>
+                            </div>
+
+                            <div class="d-flex justify-content-end gap-2 mt-3">
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary btn-round"
+                                    [ngClass]="{ 'disabled btn-progress': submitting.theme }">
+                                    <i class="ri-save-3-line me-1"></i>
+                                    {{ app.localize('Save Changes') }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

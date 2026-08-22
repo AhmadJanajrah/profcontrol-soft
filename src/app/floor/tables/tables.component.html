@@ -1,0 +1,389 @@
+<!-- Page Header -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('Tables') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">{{ app.localize('Floor') }}</li>
+                <li class="breadcrumb-item active">{{ app.localize('Tables') }}</li>
+            </ol>
+        </nav>
+    </div>
+    <div class="d-flex gap-2">
+        <button (click)="generateAllQRCodes()" type="button" class="btn btn-outline-primary btn-round">
+            <i class="ri-qr-code-line"></i>
+            {{ app.localize('Generate All QR') }}
+        </button>
+        <button (click)="showMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters Card -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label" for="floorAreaSelect">{{ app.localize('Floor Area') }}</label>
+                    <ng-select
+                        [(ngModel)]="filters.floorAreaId"
+                        [items]="floorAreas"
+                        [clearable]="true"
+                        [searchable]="true"
+                        [placeholder]="app.localize('All')"
+                        bindLabel="areaName"
+                        bindValue="id"
+                        class="form-control"
+                        appendTo="body"></ng-select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="statusSelect">{{ app.localize('Status') }}</label>
+                    <ng-select
+                        [(ngModel)]="filters.status"
+                        [items]="statusOptions"
+                        [clearable]="true"
+                        [searchable]="false"
+                        [placeholder]="app.localize('All')"
+                        bindLabel="label"
+                        bindValue="value"
+                        class="form-control"
+                        appendTo="body"></ng-select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end gap-2">
+                    <button (click)="applyFilters()" class="btn btn-primary btn-round">
+                        <i class="ri-filter-3-line"></i>
+                        {{ app.localize('Apply') }}
+                    </button>
+                    <button (click)="clearFilters()" class="btn btn-outline-secondary btn-round">
+                        <i class="ri-close-line"></i>
+                        {{ app.localize('Clear') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DataTable Card -->
+    <div class="card">
+        <div class="card-body py-2">
+            <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                <thead></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal-container">
+    <!-- Main Modal -->
+    <div
+        [ngClass]="{ show: mainModal.show }"
+        [attr.inert]="!mainModal.show ? '' : null"
+        class="modal right fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-sm btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">{{ mainModal.title }}</h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                    @if (!mainModal.loading) {
+                    <form
+                        #frm="ngForm"
+                        [ngClass]="{ 'was-validated': mainModal.validated }"
+                        (ngSubmit)="submitForm(frm)"
+                        autocomplete="off"
+                        novalidate>
+                        <!-- Floor Area -->
+                        <div class="form-group">
+                            <label class="control-label">
+                                {{ app.localize('Floor Area') }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="table.floorAreaId"
+                                [items]="floorAreas"
+                                [clearable]="false"
+                                [searchable]="true"
+                                [placeholder]="app.localize('Select Floor Area')"
+                                bindLabel="areaName"
+                                bindValue="id"
+                                name="floorAreaId"
+                                required
+                                class="form-control"></ng-select>
+                            <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                        </div>
+
+                        <!-- Table Number -->
+                        <div class="form-group">
+                            <label class="control-label">
+                                {{ app.localize('Table Number') }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                [(ngModel)]="table.tableNumber"
+                                type="text"
+                                class="form-control"
+                                name="tableNumber"
+                                maxlength="20"
+                                required />
+                            <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                        </div>
+
+                        <!-- Capacity -->
+                        <div class="form-group">
+                            <label class="control-label">
+                                {{ app.localize('Capacity') }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="table.capacity"
+                                [clearable]="false"
+                                [searchable]="false"
+                                [placeholder]="app.localize('Choose an option')"
+                                name="capacity"
+                                required
+                                class="form-control">
+                                @for (c of [].constructor(32); track $index; let i = $index) {
+                                <ng-option [value]="i + 1">{{ i + 1 }}</ng-option>
+                                }
+                            </ng-select>
+                            @if (mainModal.validated && !table.capacity) {
+                            <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                            }
+                        </div>
+
+                        <!-- Shape Type -->
+                        <div class="form-group">
+                            <label class="control-label d-block mb-2">
+                                {{ app.localize('Shape') }}
+                                <code>*</code>
+                            </label>
+                            <div class="d-flex gap-3">
+                                @for (shape of shapeOptions; track shape.value) {
+                                <label
+                                    [ngClass]="{ active: table.shapeType === shape.value }"
+                                    class="btn btn-outline-secondary d-flex align-items-center px-3 py-2 mb-0">
+                                    <input
+                                        [(ngModel)]="table.shapeType"
+                                        [value]="shape.value"
+                                        type="radio"
+                                        name="shapeType"
+                                        required
+                                        class="d-none" />
+                                    <span>
+                                        <i [class]="shape.icon" class="me-2"></i>
+                                        {{ shape.label }}
+                                    </span>
+                                </label>
+                                }
+                            </div>
+                            @if (mainModal.validated && !table.shapeType) {
+                            <div class="invalid-feedback d-block">{{ app.localize('This field is required.') }}</div>
+                            }
+                        </div>
+
+                        <!-- Status -->
+                        <div class="form-group">
+                            <label class="control-label">
+                                {{ app.localize('Status') }}
+                                <span class="text-danger">*</span>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="table.status"
+                                [items]="statusOptions"
+                                [clearable]="false"
+                                [searchable]="false"
+                                bindLabel="label"
+                                bindValue="value"
+                                name="status"
+                                required
+                                class="form-control"></ng-select>
+                            <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label class="control-label">{{ app.localize('Description') }}</label>
+                            <textarea
+                                [(ngModel)]="table.description"
+                                class="form-control"
+                                name="description"
+                                rows="3"
+                                maxlength="255"></textarea>
+                        </div>
+
+                        <!-- QR Ordering -->
+                        <div class="form-group">
+                            <div class="form-check form-switch">
+                                <input
+                                    [(ngModel)]="table.allowSelfOrdering"
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    id="allowSelfOrdering"
+                                    name="allowSelfOrdering" />
+                                <label class="form-check-label" for="allowSelfOrdering">
+                                    {{ app.localize('Enable QR Code Ordering') }}
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div
+                            [ngClass]="{ disabled: mainModal.submitted }"
+                            class="form-actions d-flex justify-content-end gap-2">
+                            <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round">
+                                <i class="ri-close-line"></i>
+                                {{ mainModal.btnCancelText }}
+                            </button>
+                            <button
+                                [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                type="submit"
+                                class="btn btn-primary btn-round">
+                                <i class="ri-save-3-line"></i>
+                                {{ mainModal.btnSaveText }}
+                            </button>
+                        </div>
+                    </form>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeMainModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div
+        [ngClass]="{ show: detailModal.show }"
+        [attr.inert]="!detailModal.show ? '' : null"
+        class="modal right fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeDetailModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">{{ app.localize('Table Details') }}</h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': detailModal.loading }" class="modal-body">
+                    @if (!detailModal.loading && detailModal.table) {
+                    <!-- Header Info -->
+                    <div class="d-flex gap-3 flex-wrap justify-content-between align-items-start mb-3">
+                        <div class="d-flex gap-3 align-items-center flex-grow-1">
+                            <div class="avatar bg-primary-light">
+                                <i class="icon-table ri-2x"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ app.localize('Table') }} #{{ detailModal.table.id }}</div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <span class="badge badge-light">{{ detailModal.table.tableNumber }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div [innerHTML]="renderStatusColumn(detailModal.table.status)" class="info-value"></div>
+                        </div>
+                    </div>
+                    <div class="divider my-2"></div>
+
+                    <div class="table-responsive">
+                        <ul class="list-group style-1">
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ app.localize('Floor Area') }}</div>
+                                </div>
+                                <div>{{ detailModal.table.floorArea?.areaName }}</div>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ app.localize('Capacity') }}</div>
+                                </div>
+                                <div>
+                                    <span class="badge badge-light">{{ detailModal.table.capacity }}</span>
+                                </div>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ app.localize('Shape') }}</div>
+                                </div>
+                                <div>{{ app.localize(floorService.getShapeString(detailModal.table.shapeType)) }}</div>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ app.localize('Position') }}</div>
+                                </div>
+                                <div>{{ detailModal.table.posX }}, {{ detailModal.table.posY }}</div>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ app.localize('Description') }}</div>
+                                </div>
+                                <div>{{ detailModal.table.description || '' }}</div>
+                            </li>
+
+                            <li class="list-group-item d-flex justify-content-between align-items-start">
+                                <div class="ms-2 me-auto">
+                                    <div class="fw-bold">{{ app.localize('QR Code Ordering') }}</div>
+                                </div>
+                                <div>
+                                    <span
+                                        [ngClass]="
+                                            detailModal.table.allowSelfOrdering
+                                                ? 'badge badge-primary'
+                                                : 'badge badge-danger'
+                                        "
+                                        class="badge">
+                                        <i class="ri-qr-code-line me-1"></i>
+                                        {{
+                                            detailModal.table.allowSelfOrdering
+                                                ? app.localize('Enabled')
+                                                : app.localize('Disabled')
+                                        }}
+                                    </span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- QR Code -->
+                    @if (detailModal.table.qrcode) {
+                    <div class="qr-code-container text-center mt-3">
+                        <div [innerHTML]="generateQrHtml(detailModal.table.qrcode)"></div>
+                        <div class="mt-3">
+                            <small class="text-muted">{{ app.localize('Scan to order from this table') }}</small>
+                        </div>
+                        <button (click)="printQRCode()" type="button" class="btn btn-light btn-round mt-2">
+                            <i class="ri-qr-code-line"></i>
+                            {{ app.localize('Print QR Code') }}
+                        </button>
+                    </div>
+                    } @else {
+                    <div class="text-muted text-center mt-3">
+                        <i class="ri-qr-code-line fs-1"></i>
+                        <div class="mt-2">{{ app.localize('QR Code not available') }}</div>
+                    </div>
+                    } }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeDetailModal()" class="modal-backdrop"></div>
+    </div>
+</div>

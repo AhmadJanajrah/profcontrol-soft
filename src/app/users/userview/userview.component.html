@@ -1,0 +1,229 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('User Details') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/users/list']">{{ app.localize('Users') }}</a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('View Details') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <button (click)="app.goBack()" type="button" class="btn btn-light btn-round btn-back">
+            <i class="ri-arrow-left-line"></i>
+            {{ app.localize('Back') }}
+        </button>
+    </div>
+</div>
+
+@if (loading) {
+<div class="main-content">
+    <div class="card">
+        <div class="card-body text-center p-4">
+            <div class="d-flex justify-content-center mb-3">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+</div>
+} @else {
+<div class="main-content">
+    <div class="row g-2 g-md-3">
+        <!-- User Profile Card -->
+        <div class="col-12 col-lg-4">
+            <div class="card user-widget">
+                <!-- Header Section -->
+                <div class="header-section">
+                    <div class="profile-image">
+                        <img
+                            [attr.data-img]="true"
+                            [attr.data-url]="user?.profileImageUrl"
+                            src="assets/images/user.png"
+                            [alt]="user?.fullName" />
+                    </div>
+                </div>
+
+                <!-- Content Section -->
+                <div class="content-section">
+                    <div class="text-center">
+                        <h2 class="title mb-1">{{ user?.fullName }}</h2>
+                        <p class="subtitle text-muted mb-2">@{{ user?.userName }}</p>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap mb-3">
+                            <span class="badge" [class]="getStatusBadgeClass()">
+                                <i class="ri-user-line me-1"></i>
+                                {{ getStatusLabel() }}
+                            </span>
+                            <span class="badge badge-info">
+                                <i class="ri-shield-user-line me-1"></i>
+                                {{ user?.role?.roleName }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Essential Information -->
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('User ID') }}:</span>
+                            <span class="text-muted">#{{ user?.id }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Email') }}:</span>
+                            <span class="text-muted">
+                                @if (user?.email) {
+                                <a [href]="'mailto:' + user?.email" class="text-decoration-none">
+                                    {{ user?.email }}
+                                </a>
+                                }
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Phone') }}:</span>
+                            <span class="text-muted">
+                                @if (user?.phone) {
+                                <a [href]="'tel:' + user?.phone" class="text-decoration-none">
+                                    {{ user?.phone }}
+                                </a>
+                                } @else {
+                                <span class="text-muted">{{ app.localize('Not specified') }}</span>
+                                }
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Default Location') }}:</span>
+                            <span class="badge badge-primary">
+                                {{ user?.defaultLocation?.locationName || app.localize('Not set') }}
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Online Status') }}:</span>
+                            <span [class]="getOnlineStatusClass()">
+                                <i [class]="getOnlineStatusIcon() + ' me-1'"></i>
+                                {{ getOnlineStatusLabel() }}
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Last Login') }}:</span>
+                            <span class="text-muted">{{ getLastLoginFormatted() }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Details Card -->
+        <div class="col-12 col-lg-8">
+            <div class="card">
+                <div class="card-body p-2">
+                    <ul class="nav nav-tabs style-1" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button
+                                class="nav-link active"
+                                id="details-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#details"
+                                type="button">
+                                <i class="ri-user-settings-line me-1"></i>
+                                {{ app.localize('Details') }}
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content border-dashed p-3 mt-2" id="userTabContent">
+                        <!-- Details Tab -->
+                        <div class="tab-pane active show fade" id="details">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="fw-semibold mb-2">{{ app.localize('Basic Information') }}</h6>
+                                    <ul class="list-group">
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Full Name') }}:</span>
+                                            <span class="text-muted">{{ user?.fullName }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Username') }}:</span>
+                                            <span class="text-muted">@{{ user?.userName }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Email') }}:</span>
+                                            <span class="text-muted">{{ user?.email }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Phone') }}:</span>
+                                            <span class="text-muted">
+                                                {{ user?.phone || app.localize('Not specified') }}
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="fw-semibold mb-2">{{ app.localize('System Information') }}</h6>
+                                    <ul class="list-group">
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Role') }}:</span>
+                                            <span class="badge badge-info">{{ user?.role?.roleName }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Status') }}:</span>
+                                            <span class="badge" [class]="getStatusBadgeClass()">
+                                                {{ getStatusLabel() }}
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('System User') }}:</span>
+                                            <span class="badge" [class]="getSystemUserBadgeClass()">
+                                                {{ getSystemUserLabel() }}
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Two Factor Auth') }}:</span>
+                                            <span [class]="getTwoFactorStatusClass()">
+                                                <i [class]="getTwoFactorStatusIcon() + ' me-1'"></i>
+                                                {{ getTwoFactorStatusLabel() }}
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <h6 class="fw-semibold mb-2">{{ app.localize('Location Access') }}</h6>
+                                    <ul class="list-group">
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Access Type') }}:</span>
+                                            <span class="badge" [class]="getAccessTypeBadgeClass()">
+                                                {{ getAccessTypeLabel() }}
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Default Location') }}:</span>
+                                            <span class="badge badge-primary">
+                                                {{ user?.defaultLocation?.locationName || app.localize('Not set') }}
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">
+                                                {{ app.localize('Assigned Locations') }}:
+                                            </span>
+                                            <span class="text-muted">{{ getLocationNames() }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end Details Tab -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}

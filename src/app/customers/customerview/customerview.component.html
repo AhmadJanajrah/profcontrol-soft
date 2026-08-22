@@ -1,0 +1,189 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Customer Details') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/customers/list']">{{ app.localize('Customers') }}</a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('View Details') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <button (click)="app.goBack()" type="button" class="btn btn-light btn-round btn-back">
+            <i class="ri-arrow-left-line"></i>
+            {{ app.localize('Back') }}
+        </button>
+    </div>
+</div>
+
+@if (loading) {
+<div class="main-content">
+    <div class="card">
+        <div class="card-body text-center p-4">
+            <div class="d-flex justify-content-center mb-3">
+                <div class="loader"></div>
+            </div>
+        </div>
+    </div>
+</div>
+} @else {
+<div class="main-content">
+    <div class="row g-2 g-md-3">
+        <div class="col-12 col-lg-4">
+            <div class="card user-widget">
+                <!-- Header -->
+                <div class="header-section">
+                    <div class="profile-image">
+                        <img src="assets/images/user.png" [alt]="customer?.fullName" />
+                    </div>
+                </div>
+
+                <!-- Essentials -->
+                <div class="content-section">
+                    <div class="text-center">
+                        <h2 class="title mb-1">{{ customer?.fullName }}</h2>
+                        <div class="d-flex justify-content-center gap-2 flex-wrap mb-2">
+                            <span class="badge" [class]="getCustomerTypeBadgeClass()">
+                                <i class="ri-user-star-line me-1"></i>
+                                {{ getCustomerTypeLabel() }}
+                            </span>
+                            <span class="badge" [class]="getStatusBadgeClass(customer?.isActive)">
+                                <i class="ri-shield-check-line me-1"></i>
+                                {{ getStatusLabel(customer?.isActive) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Only necessary info -->
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Customer #') }}:</span>
+                            <span class="text-muted">#{{ customer?.id }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Email') }}:</span>
+                            <span class="text-muted">
+                                @if (customer?.email) {
+                                <a [href]="'mailto:' + customer?.email" class="text-decoration-none">
+                                    {{ customer?.email }}
+                                </a>
+                                }
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Phone') }}:</span>
+                            <span class="text-muted">
+                                @if (customer?.phone) {
+                                <a [href]="'tel:' + customer?.phone" class="text-decoration-none">
+                                    {{ customer?.phone }}
+                                </a>
+                                }
+                            </span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Address') }}:</span>
+                            <span class="text-muted">{{ getFullAddress() }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Total Spent') }}:</span>
+                            <span class="badge badge-primary">{{ app.formatCurrency(customer?.totalSpent || 0) }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Loyalty Points') }}:</span>
+                            <span class="badge badge-light">{{ app.formatNumber(customer?.loyaltyPoints || 0) }}</span>
+                        </li>
+                        <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Notes') }}:</span>
+                            <span class="badge badge-light">{{ customer?.notes || '' }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-8">
+            <div class="card">
+                <div class="card-body p-2">
+                    <ul class="nav nav-tabs style-1" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button
+                                class="nav-link active"
+                                id="activity-tab"
+                                data-bs-toggle="tab"
+                                data-bs-target="#activity"
+                                type="button">
+                                <i class="ri-pulse-line me-1"></i>
+                                {{ app.localize('Activity') }}
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content border-dashed p-3 mt-2" id="customerTabContent">
+                        <!-- Activity -->
+                        <div class="tab-pane active show fade" id="activity">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="fw-semibold mb-2">{{ app.localize('Visits & Spending') }}</h6>
+                                    <ul class="list-group">
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Total Visits') }}:</span>
+                                            <span class="badge badge-info">{{ customer?.totalVisits || 0 }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Total Spent') }}:</span>
+                                            <span class="badge badge-primary">
+                                                {{ app.formatCurrency(customer?.totalSpent || 0) }}
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Last Visit') }}:</span>
+                                            <span class="text-muted">{{ getLastVisitFormatted() }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <h6 class="fw-semibold mb-2">{{ app.localize('Loyalty') }}</h6>
+                                    <ul class="list-group">
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Current Points') }}:</span>
+                                            <span class="badge badge-success">{{ app.formatNumber(customer?.loyaltyPoints || 0) }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Lifetime Points') }}:</span>
+                                            <span class="badge badge-warning">{{ app.formatNumber(customer?.lifetimePoints || 0) }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">
+                                                {{ app.localize('Last Points Earned') }}:
+                                            </span>
+                                            <span class="text-muted">{{ getLastPointsEarnedFormatted() }}</span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">
+                                                {{ app.localize('Last Points Redeemed') }}:
+                                            </span>
+                                            <span class="text-muted">{{ getLastPointsRedeemedFormatted() }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end Activity -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+}

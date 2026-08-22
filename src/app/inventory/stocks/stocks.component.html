@@ -1,0 +1,274 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Stock Levels') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Inventory') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Stock Levels') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new stock button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add Stock') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <div class="d-flex align-items-center gap-3 flex-wrap filter-bar">
+                <!-- Low Stock filter -->
+                <div style="min-width: 180px">
+                    <div class="form-check form-switch mb-0">
+                        <input
+                            [(ngModel)]="filters.lowStockOnly"
+                            (change)="applyFilters()"
+                            type="checkbox"
+                            id="lowStockOnly"
+                            name="lowStockOnly"
+                            class="form-check-input" />
+                        <label for="lowStockOnly" class="form-check-label">
+                            {{ app.localize('Low Stock Only') }}
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stocks DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock modal (add/edit) -->
+<div class="modal-container">
+    <div
+        [ngClass]="{ show: mainModal.show }"
+        [attr.inert]="!mainModal.show ? '' : null"
+        class="modal right fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">
+                        {{ mainModal.title }}
+                    </h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                    <!-- Stock form -->
+                    @if (!mainModal.loading) {
+                    <form
+                        #frm="ngForm"
+                        [ngClass]="{ 'was-validated': mainModal.validated }"
+                        (ngSubmit)="submitForm(frm)"
+                        id="frm"
+                        autocomplete="off"
+                        novalidate>
+                        <input [(ngModel)]="stock.id" type="hidden" name="id" />
+                        <input [(ngModel)]="stock.locationId" type="hidden" name="locationId" />
+
+                        <!-- Item Selection (only for new records) -->
+                        @if (!mainModal.isUpdate) {
+                        <div class="form-group">
+                            <label for="itemId" class="control-label">
+                                {{ app.localize('Item') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="stock.itemId"
+                                (ngModelChange)="onItemChange($event)"
+                                [items]="items"
+                                [clearable]="false"
+                                [searchable]="true"
+                                bindLabel="itemName"
+                                bindValue="id"
+                                id="itemId"
+                                name="itemId"
+                                [class.is-invalid]="mainModal.validated && !stock.itemId"
+                                [placeholder]="app.localize('Select an item')"
+                                required></ng-select>
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                        </div>
+                        } @else {
+                        <!-- Item Display (for updates) -->
+                        <div class="form-group">
+                            <label class="control-label">{{ app.localize('Item') }}</label>
+                            <div class="form-control-plaintext">
+                                <strong>{{ stock.item?.itemName }}</strong>
+                                <br />
+                                <small class="text-muted">
+                                    {{ app.formatCurrency(stock.unitCost) }} •
+                                    {{ app.formatNumber(stock.initialQuantity) }} {{ stock.item?.unitOfMeasure }}
+                                </small>
+                            </div>
+                        </div>
+                        }
+
+                        <!-- Initial Quantity (only for new records) -->
+                        @if (!mainModal.isUpdate) {
+                        <div class="form-group">
+                            <label for="initialQuantity" class="control-label">
+                                {{ app.localize('Initial Quantity') }}
+                                <code>*</code>
+                            </label>
+                            <input
+                                [(ngModel)]="stock.initialQuantity"
+                                [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                id="initialQuantity"
+                                name="initialQuantity"
+                                type="text"
+                                inputmode="decimal"
+                                class="form-control"
+                                [class.is-invalid]="
+                                    mainModal.validated &&
+                                    (!stock.initialQuantity || app.localeToAPINumber(stock.initialQuantity) < 0)
+                                "
+                                [placeholder]="app.getNumberPlaceholder('0.0000')"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unitCost" class="control-label">
+                                {{ app.localize('Unit Cost') }}
+                                <code>*</code>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">{{ app.getCurrencySymbol() }}</span>
+                                <input
+                                    [(ngModel)]="stock.unitCost"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                    id="unitCost"
+                                    name="unitCost"
+                                    type="text"
+                                    inputmode="decimal"
+                                    class="form-control"
+                                    [class.is-invalid]="
+                                        mainModal.validated &&
+                                        (!stock.unitCost || app.localeToAPINumber(stock.unitCost) < 0)
+                                    "
+                                    [placeholder]="app.getNumberPlaceholder('0.0000')"
+                                    required />
+                            </div>
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                        </div>
+                        }
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="minLevel" class="control-label">
+                                        {{ app.localize('Minimum Level') }}
+                                        <code>*</code>
+                                        <a
+                                            href="javascript:void(0)"
+                                            [appTooltip]="app.localize('Alert threshold when stock runs low')"
+                                            class="btn-link-icon ms-2">
+                                            <i class="ri-information-line"></i>
+                                        </a>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="stock.minLevel"
+                                        [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                        id="minLevel"
+                                        name="minLevel"
+                                        type="text"
+                                        inputmode="decimal"
+                                        class="form-control"
+                                        [class.is-invalid]="
+                                            mainModal.validated &&
+                                            (!stock.minLevel || app.localeToAPINumber(stock.minLevel) < 0)
+                                        "
+                                        [placeholder]="app.getNumberPlaceholder('0.0000')"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="maxLevel" class="control-label">
+                                        {{ app.localize('Maximum Level') }}
+                                        <a
+                                            href="javascript:void(0)"
+                                            [appTooltip]="app.localize('Optional maximum stock level for this item')"
+                                            class="btn-link-icon ms-2">
+                                            <i class="ri-information-line"></i>
+                                        </a>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="stock.maxLevel"
+                                        [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                        id="maxLevel"
+                                        name="maxLevel"
+                                        type="text"
+                                        inputmode="decimal"
+                                        class="form-control"
+                                        [placeholder]="app.getNumberPlaceholder('0.0000')" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="pb-5"></div>
+
+                        <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions">
+                            <div class="d-flex justify-content-end gap-2 w-100">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    form="frm"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeMainModal()" class="modal-backdrop"></div>
+    </div>
+</div>

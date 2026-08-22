@@ -1,0 +1,345 @@
+<!-- Page Header -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('Floor Plans') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">{{ app.localize('Floor') }}</li>
+                <li class="breadcrumb-item active">{{ app.localize('Floor Plans') }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Controls -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-end gap-3">
+                        <div class="flex-grow-1">
+                            <label class="form-label">{{ app.localize('Floor Area') }}</label>
+                            <ng-select [(ngModel)]="selectedFloorId" [items]="floorAreas" bindLabel="areaName"
+                                bindValue="id" [clearable]="false" [searchable]="true"
+                                [placeholder]="app.localize('Select Floor Area')" (ngModelChange)="selectFloor($event)"
+                                class="form-control" appendTo="body"></ng-select>
+                        </div>
+                        @if (currentFloor) {
+                        <div class="d-flex gap-2">
+                            <button [appTooltip]="app.localize('Edit Floor')" (click)="showFloorModal(currentFloor.id)"
+                                class="btn btn-light btn-icon btn-round">
+                                <i class="ri-edit-line"></i>
+                            </button>
+                            <button [appTooltip]="app.localize('Delete Floor')" (click)="deleteFloor()"
+                                class="btn btn-light text-danger btn-icon btn-round">
+                                <i class="ri-delete-bin-line"></i>
+                            </button>
+                        </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div>&nbsp;</div>
+                    <button (click)="showFloorModal(0)" class="btn btn-primary btn-round">
+                        <i class="ri-add-line"></i>
+                        {{ app.localize('Add Floor') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floor Plan -->
+    @if (currentFloor) {
+    <div class="card">
+        <div class="card-body p-3">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <button (click)="showTableModal(0)" class="btn btn-light btn-round">
+                    <i class="ri-add-line"></i>
+                    {{ app.localize('Add Table') }}
+                </button>
+
+                @if (selectedTable) {
+                <span class="badge bg-info fs-6">{{ app.localize('Selected') }}: {{ selectedTable.tableNumber }}</span>
+                }
+
+                <button (click)="saveLayout()"
+                    [class]="hasChanges ? 'btn btn-success btn-round' : 'btn btn-light btn-round disabled'">
+                    <i class="ri-save-3-line"></i>
+                    {{ app.localize('Save Layout') }}
+                </button>
+            </div>
+
+            <div #floorCanvas class="floor-plan-canvas border rounded bg-light grid"
+                [style.aspect-ratio]="currentFloor.width / currentFloor.height"></div>
+        </div>
+    </div>
+    }
+
+    <!-- Loading -->
+    @if (isLoading) {
+    <div class="card">
+        <div class="card-body">
+            <div class="text-center p-4">
+                <div class="d-flex justify-content-center mb-3">
+                    <div class="loader"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    }
+
+    <!-- Empty -->
+    @if (!currentFloor && !isLoading) {
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="ri-map-2-line fs-1 text-muted mb-3"></i>
+            <h4>{{ app.localize('No Floor Areas') }}</h4>
+            <p class="text-muted mb-0">{{ app.localize('Create your first floor area to start designing') }}</p>
+        </div>
+    </div>
+    }
+</div>
+
+<div class="modal-container">
+    <!-- Floor Modal -->
+    <div [ngClass]="{ show: modals.floor.show }" [attr.inert]="!modals.floor.show ? '' : null" class="modal right fade"
+        role="dialog" tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeFloorModal()" type="button" class="btn btn-icon btn-sm btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">{{ modals.floor.title }}</h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': modals.floor.loading }" class="modal-body">
+                    @if (!modals.floor.loading) {
+                    <form #floorForm="ngForm" [ngClass]="{ 'was-validated': modals.floor.validated }"
+                        (ngSubmit)="submitFloorForm(floorForm)" autocomplete="off" novalidate>
+                        <div class="form-group">
+                            <label for="areaName" class="form-label">
+                                {{ app.localize('Floor Name') }}
+                                <code>*</code>
+                            </label>
+                            <input [(ngModel)]="floorArea.areaName" type="text" class="form-control" id="areaName"
+                                name="areaName" required />
+                            <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="width" class="form-label">
+                                        {{ app.localize('Width (cm)') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input [(ngModel)]="floorArea.width" appIntegerOnly id="width" name="width"
+                                        type="number" min="100" max="9999" step="1" class="form-control" required />
+                                    <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="height" class="form-label">
+                                        {{ app.localize('Height (cm)') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input [(ngModel)]="floorArea.height" appIntegerOnly id="height" name="height"
+                                        type="number" class="form-control" min="100" max="9999" required />
+                                    <div class="invalid-feedback">{{ app.localize('This field is required.') }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">{{ app.localize('Description') }}</label>
+                            <textarea [(ngModel)]="floorArea.description" class="form-control" name="description"
+                                rows="3"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 form-group">
+                                <div class="form-check form-switch">
+                                    <input [(ngModel)]="floorArea.isOutdoor" type="checkbox" class="form-check-input"
+                                        name="isOutdoor" id="isOutdoor" />
+                                    <label class="form-check-label" for="isOutdoor">
+                                        {{ app.localize('Outdoor Area') }}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12 form-group">
+                                <div class="form-check form-switch">
+                                    <input [(ngModel)]="floorArea.isSmokingAllowed" type="checkbox"
+                                        class="form-check-input" name="isSmokingAllowed" id="isSmokingAllowed" />
+                                    <label class="form-check-label" for="isSmokingAllowed">
+                                        {{ app.localize('Smoking Allowed') }}
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-12 form-group">
+                                <div class="form-check form-switch">
+                                    <input [(ngModel)]="floorArea.isActive" type="checkbox" class="form-check-input"
+                                        name="isActive" id="isActive" />
+                                    <label class="form-check-label" for="isActive">
+                                        {{ app.localize('Status') }}
+                                        ({{ floorArea.isActive ? app.localize('Active') : app.localize('Inactive') }})
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-actions d-flex justify-content-end gap-2">
+                            <button (click)="closeFloorModal()" type="button" class="btn btn-light btn-round">
+                                <i class="ri-close-line"></i>
+                                {{ app.localize('Cancel') }}
+                            </button>
+                            <button [ngClass]="{ 'disabled btn-progress': modals.floor.submitted }" type="submit"
+                                class="btn btn-primary btn-round">
+                                <i class="ri-save-line"></i>
+                                {{ modals.floor.btnText }}
+                            </button>
+                        </div>
+                    </form>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeFloorModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Table Modal -->
+    <div [ngClass]="{ show: modals.table.show }" [attr.inert]="!modals.table.show ? '' : null" class="modal right fade"
+        role="dialog" tabindex="-1">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeTableModal()" type="button" class="btn btn-icon btn-sm btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">{{ modals.table.title }}</h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': modals.table.loading }" class="modal-body">
+                    @if (!modals.table.loading) {
+                    <form #tableForm="ngForm" [ngClass]="{ 'was-validated': modals.table.validated }"
+                        (ngSubmit)="submitTableForm(tableForm)" autocomplete="off" novalidate>
+                        @if (!modals.table.isEdit) {
+                        <div class="form-group">
+                            <label class="form-label">
+                                {{ app.localize('Floor Area') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select [(ngModel)]="table.floorAreaId" [items]="floorAreas" bindLabel="areaName"
+                                bindValue="id" [clearable]="false" [searchable]="true" name="floorAreaId" required
+                                class="form-control"></ng-select>
+                            @if (modals.table.validated && !table.floorAreaId) {
+                            <div class="invalid-feedback d-block">{{ app.localize('This field is required.') }}</div>
+                            }
+                        </div>
+                        }
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">{{ app.localize('Table Number') }}</label>
+                                    <input [(ngModel)]="table.tableNumber"
+                                        [placeholder]="app.localize('Auto-generated if empty')" type="text"
+                                        class="form-control" name="tableNumber" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label">
+                                        {{ app.localize('Capacity') }}
+                                        <code>*</code>
+                                    </label>
+                                    <ng-select [(ngModel)]="table.capacity" [clearable]="false" [searchable]="false"
+                                        name="capacity" required class="form-control">
+                                        @for (c of [].constructor(32); track $index; let i = $index) {
+                                        <ng-option [value]="i + 1">{{ i + 1 }}</ng-option>
+                                        }
+                                    </ng-select>
+                                    @if (modals.table.validated && !table.capacity) {
+                                    <div class="invalid-feedback d-block">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="control-label d-block mb-2">
+                                {{ app.localize('Shape') }}
+                                <code>*</code>
+                            </label>
+                            <div class="d-flex gap-3">
+                                @for (shape of shapeOptions; track shape.value) {
+                                <label [ngClass]="{ active: table.shapeType === shape.value }"
+                                    class="btn btn-outline-secondary d-flex align-items-center px-3 py-2 mb-0">
+                                    <input [(ngModel)]="table.shapeType" [value]="shape.value" type="radio"
+                                        name="shapeType" required class="d-none" />
+                                    <span>
+                                        <i [class]="shape.icon" class="me-2"></i>
+                                        {{ shape.label }}
+                                    </span>
+                                </label>
+                                }
+                            </div>
+                            @if (modals.table.validated && !table.shapeType) {
+                            <div class="invalid-feedback d-block">{{ app.localize('This field is required.') }}</div>
+                            }
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                {{ app.localize('Status') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select [(ngModel)]="table.status" [items]="statusOptions" bindLabel="label"
+                                bindValue="value" [clearable]="false" class="form-control" name="status"
+                                required></ng-select>
+                            @if (modals.table.validated && !table.status) {
+                            <div class="invalid-feedback d-block">{{ app.localize('This field is required.') }}</div>
+                            }
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">{{ app.localize('Description') }}</label>
+                            <textarea [(ngModel)]="table.description" class="form-control" name="description"
+                                rows="3"></textarea>
+                        </div>
+
+                        <div class="form-check form-switch mt-3">
+                            <input [(ngModel)]="table.allowSelfOrdering" type="checkbox" class="form-check-input"
+                                name="allowSelfOrdering" id="allowSelfOrdering" />
+                            <label class="form-check-label" for="allowSelfOrdering">
+                                {{ app.localize('Enable QR Code Ordering') }}
+                            </label>
+                        </div>
+
+                        <div class="form-actions d-flex justify-content-end gap-2 mt-4">
+                            <button (click)="closeTableModal()" type="button" class="btn btn-light btn-round">
+                                <i class="ri-close-line"></i>
+                                {{ app.localize('Cancel') }}
+                            </button>
+                            <button [ngClass]="{ 'disabled btn-progress': modals.table.submitted }" type="submit"
+                                class="btn btn-primary btn-round">
+                                <i class="ri-save-line"></i>
+                                {{ modals.table.btnText }}
+                            </button>
+                        </div>
+                    </form>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeTableModal()" class="modal-backdrop"></div>
+    </div>
+</div>

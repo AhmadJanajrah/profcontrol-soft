@@ -1,0 +1,276 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Roles & Permissions') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Users') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Roles') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new role button -->
+        @if (app.hasPermission('users.roles')) {
+        <button (click)="openRoleModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+        }
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Roles DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Role modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Role form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="role.id" type="hidden" name="id" />
+                            <div class="form-section mb-5">
+                                <div class="form-group">
+                                    <label for="roleName" class="control-label">
+                                        {{ app.localize('Role Name') }}
+                                        <code>*</code>
+                                    </label>
+                                    <input
+                                        [(ngModel)]="role.roleName"
+                                        id="roleName"
+                                        name="roleName"
+                                        type="text"
+                                        class="form-control"
+                                        maxlength="50"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="defaultHome" class="control-label">
+                                        {{ app.localize('Default Home Page') }}
+                                        <code>*</code>
+                                        <a
+                                            [appTooltip]="app.localize('Default landing page after login')"
+                                            href="javascript:void(0)"
+                                            class="btn-link-icon">
+                                            <i class="ri-information-line ms-2"></i>
+                                        </a>
+                                    </label>
+                                    <!-- Home page select -->
+                                    <ng-select
+                                        [(ngModel)]="role.defaultHome"
+                                        [items]="[
+                                            { value: 'home', label: app.localize('Home') },
+                                            { value: 'dashboard', label: app.localize('Dashboard') },
+                                            { value: 'pos', label: app.localize('POS') }
+                                        ]"
+                                        [class.is-invalid]="mainModal.validated && !role.defaultHome"
+                                        [class.is-valid]="mainModal.validated && role.defaultHome"
+                                        id="defaultHome"
+                                        name="defaultHome"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        clearable="false"
+                                        placeholder="{{ app.localize('Choose an option') }}"
+                                        class="form-control"
+                                        required></ng-select>
+                                    @if (mainModal.validated && !role.defaultHome) {
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                    }
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="description" class="control-label">
+                                        {{ app.localize('Description') }}
+                                    </label>
+                                    <textarea
+                                        [(ngModel)]="role.description"
+                                        id="description"
+                                        name="description"
+                                        class="form-control"
+                                        maxlength="255"
+                                        rows="3"></textarea>
+                                </div>
+
+                                <!-- Permissions section -->
+                                <div class="heading heading-form-title d-flex mt-4 mb-3">
+                                    <span>
+                                        <i class="ri-shield-keyhole-line me-2"></i>
+                                        {{ app.localize('Permissions') }}
+                                    </span>
+                                    <span class="badge badge-info ms-auto pt-2 px-2">
+                                        {{ selectedPermissions.length }}
+                                    </span>
+                                </div>
+
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="flex-grow-1 me-3">
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="ri-search-line"></i>
+                                            </span>
+                                            <input
+                                                [(ngModel)]="permissionSearch"
+                                                [placeholder]="app.localize('Search...')"
+                                                type="text"
+                                                class="form-control"
+                                                name="permissionSearch" />
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <!-- Select all permissions -->
+                                        <div class="form-check">
+                                            <input
+                                                [checked]="isAllPermissionsSelected()"
+                                                [indeterminate]="isSomePermissionsSelected()"
+                                                (change)="selectAllPermissions()"
+                                                type="checkbox"
+                                                class="form-check-input"
+                                                id="selectAllPermissions" />
+                                            <label class="form-check-label" for="selectAllPermissions">
+                                                {{ app.localize('Select All') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="permissions-container border rounded p-2">
+                                    <!-- Permission groups -->
+                                    @for (group of getFilteredGroups(); track group.name) {
+                                    <div class="permission-group">
+                                        <div
+                                            (click)="toggleGroup(group.name)"
+                                            class="permission-group-header d-flex align-items-center mb-2 p-2 bg-light rounded cursor-pointer">
+                                            <div class="form-check">
+                                                <input
+                                                    [checked]="isGroupFullySelected(group)"
+                                                    [indeterminate]="isGroupPartiallySelected(group)"
+                                                    (change)="toggleGroupPermissions(group)"
+                                                    (click)="$event.stopPropagation()"
+                                                    type="checkbox"
+                                                    class="form-check-input" />
+                                            </div>
+                                            <i
+                                                [ngClass]="
+                                                    isGroupExpanded(group.name)
+                                                        ? 'ri-arrow-down-s-line'
+                                                        : 'ri-arrow-right-s-line'
+                                                "
+                                                class="me-2"></i>
+                                            <strong class="flex-grow-1">
+                                                {{ group.displayName }}
+                                            </strong>
+                                            <span class="badge badge-light">
+                                                {{ getSelectedPermissionsCount(group) }} /
+                                                {{ group.permissions.length }}
+                                            </span>
+                                        </div>
+
+                                        @if (isGroupExpanded(group.name)) {
+                                        <div class="permission-group-items ms-4">
+                                            <!-- Individual permissions -->
+                                            @for (permission of group.permissions; track permission.name) {
+                                            <div class="form-check p-2 border-start border-2 border-light">
+                                                <input
+                                                    [id]="'perm_' + permission.name"
+                                                    [checked]="isPermissionSelected(permission.name)"
+                                                    (change)="togglePermission(permission.name)"
+                                                    type="checkbox"
+                                                    class="form-check-input" />
+                                                <label
+                                                    [for]="'perm_' + permission.name"
+                                                    class="form-check-label flex-grow-1">
+                                                    <div>
+                                                        <strong>{{ permission.displayName }}</strong>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                            }
+                                        </div>
+                                        }
+                                    </div>
+                                    }
+
+                                    <!-- No permissions found -->
+                                    @if (getFilteredGroups().length === 0) {
+                                    <div class="text-center text-muted py-2">
+                                        <i class="ri-search-line fs-2"></i>
+                                        <p class="mt-2">{{ app.localize('No permissions found') }}</p>
+                                    </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

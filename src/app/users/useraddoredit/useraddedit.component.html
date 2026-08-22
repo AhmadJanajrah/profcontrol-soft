@@ -1,0 +1,409 @@
+<!-- Page header with title and breadcrumb -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ isEditMode ? app.localize('Edit User') : app.localize('Add User') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/users/list']">
+                        {{ app.localize('Users') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ isEditMode ? app.localize('Edit') : app.localize('Add') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- User form card -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Loading overlay -->
+            <div [ngClass]="{ 'disabled loader-full': isLoading }">
+                <!-- User form -->
+                @if (!isLoading) {
+                <form
+                    #userForm="ngForm"
+                    [ngClass]="{ 'was-validated': isValidated }"
+                    (ngSubmit)="submitForm(userForm)"
+                    autocomplete="off"
+                    novalidate>
+                    <!-- Hidden ID field -->
+                    <input [(ngModel)]="user.id" type="hidden" name="id" />
+
+                    <div class="text-center mb-3">
+                        <!-- Profile Image Section -->
+                        <div class="d-flex justify-content-center">
+                            <div class="u-image-preview">
+                                <input
+                                    (change)="onFileSelected($event)"
+                                    id="profileImage"
+                                    name="profileImage"
+                                    type="file"
+                                    accept=".jpg, .jpeg, .png, .gif, .webp" />
+                                @if(user.profileImageUrl || imageFile) {
+                                <img
+                                    src="assets/images/user.png"
+                                    [attr.data-form-img]="true"
+                                    [attr.data-url]="imagePreviewUrl"
+                                    alt="Profile Image" />
+                                <button type="button" (click)="clearImage()" class="bg-light text-danger trash">
+                                    <i class="ri-delete-bin-5-line"></i>
+                                </button>
+                                }@else {
+                                <img src="assets/images/user.png" alt="Profile Image" />
+                                <button type="button">
+                                    <i class="ri-pencil-line"></i>
+                                </button>
+                                }
+                            </div>
+                        </div>
+                        <label for="profileImage" class="control-label mt-2 d-block">
+                            {{ app.localize('Profile Image') }}
+                        </label>
+                        <div class="form-text small text-muted">
+                            {{ app.localize('Use JPG, PNG, GIF or WebP. Keep it under 5MB') }}
+                        </div>
+                    </div>
+
+                    <!-- User Information Form -->
+                    <div class="row">
+                        <!-- Basic Information Section -->
+                        <div class="col-12">
+                            <div class="heading heading-form-title mb-3">
+                                <i class="ri-user-line me-2"></i>
+                                {{ app.localize('Basic Information') }}
+                            </div>
+                        </div>
+
+                        <!-- Full Name -->
+                        <div class="col-md-6 form-group">
+                            <label for="fullName" class="form-label">
+                                {{ app.localize('Full Name') }}
+                                <code>*</code>
+                            </label>
+                            <input
+                                [(ngModel)]="user.fullName"
+                                type="text"
+                                id="fullName"
+                                name="fullName"
+                                class="form-control"
+                                maxlength="100"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                        </div>
+
+                        <!-- Username -->
+                        <div class="col-md-6 form-group">
+                            <label for="userName" class="form-label">
+                                {{ app.localize('User Name') }}
+                                <code>*</code>
+                            </label>
+                            <input
+                                [(ngModel)]="user.userName"
+                                type="text"
+                                id="userName"
+                                name="userName"
+                                class="form-control"
+                                maxlength="50"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                        </div>
+
+                        <!-- Email -->
+                        <div class="col-md-6 form-group">
+                            <label for="email" class="form-label">
+                                {{ app.localize('Email') }}
+                                <code>*</code>
+                            </label>
+                            <input
+                                [(ngModel)]="user.email"
+                                type="email"
+                                id="email"
+                                name="email"
+                                class="form-control"
+                                maxlength="100"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('Please enter a valid email address.') }}
+                            </div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="col-md-6 form-group">
+                            <label for="phone" class="control-label">{{ app.localize('Phone') }}</label>
+                            <input
+                                [(ngModel)]="user.phone"
+                                type="tel"
+                                id="phone"
+                                name="phone"
+                                class="form-control"
+                                maxlength="20"
+                                pattern="^\+?[0-9]{7,20}$" />
+                            <div class="invalid-feedback">
+                                {{ app.localize('Please enter a valid phone number.') }}
+                            </div>
+                        </div>
+
+                        <!-- Security Section -->
+                        <div class="col-12 mt-3">
+                            <div class="heading heading-form-title mb-3">
+                                <i class="ri-shield-keyhole-line me-2"></i>
+                                {{ app.localize('Security & Access') }}
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="col-md-6 form-group">
+                            <label for="passwordHash" class="form-label">
+                                {{ isEditMode ? app.localize('New Password') : app.localize('Password') }}
+                                @if (!isEditMode) {
+                                <code>*</code>
+                                }
+                            </label>
+                            <div class="d-flex align-items-start gap-1">
+                                <div class="input-with-icon flex-grow-1">
+                                    <input
+                                        [(ngModel)]="user.passwordHash"
+                                        id="passwordHash"
+                                        name="passwordHash"
+                                        type="password"
+                                        minlength="6"
+                                        maxlength="30"
+                                        [attr.pattern]="'^(?=.*[A-Za-z])(?=.*\\d)[A-Za-z\\d@$!%*#?&]{6,}$'"
+                                        class="form-control"
+                                        required />
+                                    <button
+                                        type="button"
+                                        class="input-icon-end toggle-password"
+                                        tabindex="-1"
+                                        data-target="#passwordHash">
+                                        <i class="ri-eye-line"></i>
+                                    </button>
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('At least 6 characters, including a letter and a number.') }}
+                                    </div>
+                                </div>
+                                <button
+                                    [appTooltip]="app.localize('Generate Password')"
+                                    (click)="generatePassword(8)"
+                                    type="button"
+                                    class="btn btn-icon btn-light">
+                                    <i class="ri-refresh-line"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- PIN -->
+                        <div class="col-md-6 form-group">
+                            <label for="pin" class="form-label">
+                                {{ app.localize('PIN') }}
+                            </label>
+                            <input
+                                [(ngModel)]="user.pin"
+                                appIntegerOnly
+                                type="password"
+                                id="pin"
+                                name="pin"
+                                class="form-control"
+                                pattern="[0-9]{4,6}"
+                                maxlength="6"
+                                placeholder="{{ app.localize('Enter 4-6 digit PIN') }}" />
+                            <div class="invalid-feedback">
+                                {{ app.localize('Please enter 4-6 digit PIN.') }}
+                            </div>
+                        </div>
+
+                        <!-- Role -->
+                        <div class="col-md-6 form-group">
+                            <label for="roleId" class="form-label">
+                                {{ app.localize('Role') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="user.roleId"
+                                [items]="roles"
+                                [searchable]="true"
+                                [clearable]="false"
+                                [placeholder]="app.localize('Choose an option')"
+                                [class.is-invalid]="isValidated && !user.roleId"
+                                [class.is-valid]="isValidated && user.roleId"
+                                bindLabel="roleName"
+                                bindValue="id"
+                                name="roleId"
+                                id="roleId"
+                                class="form-control"></ng-select>
+                            @if (isValidated && !user.roleId) {
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Status -->
+                        <div class="col-md-6 form-group">
+                            <label for="status" class="form-label">
+                                {{ app.localize('Status') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="user.status"
+                                [items]="statusOptions"
+                                [searchable]="false"
+                                [clearable]="false"
+                                [class.is-invalid]="isValidated && !user.status"
+                                [class.is-valid]="isValidated && user.status"
+                                bindLabel="label"
+                                bindValue="value"
+                                id="status"
+                                name="status"
+                                class="form-control"></ng-select>
+                            @if (isValidated && !user.status) {
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Security Options -->
+                        <div class="col-12">
+                            <div class="form-group">
+                                <label class="form-label">
+                                    {{ app.localize('Security Options') }}
+                                </label>
+                                <div class="security-options">
+                                    <div class="form-check form-switch">
+                                        <input
+                                            [(ngModel)]="user.isTwoFactorEnabled"
+                                            type="checkbox"
+                                            id="isTwoFactorEnabled"
+                                            name="isTwoFactorEnabled"
+                                            class="form-check-input" />
+                                        <label for="isTwoFactorEnabled" class="form-check-label">
+                                            {{ app.localize('Two Factor Authentication') }}
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Access Section -->
+                        <div class="col-12 mt-3">
+                            <div class="heading heading-form-title mb-3">
+                                <i class="ri-store-line me-2"></i>
+                                {{ app.localize('Location Access') }}
+                            </div>
+                        </div>
+
+                        <!-- Access All Locations -->
+                        <div class="col-12">
+                            <div class="form-group">
+                                <div class="form-check form-switch mb-0">
+                                    <input
+                                        [(ngModel)]="user.accessAllLocations"
+                                        type="checkbox"
+                                        id="accessAllLocations"
+                                        name="accessAllLocations"
+                                        class="form-check-input" />
+                                    <label for="accessAllLocations" class="form-check-label">
+                                        {{ app.localize('Access All Locations') }}
+                                        <a
+                                            href="javascript:void(0);"
+                                            [appTooltip]="app.localize('Grant access to all locations')"
+                                            class="ms-1 btn-link-icon">
+                                            <i class="ri-information-line"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- User Locations -->
+                        <div class="col-md-6 form-group">
+                            <label for="userLocations" class="form-label">
+                                {{ app.localize('User Locations') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="selectedLocations"
+                                [items]="locations"
+                                [multiple]="true"
+                                [clearable]="false"
+                                [placeholder]="app.localize('Choose options')"
+                                [class.is-invalid]="
+                                    isValidated && (!selectedLocations || selectedLocations.length === 0)
+                                "
+                                (ngModelChange)="onLocationSelectionChange()"
+                                bindLabel="locationName"
+                                bindValue="id"
+                                name="userLocations"
+                                id="userLocations"
+                                dropdownPosition="top"></ng-select>
+                            @if (isValidated && (!selectedLocations || selectedLocations.length === 0)) {
+                            <div class="invalid-feedback">
+                                {{ app.localize('Please select at least one location.') }}
+                            </div>
+                            }
+                        </div>
+
+                        <!-- Default Location -->
+                        <div class="col-md-6 form-group">
+                            <label for="defaultLocationId" class="form-label">
+                                {{ app.localize('Default Location') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="user.defaultLocationId"
+                                [items]="availableDefaultLocations"
+                                [searchable]="true"
+                                [clearable]="false"
+                                [placeholder]="app.localize('Choose an option')"
+                                [class.is-invalid]="isValidated && !user.defaultLocationId"
+                                bindLabel="locationName"
+                                bindValue="id"
+                                name="defaultLocationId"
+                                id="defaultLocationId"
+                                class="form-control"
+                                dropdownPosition="top"></ng-select>
+                            @if (isValidated && !user.defaultLocationId) {
+                            <div class="invalid-feedback">
+                                {{ app.localize('Please select a default location from the selected locations.') }}
+                            </div>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div [ngClass]="{ disabled: isSubmitted }" class="d-flex gap-2 justify-content-end py-0 mt-4">
+                        <button (click)="app.goBack()" type="button" class="btn btn-light btn-round">
+                            <i class="ri-arrow-left-line me-1"></i>
+                            {{ app.localize('Back') }}
+                        </button>
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-save-3-line me-1"></i>
+                            {{ user.id > 0 ? app.localize('Update') : app.localize('Save') }}
+                        </button>
+                    </div>
+                </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

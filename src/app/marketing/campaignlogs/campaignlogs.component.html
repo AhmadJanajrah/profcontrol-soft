@@ -1,0 +1,119 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Campaign Details') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/marketing/campaigns']">{{ app.localize('Campaigns') }}</a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('View') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a [routerLink]="['/marketing/campaigns']" class="btn btn-light btn-round btn-back">
+            <i class="ri-arrow-left-line me-1"></i>
+            {{ app.localize('Back') }}
+        </a>
+    </div>
+</div>
+
+<div class="main-content" [ngClass]="{ 'disabled loader-full': isLoading }">
+    <div class="row g-2">
+        <div class="col-12 col-md-5 col-xl-4">
+            <div class="card">
+                <div class="card-header px-3">
+                    <h4 class="card-title">
+                        {{ app.localize('Campaign') }}
+                    </h4>
+                </div>
+                <div class="card-body p-0">
+                    @if(campaign){
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Campaign') }} #:</span>
+                            <span class="text-muted">{{ campaign?.id ?? '—' }}</span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Campaign Name') }}:</span>
+                            <span class="text-muted">{{ campaign?.campaignName || '—' }}</span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Description') }}:</span>
+                            <span class="text-muted">{{ campaign?.description || '—' }}</span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Channel') }}:</span>
+                            <span class="text-muted">{{ campaign?.channel || '—' }}</span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Status') }}:</span>
+                            <span [innerHTML]="renderCampaignStatusBadge(campaign?.status)"></span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Start Date') }}:</span>
+                            <span class="text-muted">
+                                {{ campaign?.startDate ? app.formatDateTime(campaign?.startDate) : '—' }}
+                            </span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('End Date') }}:</span>
+                            <span class="text-muted">
+                                {{ campaign?.endDate ? app.formatDateTime(campaign?.endDate) : '—' }}
+                            </span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Time') }}:</span>
+                            <span class="text-muted">
+                                {{ campaign?.timing ? app.formatTime(campaign?.timing) : '—' }}
+                            </span>
+                        </li>
+                        <li class="list-group-item px-3">
+                            <span class="fw-medium me-2">{{ app.localize('Send to All') }}:</span>
+                            <span>
+                                <span class="badge {{ campaign?.sendToAll ? 'badge-success' : 'badge-secondary' }}">
+                                    {{ app.localize(campaign?.sendToAll ? 'Yes' : 'No') }}
+                                </span>
+                            </span>
+                        </li>
+                    </ul>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-7 col-xl-8">
+            <!-- Message Logs List -->
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        {{ app.localize('Message Logs') }}
+                    </h4>
+                </div>
+                <div class="card-body py-2">
+                    <div class="table-responsive">
+                        <!-- Message Logs DataTable -->
+                        <table
+                            [dtOptions]="dtOptions"
+                            [dtTrigger]="dtTrigger"
+                            datatable
+                            class="table"
+                            id="messageLogsTable">
+                            <thead></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

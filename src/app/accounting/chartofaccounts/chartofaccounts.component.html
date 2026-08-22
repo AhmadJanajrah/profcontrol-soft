@@ -1,0 +1,215 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Chart of Accounts') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Accounting') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Chart of Accounts') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new account button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Accounts DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Account form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="account.id" type="hidden" name="id" />
+
+                            <!-- Account Type -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Account Type') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="account.accountTypeId"
+                                    [items]="accountTypes"
+                                    bindLabel="typeName"
+                                    bindValue="id"
+                                    name="accountTypeId"
+                                    [clearable]="false"
+                                    [required]="true"
+                                    [class.is-invalid]="mainModal.validated && !account.accountTypeId"
+                                    (change)="onAccountTypeChange()"
+                                    placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                                @if(mainModal.validated && !account.accountTypeId){
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+
+                            <!-- Category (optional, filtered by account type) -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Category') }}
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="account.categoryId"
+                                    [items]="filteredCategories"
+                                    bindLabel="categoryName"
+                                    bindValue="id"
+                                    name="categoryId"
+                                    [clearable]="true"
+                                    placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <!-- Account Code -->
+                                    <div class="form-group">
+                                        <label class="control-label">
+                                            {{ app.localize('Account Code') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="account.accountCode"
+                                            (blur)="account.accountCode = (account.accountCode || '').toUpperCase()"
+                                            name="accountCode"
+                                            type="text"
+                                            class="form-control"
+                                            maxlength="20"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <!-- Account Name -->
+                                    <div class="form-group">
+                                        <label class="control-label">
+                                            {{ app.localize('Account Name') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="account.accountName"
+                                            name="accountName"
+                                            type="text"
+                                            class="form-control"
+                                            maxlength="100"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="account.description"
+                                    name="description"
+                                    rows="2"
+                                    class="form-control"
+                                    maxlength="250"></textarea>
+                            </div>
+
+                            <!-- Active -->
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        id="isActive"
+                                        name="isActive"
+                                        [(ngModel)]="account.isActive" />
+                                    <label class="form-check-label" for="isActive">
+                                        {{ app.localize('Status') }}
+                                        ({{ account.isActive ? app.localize('Active') : app.localize('Inactive') }})
+                                        <a
+                                            href="javascript:void(0)"
+                                            [appTooltip]="app.localize('Enable this account for use in transactions')"
+                                            class="btn-link-icon ms-2">
+                                            <i class="ri-information-line"></i>
+                                        </a>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

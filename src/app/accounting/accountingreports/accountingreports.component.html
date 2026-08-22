@@ -1,0 +1,579 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Financial Reports') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Accounting') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Reports') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Report tiles -->
+    <div class="row g-2 p-2">
+        @for (report of availableReports; track report?.id || report?.title) {
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <button class="btn btn-light btn-lg w-100" (click)="openReportModal(report)">
+                <span>
+                    <i [class]="report.icon"></i>
+                </span>
+                <span class="fw-semibold">{{ app.localize(report.title) }}</span>
+            </button>
+        </div>
+        }
+    </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal-container">
+    <div
+        [ngClass]="{ show: reportModal.show }"
+        [attr.inert]="!reportModal.show ? '' : null"
+        class="modal fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title w-100 d-flex align-items-center">
+                        <i [class]="currentReport?.icon" class="me-2"></i>
+                        <span>{{ app.localize(currentReport?.title || 'Report') }}</span>
+                    </h5>
+                    <button
+                        type="button"
+                        class="btn btn-icon btn-light"
+                        aria-label="Close"
+                        (click)="closeReportModal()">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <!-- Filters -->
+                    <form [ngClass]="{ 'was-validated': reportModal.validated }" novalidate>
+                        <div class="row g-3 align-items-end">
+                            <!-- Location/All Locations -->
+                            @if (hasAccessAllLocations()) {
+                            <div class="col-md-4 form-group mb-0">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="reportParams.allLocations"
+                                        type="checkbox"
+                                        id="allLocations"
+                                        name="allLocations"
+                                        class="form-check-input" />
+                                    <label for="allLocations" class="form-check-label">
+                                        {{ app.localize('All Locations') }}
+                                    </label>
+                                </div>
+                                @if (reportParams.allLocations) {
+                                <div class="text-muted small mb-0">
+                                    {{ app.localize('Report will include data from all locations') }}
+                                </div>
+                                }@else {
+                                <div class="text-muted small mb-0">
+                                    {{ app.localize('Using location') }}:
+                                    {{ app.getLocationName(app.getSelectedLocationId() || 0) }}
+                                </div>
+                                }
+                            </div>
+                            }
+
+                            <!-- Account -->
+                            @if (currentReport?.showAccount) {
+                            <div class="col-md-4 form-group mb-0">
+                                <label class="form-label">
+                                    {{ app.localize('Account') }}
+                                    @if (currentReport?.requiresAccount) {
+                                    <code>*</code>
+                                    }
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="reportParams.accountId"
+                                    [items]="accounts"
+                                    bindLabel="accountName"
+                                    bindValue="id"
+                                    [groupBy]="'group'"
+                                    [clearable]="!currentReport?.requiresAccount"
+                                    [placeholder]="app.localize('Choose an option')"
+                                    name="accountId"
+                                    (ngModelChange)="resetValidation()"
+                                    class="form-control"
+                                    [required]="currentReport?.requiresAccount"></ng-select>
+                                @if (currentReport?.requiresAccount) {
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+                            }
+
+                            <!-- Date range -->
+                            @if (currentReport?.showDateRange) {
+                            <div class="col-md-2 form-group mb-0">
+                                <label class="form-label">
+                                    {{ app.localize('From') }}
+                                    @if (currentReport?.requiresDateRange) {
+                                    <code>*</code>
+                                    }
+                                </label>
+                                <input
+                                    [(ngModel)]="reportParams.dateFrom"
+                                    (ngModelChange)="resetValidation()"
+                                    name="dateFrom"
+                                    type="date"
+                                    class="form-control"
+                                    onclick="this.showPicker()"
+                                    [required]="currentReport?.requiresDateRange" />
+                                @if (currentReport?.requiresDateRange) {
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+                            <div class="col-md-2 form-group mb-0">
+                                <label class="form-label">
+                                    {{ app.localize('To') }}
+                                    @if (currentReport?.requiresDateRange) {
+                                    <code>*</code>
+                                    }
+                                </label>
+                                <input
+                                    [(ngModel)]="reportParams.dateTo"
+                                    (ngModelChange)="resetValidation()"
+                                    name="dateTo"
+                                    type="date"
+                                    class="form-control"
+                                    onclick="this.showPicker()"
+                                    [required]="currentReport?.requiresDateRange" />
+                                @if (currentReport?.requiresDateRange) {
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+                            }
+
+                            <!-- As Of date -->
+                            @if (currentReport?.showAsOfDate) {
+                            <div class="col-md-4 form-group mb-0">
+                                <label class="form-label">
+                                    {{ app.localize('As Of Date') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="reportParams.asOfDate"
+                                    (ngModelChange)="resetValidation()"
+                                    name="asOfDate"
+                                    type="date"
+                                    class="form-control"
+                                    onclick="this.showPicker()"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+                            }
+
+                            <!-- Actions -->
+                            <div class="col-md-4 d-flex gap-2">
+                                <button
+                                    type="button"
+                                    class="btn btn-primary btn-round"
+                                    [ngClass]="{ 'btn-progress disabled': reportModal.loading }"
+                                    [disabled]="reportModal.loading"
+                                    (click)="generateReport()">
+                                    @if (reportModal.loading) {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                    {{ app.localize('Generating...') }}
+                                    } @else {
+                                    <i class="ri-file-chart-line me-2"></i>
+                                    {{ app.localize('Generate') }}
+                                    }
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-primary btn-round"
+                                    [disabled]="!reportData || reportModal.loading"
+                                    (click)="printReport()">
+                                    <i class="ri-printer-line me-1"></i>
+                                    {{ app.localize('Print') }}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="divider my-3"></div>
+
+                    <!-- Report content -->
+                    <div id="reportContent">
+                        @if (reportModal.loading) {
+                        <div class="text-center text-muted py-4">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <div class="mt-2">{{ app.localize('Preparing your report...') }}</div>
+                        </div>
+                        } @else if (!reportData) {
+                        <div class="text-center text-muted py-4">
+                            <i class="ri-file-chart-line fs-2"></i>
+                            <div class="mt-2">{{ app.localize('Select filters and Generate') }}</div>
+                        </div>
+                        } @else {
+                        <!-- Report header -->
+                        <div class="mb-4 text-center">
+                            <h4 class="text-primary mb-1">{{ app.localize(reportData.reportName) }}</h4>
+                            <h5 class="mb-1">{{ reportData.companyName }}</h5>
+                            @if (reportData?.locationId && reportData.locationId > 0) {
+                            <small class="text-muted d-block">
+                                {{ app.getLocationName(reportData.locationId || 0) }}
+                            </small>
+                            } @else {
+                            <small class="text-muted d-block">
+                                {{ app.localize('All Locations') }}
+                            </small>
+                            }
+                            <small class="text-muted d-block">
+                                @if (currentReport?.showDateRange) {
+                                {{ app.formatDate(reportData.dateFrom) }}
+                                {{ app.localize('to') }}
+                                {{ app.formatDate(reportData.dateTo) }}
+                                } @if (currentReport?.showAsOfDate) {
+                                {{ app.localize('As of') }}
+                                {{ app.formatDate(reportData.asOfDate) }}
+                                }
+                            </small>
+                        </div>
+
+                        <!-- Report-specific content -->
+                        @switch (currentReport?.id) { @case ('profitLoss') {
+                        <!-- Profit & Loss report display -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Revenue') }}</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Total Revenue') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.revenue) }}</td>
+                                </tr>
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Cost of Goods Sold') }}</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Total COGS') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.costOfGoodsSold) }}</td>
+                                </tr>
+                                <tr class="bg-light">
+                                    <th>{{ app.localize('Gross Profit') }}</th>
+                                    <th class="text-end">{{ app.formatCurrency(reportData.grossProfit) }}</th>
+                                </tr>
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Expenses') }}</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Total Expenses') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.expenses) }}</td>
+                                </tr>
+                                <tr class="bg-light">
+                                    <th>{{ app.localize('Net Income') }}</th>
+                                    <th class="text-end">{{ app.formatCurrency(reportData.netIncome) }}</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Gross Profit Margin') }}</td>
+                                    <td class="text-end">{{ reportData.grossProfitMargin }}%</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Net Profit Margin') }}</td>
+                                    <td class="text-end">{{ reportData.netProfitMargin }}%</td>
+                                </tr>
+                            </table>
+                        </div>
+                        } @case ('balanceSheet') {
+                        <!-- Balance Sheet report display -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Assets') }}</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Total Assets') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.assets) }}</td>
+                                </tr>
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Liabilities and Equity') }}</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Total Liabilities') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.liabilities) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Total Equity') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.equity) }}</td>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Retained Earnings') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.retainedEarnings) }}</td>
+                                </tr>
+                                <tr class="bg-light">
+                                    <th>{{ app.localize('Total Liabilities & Equity') }}</th>
+                                    <th class="text-end">
+                                        {{ app.formatCurrency(reportData.totalLiabilitiesAndEquity) }}
+                                    </th>
+                                </tr>
+                            </table>
+                        </div>
+                        @if (reportData.isBalanced !== true) {
+                        <div class="alert alert-warning mt-3">
+                            <i class="ri-alert-line me-2"></i>
+                            {{ app.localize('Balance sheet does not balance!') }}
+                        </div>
+                        } } @case ('cashFlow') {
+                        <!-- Cash Flow report display -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Operating Activities') }}</th>
+                                </tr>
+                                <tr class="bg-light">
+                                    <td>{{ app.localize('Net Cash from Operating Activities') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.operatingCashFlow) }}</td>
+                                </tr>
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Investing Activities') }}</th>
+                                </tr>
+                                <tr class="bg-light">
+                                    <td>{{ app.localize('Net Cash from Investing Activities') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.investingCashFlow) }}</td>
+                                </tr>
+                                <tr class="bg-primary-all">
+                                    <th colspan="2">{{ app.localize('Financing Activities') }}</th>
+                                </tr>
+                                <tr class="bg-light">
+                                    <td>{{ app.localize('Net Cash from Financing Activities') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.financingCashFlow) }}</td>
+                                </tr>
+                                <tr class="bg-light">
+                                    <th>{{ app.localize('Net Cash Change') }}</th>
+                                    <th class="text-end">{{ app.formatCurrency(reportData.netCashChange) }}</th>
+                                </tr>
+                                <tr>
+                                    <td>{{ app.localize('Beginning Cash') }}</td>
+                                    <td class="text-end">{{ app.formatCurrency(reportData.beginningCash) }}</td>
+                                </tr>
+                                <tr class="bg-light">
+                                    <th>{{ app.localize('Ending Cash') }}</th>
+                                    <th class="text-end">{{ app.formatCurrency(reportData.endingCash) }}</th>
+                                </tr>
+                            </table>
+                        </div>
+                        @if (reportData.isReconciled !== true) {
+                        <div class="alert alert-warning">
+                            <i class="ri-alert-line me-2"></i>
+                            {{ app.localize('Cash flow does not reconcile with ending cash!') }}
+                        </div>
+                        } } @case ('trialBalance') {
+                        <!-- Trial Balance report display -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>{{ app.localize('Account') }}</th>
+                                        <th>{{ app.localize('Type') }}</th>
+                                        <th class="text-end">{{ app.localize('Debit') }}</th>
+                                        <th class="text-end">{{ app.localize('Credit') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (account of reportData.accounts; track account.accountCode) {
+                                    <tr>
+                                        <td>{{ account.accountCode }} - {{ account.accountName }}</td>
+                                        <td>{{ account.accountType }}</td>
+                                        <td class="text-end">
+                                            {{
+                                                account.debitBalance > 0 ? app.formatCurrency(account.debitBalance) : ''
+                                            }}
+                                        </td>
+                                        <td class="text-end">
+                                            {{
+                                                account.creditBalance > 0
+                                                    ? app.formatCurrency(account.creditBalance)
+                                                    : ''
+                                            }}
+                                        </td>
+                                    </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-light">
+                                        <th colspan="2">{{ app.localize('Total') }}</th>
+                                        <th class="text-end">
+                                            {{ app.formatCurrency(reportData.totalDebitBalances) }}
+                                        </th>
+                                        <th class="text-end">
+                                            {{ app.formatCurrency(reportData.totalCreditBalances) }}
+                                        </th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        @if (reportData.isBalanced !== true) {
+                        <div class="alert alert-warning">
+                            <i class="ri-alert-line me-2"></i>
+                            {{ app.localize('Trial balance does not balance!') }}
+                        </div>
+                        } } @case ('generalLedger') {
+                        <!-- General Ledger report display -->
+                        @for (ledger of reportData.accountLedgers; track ledger.accountCode) {
+                        <div class="mb-4">
+                            <h5>{{ ledger.accountCode }} - {{ ledger.accountName }}</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ app.localize('Date') }}</th>
+                                            <th>{{ app.localize('Reference') }}</th>
+                                            <th>{{ app.localize('Description') }}</th>
+                                            <th class="text-end">{{ app.localize('Debit') }}</th>
+                                            <th class="text-end">{{ app.localize('Credit') }}</th>
+                                            <th class="text-end">{{ app.localize('Balance') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (transaction of ledger.transactions; track transaction.date +
+                                        transaction.referenceNumber) {
+                                        <tr>
+                                            <td>{{ app.formatDate(transaction.date) }}</td>
+                                            <td>{{ transaction.referenceNumber }}</td>
+                                            <td>{{ transaction.description }}</td>
+                                            <td class="text-end">
+                                                {{
+                                                    transaction.debitAmount > 0
+                                                        ? app.formatCurrency(transaction.debitAmount)
+                                                        : ''
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{
+                                                    transaction.creditAmount > 0
+                                                        ? app.formatCurrency(transaction.creditAmount)
+                                                        : ''
+                                                }}
+                                            </td>
+                                            <td class="text-end">
+                                                {{ app.formatCurrency(transaction.runningBalance) }}
+                                            </td>
+                                        </tr>
+                                        }
+                                    </tbody>
+                                    <tfoot>
+                                        <tr class="bg-light">
+                                            <th colspan="3">{{ app.localize('Total') }}</th>
+                                            <th class="text-end">{{ app.formatCurrency(ledger.totalDebits) }}</th>
+                                            <th class="text-end">{{ app.formatCurrency(ledger.totalCredits) }}</th>
+                                            <th class="text-end">{{ app.formatCurrency(ledger.endingBalance) }}</th>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                        } } @case ('accountStatement') {
+                        <!-- Account Statement report display -->
+                        <div class="mb-3">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>{{ app.localize('Opening Balance') }}</h6>
+                                            <h5>{{ app.formatCurrency(reportData.openingBalance) }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>{{ app.localize('Ending Balance') }}</h6>
+                                            <h5>{{ app.formatCurrency(reportData.endingBalance) }}</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>{{ app.localize('Date') }}</th>
+                                        <th>{{ app.localize('Reference') }}</th>
+                                        <th>{{ app.localize('Description') }}</th>
+                                        <th class="text-end">{{ app.localize('Debit') }}</th>
+                                        <th class="text-end">{{ app.localize('Credit') }}</th>
+                                        <th class="text-end">{{ app.localize('Balance') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (transaction of reportData.transactions; track transaction.date +
+                                    transaction.referenceNumber) {
+                                    <tr>
+                                        <td>{{ app.formatDate(transaction.date) }}</td>
+                                        <td>{{ transaction.referenceNumber }}</td>
+                                        <td>{{ transaction.description }}</td>
+                                        <td class="text-end">
+                                            {{
+                                                transaction.debitAmount > 0
+                                                    ? app.formatCurrency(transaction.debitAmount)
+                                                    : ''
+                                            }}
+                                        </td>
+                                        <td class="text-end">
+                                            {{
+                                                transaction.creditAmount > 0
+                                                    ? app.formatCurrency(transaction.creditAmount)
+                                                    : ''
+                                            }}
+                                        </td>
+                                        <td class="text-end">{{ app.formatCurrency(transaction.runningBalance) }}</td>
+                                    </tr>
+                                    }
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-light">
+                                        <th colspan="3">{{ app.localize('Total') }}</th>
+                                        <th class="text-end">{{ app.formatCurrency(reportData.totalDebits) }}</th>
+                                        <th class="text-end">{{ app.formatCurrency(reportData.totalCredits) }}</th>
+                                        <th class="text-end">{{ app.formatCurrency(reportData.endingBalance) }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        } @default {
+                        <!-- Default report view for any other reports -->
+                        <div class="alert alert-info">
+                            <i class="ri-information-line me-2"></i>
+                            {{ app.localize('Report generated successfully.') }}
+                        </div>
+                        <pre class="bg-light p-3">{{ reportData | json }}</pre>
+                        } } }
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div (click)="closeReportModal()" class="modal-backdrop"></div>
+    </div>
+</div>

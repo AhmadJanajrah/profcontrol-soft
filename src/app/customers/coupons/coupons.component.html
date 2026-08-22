@@ -1,0 +1,302 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Coupons') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Customers') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Coupons') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new coupon button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Coupons DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coupon modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Coupon form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="coupon.id" type="hidden" name="id" />
+
+                            <!-- Coupon Code -->
+                            <div class="form-group">
+                                <label for="code" class="control-label">
+                                    {{ app.localize('Coupon Code') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="coupon.code"
+                                    id="code"
+                                    name="code"
+                                    type="text"
+                                    class="form-control text-uppercase"
+                                    maxlength="50"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="form-group">
+                                <label for="description" class="control-label">
+                                    {{ app.localize('Description') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="coupon.description"
+                                    id="description"
+                                    name="description"
+                                    class="form-control"
+                                    maxlength="255"
+                                    rows="3"></textarea>
+                            </div>
+
+                            <!-- Discount Value -->
+                            <div class="form-group">
+                                <label for="discountValue" class="control-label">
+                                    {{ app.localize('Discount Value') }}
+                                    <code>*</code>
+                                </label>
+                                <div class="d-flex justify-content-between align-items-start gap-1">
+                                    <div class="flex-grow-1">
+                                        <input
+                                            [(ngModel)]="coupon.discountValue"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                            id="discountValue"
+                                            name="discountValue"
+                                            type="text"
+                                            inputmode="numeric"
+                                            class="form-control"
+                                            maxlength="18"
+                                            placeholder="{{ app.getNumberPlaceholder('0.00') }}"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                    <ng-select
+                                        [(ngModel)]="coupon.isPercentage"
+                                        [items]="[
+                                            { value: true, label: '%' },
+                                            { value: false, label: app.localize('Fixed') }
+                                        ]"
+                                        bindLabel="label"
+                                        bindValue="value"
+                                        clearable="false"
+                                        searchable="false"
+                                        id="isPercentage"
+                                        name="isPercentage"
+                                        class="form-control"
+                                        style="width: 90px"
+                                        [clearable]="false"></ng-select>
+                                </div>
+                            </div>
+
+                            <!-- Date Range -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="startDate" class="control-label">
+                                            {{ app.localize('Valid From') }}
+                                        </label>
+                                        <div class="input-with-icon">
+                                            <input
+                                                [(ngModel)]="coupon.startDate"
+                                                type="date"
+                                                name="startDate"
+                                                id="startDate"
+                                                onclick="this.showPicker()"
+                                                class="form-control" />
+                                            @if (coupon.startDate) {
+                                            <button
+                                                (click)="coupon.startDate = null"
+                                                type="button"
+                                                class="input-icon-end"
+                                                tabindex="-1">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="endDate" class="control-label">
+                                            {{ app.localize('Valid Until') }}
+                                        </label>
+                                        <div class="input-with-icon">
+                                            <input
+                                                [(ngModel)]="coupon.endDate"
+                                                type="date"
+                                                name="endDate"
+                                                id="endDate"
+                                                onclick="this.showPicker()"
+                                                class="form-control" />
+                                            @if (coupon.endDate) {
+                                            <button
+                                                (click)="coupon.endDate = null"
+                                                type="button"
+                                                class="input-icon-end"
+                                                tabindex="-1">
+                                                <i class="ri-close-line"></i>
+                                            </button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Minimum Order Amount -->
+                            <div class="form-group">
+                                <label for="minimumOrderAmount" class="control-label">
+                                    {{ app.localize('Minimum Order Amount') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="coupon.minimumOrderAmount"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                    id="minimumOrderAmount"
+                                    name="minimumOrderAmount"
+                                    type="text"
+                                    inputmode="numeric"
+                                    class="form-control"
+                                    maxlength="18"
+                                    placeholder="{{ app.getNumberPlaceholder('0.00') }}" />
+                            </div>
+
+                            <!-- Usage Limits -->
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="maxUsagePerCustomer" class="control-label">
+                                            {{ app.localize('Max Usage Per Customer') }}
+                                        </label>
+                                        <input
+                                            [(ngModel)]="coupon.maxUsagePerCustomer"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(0, true)"
+                                            [appCleaveNumberMin]="1"
+                                            id="maxUsagePerCustomer"
+                                            name="maxUsagePerCustomer"
+                                            type="text"
+                                            inputmode="numeric"
+                                            maxlength="8"
+                                            class="form-control"
+                                            placeholder="{{ app.localize('Unlimited') }}" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="totalUsageLimit" class="control-label">
+                                            {{ app.localize('Total Usage Limit') }}
+                                        </label>
+                                        <input
+                                            [(ngModel)]="coupon.totalUsageLimit"
+                                            [appCleaveNumber]="app.getCleaveNumberOptions(0, true)"
+                                            [appCleaveNumberMin]="1"
+                                            id="totalUsageLimit"
+                                            name="totalUsageLimit"
+                                            type="text"
+                                            inputmode="numeric"
+                                            maxlength="8"
+                                            class="form-control"
+                                            placeholder="{{ app.localize('Unlimited') }}" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Active Status -->
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="coupon.isActive"
+                                        type="checkbox"
+                                        id="isActive"
+                                        name="isActive"
+                                        class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">
+                                        {{ app.localize('Status') }}
+                                        ({{ coupon.isActive ? app.localize('Active') : app.localize('Inactive') }})
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted d-block">
+                                    {{ app.localize('Inactive coupons cannot be used by customers.') }}
+                                </small>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

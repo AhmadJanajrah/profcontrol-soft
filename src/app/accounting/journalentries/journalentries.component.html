@@ -1,0 +1,282 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Journal Entries') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Accounting') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Journal Entries') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Start Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateFrom" class="form-label">
+                            {{ app.localize('From') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateFrom"
+                                type="date"
+                                name="dateFrom"
+                                id="dateFrom"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateFrom) {
+                            <button
+                                (click)="filters.dateFrom = null"
+                                type="button"
+                                class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- End Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateTo" class="form-label">
+                            {{ app.localize('To') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateTo"
+                                type="date"
+                                name="dateTo"
+                                id="dateTo"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateTo) {
+                            <button (click)="filters.dateTo = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex align-items-end gap-2 flex-grow-1">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Journal Entries DataTable -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Journal Entry Detail Modal -->
+<div class="modal-container">
+    <div
+        [ngClass]="{ show: detailModal.show }"
+        [attr.inert]="!detailModal.show ? '' : null"
+        class="modal right fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeDetailModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">
+                        {{ detailModal.title }}
+                    </h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': detailModal.loading }" class="modal-body">
+                    @if (!detailModal.loading) {
+                    <!-- Journal Entry Header -->
+                    <div class="d-flex gap-3 flex-wrap justify-content-between align-items-start mb-3">
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ app.localize('Journal Entry') }} #{{ journalEntry.id || '' }}</div>
+                            <div class="d-flex gap-2 align-items-center flex-wrap">
+                                <span class="badge badge-info">
+                                    {{ journalEntry.referenceNumber || '' }}
+                                </span>
+                                <span [innerHTML]="getStatusBadge(journalEntry.status)"></span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted">
+                                {{ app.localize('Entry Date') }}
+                            </div>
+                            <div class="fw-medium">
+                                {{ journalEntry.entryDateFormatted || '' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Journal Entry Details -->
+                    <div class="journal-entry-details">
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('Description') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <p class="mb-0 small">
+                                    {{ journalEntry.description || '' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <h6 class="fw-semibold mb-2">
+                                    {{ app.localize('Total Debit') }}
+                                </h6>
+                                <div class="border rounded p-2">
+                                    <p class="mb-0 fw-medium text-success">
+                                        {{ journalEntry.totalDebitFormatted || '' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="fw-semibold mb-2">
+                                    {{ app.localize('Total Credit') }}
+                                </h6>
+                                <div class="border rounded p-2">
+                                    <p class="mb-0 fw-medium text-danger">
+                                        {{ journalEntry.totalCreditFormatted || '' }}
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="fw-semibold mb-2">
+                                    {{ app.localize('Amount') }}
+                                </h6>
+                                <div class="border rounded p-2">
+                                    <p class="mb-0 fw-medium text-primary">
+                                        {{ journalEntry.amountFormatted || '' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Journal Entry Lines -->
+                        @if (journalEntry.journalEntryLines && journalEntry.journalEntryLines.length > 0) {
+                        <div class="mb-3">
+                            <div class="heading heading-form-title">
+                                <i class="ri-file-list-line me-2"></i>
+                                {{ app.localize('Journal Entry Lines') }}
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>{{ app.localize('Account') }}</th>
+                                            <th class="text-end">{{ app.localize('Debit') }}</th>
+                                            <th class="text-end">{{ app.localize('Credit') }}</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @for (line of journalEntry.journalEntryLines; track line.id) {
+                                        <tr>
+                                            <td>
+                                                {{ line.account?.accountCode || '&mdash;' }} -
+                                                {{ line.account?.accountName || '&mdash;' }}
+                                            </td>
+                                            <td class="text-end">
+                                                @if (line.debitAmount > 0) {
+                                                <span class="text-success fw-medium">
+                                                    {{ app.formatCurrency(line.debitAmount) }}
+                                                </span>
+                                                } @else {
+                                                <span class="text-muted">&mdash;</span>
+                                                }
+                                            </td>
+                                            <td class="text-end">
+                                                @if (line.creditAmount > 0) {
+                                                <span class="text-danger fw-medium">
+                                                    {{ app.formatCurrency(line.creditAmount) }}
+                                                </span>
+                                                } @else {
+                                                <span class="text-muted">&mdash;</span>
+                                                }
+                                            </td>
+                                        </tr>
+                                        }
+                                        <tr class="border-top">
+                                            <td class="fw-bold">{{ app.localize('Totals') }}</td>
+                                            <td class="text-end fw-bold text-success">
+                                                {{ app.formatCurrency(getDebitTotal(journalEntry)) }}
+                                            </td>
+                                            <td class="text-end fw-bold text-danger">
+                                                {{ app.formatCurrency(getCreditTotal(journalEntry)) }}
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        } @else {
+                        <div class="mb-3">
+                            <div class="heading heading-form-title">
+                                <i class="ri-file-list-line me-2"></i>
+                                {{ app.localize('Journal Entry Lines') }}
+                            </div>
+                            <div class="border rounded p-3 text-center text-muted">
+                                <i class="ri-file-list-line fs-2"></i>
+                                <p class="mb-0 mt-2">{{ app.localize('No journal entry lines found') }}</p>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeDetailModal()" class="modal-backdrop"></div>
+    </div>
+</div>

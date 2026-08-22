@@ -1,0 +1,183 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Gift Cards') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Customers') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Gift Cards') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new gift card button -->
+        <button (click)="openMainModal(0)" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Gift Cards DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gift Card modal (add/edit) -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        <!-- Gift Card form -->
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="giftCard.id" type="hidden" name="id" />
+
+                            <!-- Card Number -->
+                            <div class="form-group">
+                                <label for="cardNumber" class="control-label">
+                                    {{ app.localize('Card Number') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="giftCard.cardNumber"
+                                    id="cardNumber"
+                                    name="cardNumber"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="50"
+                                    placeholder="{{ app.localize('Leave empty to auto-generate') }}" />
+                            </div>
+
+                            <!-- Initial Value -->
+                            <div class="form-group">
+                                <label for="initialValue" class="control-label">
+                                    {{ app.localize('Initial Value') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="giftCard.initialValue"
+                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                    id="initialValue"
+                                    name="initialValue"
+                                    type="text"
+                                    inputmode="numeric"
+                                    class="form-control"
+                                    maxlength="18"
+                                    placeholder="{{ app.getNumberPlaceholder('0.00') }}"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+
+                            <!-- Expiry Date -->
+                            <div class="form-group">
+                                <label for="expiryDate" class="control-label">
+                                    {{ app.localize('Expiry Date') }}
+                                </label>
+                                <div class="input-with-icon">
+                                    <input
+                                        [(ngModel)]="giftCard.expiryDate"
+                                        type="date"
+                                        name="expiryDate"
+                                        id="expiryDate"
+                                        onclick="this.showPicker()"
+                                        class="form-control" />
+                                    @if (giftCard.expiryDate) {
+                                    <button
+                                        (click)="giftCard.expiryDate = null"
+                                        type="button"
+                                        class="input-icon-end"
+                                        tabindex="-1">
+                                        <i class="ri-close-line"></i>
+                                    </button>
+                                    }
+                                </div>
+                                <small class="form-text text-muted">
+                                    {{ app.localize('Leave empty for no expiry date.') }}
+                                </small>
+                            </div>
+
+                            @if (mainModal.isUpdate) {
+                            <!-- Active Status -->
+                            <div class="form-group">
+                                <div class="form-check form-switch">
+                                    <input
+                                        [(ngModel)]="giftCard.isActive"
+                                        type="checkbox"
+                                        id="isActive"
+                                        name="isActive"
+                                        class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">
+                                        {{ app.localize('Active') }}
+                                    </label>
+                                </div>
+                                <small class="form-text text-muted d-block">
+                                    {{ app.localize('Inactive gift cards cannot be used for purchases.') }}
+                                </small>
+                            </div>
+                            }
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,513 @@
+<!-- Page header with title and breadcrumb -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ getPageTitle() }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Inventory') }}
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/inventory/purchases/list']">
+                        {{ app.localize('Purchases') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ isEditMode ? app.localize('Edit') : app.localize('Add') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    @if (isEditMode && purchaseOrder.id > 0) {
+    <div class="float-end">
+        <button (click)="viewPurchaseOrder()" type="button" class="btn btn-outline-primary btn-round">
+            <i class="ri-eye-line"></i>
+            {{ app.localize('View') }}
+        </button>
+    </div>
+    }
+</div>
+
+<div class="main-content">
+    <!-- Purchase form card -->
+    <div class="card">
+        <div class="card-body">
+            <!-- Loading overlay -->
+            <div [ngClass]="{ 'disabled loader-full': isLoading }">
+                <!-- Purchase order form -->
+                @if (!isLoading) {
+                <form
+                    #purchaseOrderForm="ngForm"
+                    [ngClass]="{ 'was-validated': isValidated }"
+                    (ngSubmit)="submitForm(purchaseOrderForm)"
+                    autocomplete="off"
+                    novalidate>
+                    <!-- Hidden ID field -->
+                    <input [(ngModel)]="purchaseOrder.id" type="hidden" name="id" />
+
+                    <div class="row g-3">
+                        <div class="col-lg-7 col-xxl-8">
+                            <div class="row">
+                                <!-- Supplier -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="supplierId" class="form-label">
+                                            {{ app.localize('Supplier') }}
+                                            <code>*</code>
+                                        </label>
+                                        <ng-select
+                                            [(ngModel)]="purchaseOrder.supplierId"
+                                            [items]="suppliers"
+                                            [clearable]="false"
+                                            [searchable]="true"
+                                            bindLabel="supplierName"
+                                            bindValue="id"
+                                            name="supplierId"
+                                            [class.is-invalid]="isValidated && !purchaseOrder.supplierId"
+                                            [placeholder]="app.localize('Choose an option')"
+                                            required></ng-select>
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Reference -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="reference" class="form-label">
+                                            {{ app.localize('Reference') }}
+                                        </label>
+                                        <input
+                                            [(ngModel)]="purchaseOrder.reference"
+                                            type="text"
+                                            id="reference"
+                                            name="reference"
+                                            class="form-control"
+                                            maxlength="50"
+                                            [placeholder]="app.localize('Auto-generated if empty')" />
+                                    </div>
+                                </div>
+
+                                <!-- Order Date -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="orderDate" class="form-label">
+                                            {{ app.localize('Order Date') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="purchaseOrder.orderDate"
+                                            type="date"
+                                            id="orderDate"
+                                            name="orderDate"
+                                            class="form-control"
+                                            [class.is-invalid]="isValidated && !purchaseOrder.orderDate"
+                                            onclick="this.showPicker()"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Expected Delivery Date -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="expectedDeliveryDate" class="form-label">
+                                            {{ app.localize('Expected Delivery Date') }}
+                                        </label>
+                                        <input
+                                            [(ngModel)]="purchaseOrder.expectedDeliveryDate"
+                                            type="date"
+                                            id="expectedDeliveryDate"
+                                            name="expectedDeliveryDate"
+                                            class="form-control"
+                                            onclick="this.showPicker()" />
+                                    </div>
+                                </div>
+
+                                <!-- Status -->
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="status" class="form-label">
+                                            {{ app.localize('Order Status') }}
+                                        </label>
+                                        <ng-select
+                                            [(ngModel)]="purchaseOrder.status"
+                                            [items]="statusOptions"
+                                            [clearable]="false"
+                                            [searchable]="false"
+                                            bindLabel="label"
+                                            bindValue="value"
+                                            name="status"></ng-select>
+                                    </div>
+                                </div>
+
+                                <!-- Notes -->
+                                <div class="col-md-12">
+                                    <div class="form-group">
+                                        <label for="notes" class="form-label">
+                                            {{ app.localize('Notes') }}
+                                        </label>
+                                        <textarea
+                                            [(ngModel)]="purchaseOrder.notes"
+                                            id="notes"
+                                            name="notes"
+                                            class="form-control"
+                                            rows="2"
+                                            maxlength="500"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Order Items Section -->
+                            <div class="section-card mt-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-stack-line me-2"></i>
+                                    {{ app.localize('Order Items') }}
+                                </div>
+
+                                <!-- ng-select for adding items -->
+                                <div class="form-group">
+                                    <ng-select
+                                        [ngModel]="null"
+                                        (ngModelChange)="addItem($event)"
+                                        [items]="items"
+                                        [clearable]="true"
+                                        [searchable]="true"
+                                        bindLabel="itemName"
+                                        bindValue="id"
+                                        name="itemSelect"
+                                        [placeholder]="app.localize('Search and add items...')"
+                                        appendTo="body"></ng-select>
+                                </div>
+
+                                @if (purchaseOrder.items && purchaseOrder.items.length > 0) {
+                                <div class="table-responsive mb-3">
+                                    <table class="table table-bordered table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>{{ app.localize('Item') }}</th>
+                                                <th class="text-center" style="width: 160px">
+                                                    {{ app.localize('Quantity') }}
+                                                </th>
+                                                <th class="text-center" style="width: 140px">
+                                                    {{ app.localize('Unit Price') }}
+                                                    ({{ app.getCurrencySymbol() }})
+                                                </th>
+                                                <th class="text-end" style="width: 120px">
+                                                    {{ app.localize('Total') }}
+                                                </th>
+                                                <th class="text-center" style="width: 60px"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @for (item of purchaseOrder.items; track $index; let i = $index) {
+                                            <tr>
+                                                <td>
+                                                    <div class="table-img-text">
+                                                        <i class="ri-restaurant-2-line"></i>
+                                                        <div class="text-block">
+                                                            <span class="no-wrap fw-medium">
+                                                                {{ item?.item?.itemName || '' }}
+                                                            </span>
+                                                            <small class="text-muted">
+                                                                {{ app.formatCurrency(item?.item?.cost || 0) }}
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </td>
+
+                                                <td>
+                                                    <div class="qty-wrapper">
+                                                        <button
+                                                            (click)="decreaseQuantity(item.itemId)"
+                                                            type="button"
+                                                            class="btn-minus"
+                                                            title="{{ app.localize('Decrease quantity') }}">
+                                                            <i class="ri-subtract-line"></i>
+                                                        </button>
+                                                        <input
+                                                            [(ngModel)]="item.quantity"
+                                                            [appCleaveNumber]="app.getCleaveNumberOptions(3, true)"
+                                                            name="item_quantity_{{ i }}"
+                                                            type="text"
+                                                            inputmode="numeric"
+                                                            class="form-control form-control-sm"
+                                                            [class.is-invalid]="
+                                                                isValidated &&
+                                                                (!item.quantity ||
+                                                                    app.localeToAPINumber(item.quantity) <= 0)
+                                                            "
+                                                            placeholder="{{ app.getNumberPlaceholder('0.00') }}"
+                                                            required />
+                                                        <span class="unit">
+                                                            {{ item?.item?.unitOfMeasure || '' }}
+                                                        </span>
+                                                        <button
+                                                            (click)="increaseQuantity(item.itemId)"
+                                                            type="button"
+                                                            class="btn-plus"
+                                                            title="{{ app.localize('Increase quantity') }}">
+                                                            <i class="ri-add-line"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+
+                                                <td>
+                                                    <div class="input-group input-group-sm justify-content-end">
+                                                        <input
+                                                            [(ngModel)]="item.unitPrice"
+                                                            [appCleaveNumber]="app.getCleaveNumberOptions(4, true)"
+                                                            name="item_price_{{ i }}"
+                                                            type="text"
+                                                            inputmode="numeric"
+                                                            class="form-control"
+                                                            [class.is-invalid]="
+                                                                isValidated &&
+                                                                item.unitPrice &&
+                                                                app.localeToAPINumber(item.unitPrice) < 0
+                                                            "
+                                                            [placeholder]="app.getNumberPlaceholder('0.00')"
+                                                            required />
+                                                    </div>
+                                                </td>
+
+                                                <td class="text-end fw-medium">
+                                                    {{ app.formatCurrency(getItemTotal(item)) }}
+                                                </td>
+
+                                                <td class="text-center">
+                                                    <button
+                                                        type="button"
+                                                        (click)="removeItem(i)"
+                                                        class="btn btn-icon text-danger btn-sm"
+                                                        [appTooltip]="app.localize('Remove')">
+                                                        <i class="ri-delete-bin-line"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                                } @else {
+                                <div class="text-center py-3 bg-light border rounded">
+                                    <i class="ri-box-3-line fs-2 text-muted mb-2"></i>
+                                    <p class="mb-0">{{ app.localize('No items added yet') }}</p>
+                                </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5 col-xxl-4">
+                            <!-- Financial Details Card -->
+                            <div class="card-section border-dashed-primary bg-gradient-primary-light rounded p-3">
+                                <div class="heading heading-form-title">
+                                    <i class="ri-money-dollar-circle-line me-2"></i>
+                                    {{ app.localize('Financial Details') }}
+                                </div>
+
+                                <div class="row">
+                                    <!-- Discount Amount -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="discountAmount" class="form-label">
+                                                {{ app.localize('Discount Amount') }}
+                                            </label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">{{ app.getCurrencySymbol() }}</span>
+                                                </div>
+                                                <input
+                                                    [(ngModel)]="purchaseOrder.discountAmount"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                    name="discountAmount"
+                                                    type="text"
+                                                    inputmode="numeric"
+                                                    class="form-control"
+                                                    [placeholder]="app.getNumberPlaceholder('0.00')" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tax Rate -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="taxRateId" class="form-label">
+                                                {{ app.localize('Tax Rate') }}
+                                            </label>
+                                            <ng-select
+                                                [(ngModel)]="purchaseOrder.taxRateId"
+                                                [items]="taxRates"
+                                                [clearable]="true"
+                                                [searchable]="true"
+                                                bindLabel="displayName"
+                                                bindValue="id"
+                                                id="taxRateId"
+                                                name="taxRateId"
+                                                [placeholder]="app.localize('Choose an option')"></ng-select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shipping Cost -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="shippingCost" class="form-label">
+                                                {{ app.localize('Shipping Cost') }}
+                                            </label>
+                                            <div class="input-group">
+                                                <span class="input-group-text">{{ app.getCurrencySymbol() }}</span>
+                                                <input
+                                                    [(ngModel)]="purchaseOrder.shippingCost"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                    id="shippingCost"
+                                                    name="shippingCost"
+                                                    type="text"
+                                                    inputmode="numeric"
+                                                    class="form-control"
+                                                    [placeholder]="app.getNumberPlaceholder('0.00')" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Payment Method -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="paymentMethodId" class="form-label">
+                                                {{ app.localize('Payment Method') }}
+                                                <code>*</code>
+                                            </label>
+                                            <ng-select
+                                                [(ngModel)]="purchaseOrder.paymentMethodId"
+                                                [items]="paymentMethods"
+                                                [clearable]="false"
+                                                [searchable]="true"
+                                                bindLabel="methodName"
+                                                bindValue="id"
+                                                id="paymentMethodId"
+                                                name="paymentMethodId"
+                                                [class.is-invalid]="isValidated && !purchaseOrder.paymentMethodId"
+                                                [placeholder]="app.localize('Choose an option')"
+                                                required></ng-select>
+                                            <div class="invalid-feedback">
+                                                {{ app.localize('This field is required.') }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Paid Amount -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="paidAmount" class="form-label">
+                                                {{ app.localize('Paid Amount') }}
+                                            </label>
+                                            <div class="input-group">
+                                                <div class="input-group-prepend">
+                                                    <span class="input-group-text">{{ app.getCurrencySymbol() }}</span>
+                                                </div>
+                                                <input
+                                                    [(ngModel)]="purchaseOrder.paidAmount"
+                                                    [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                                    id="paidAmount"
+                                                    name="paidAmount"
+                                                    [placeholder]="app.getNumberPlaceholder('0.00')"
+                                                    type="text"
+                                                    inputmode="numeric"
+                                                    class="form-control" />
+                                                <div>
+                                                    <button
+                                                        (click)="setMaxPaidAmount()"
+                                                        type="button"
+                                                        class="btn btn-icon btn-dark ms-1">
+                                                        <i class="ri-equal-line"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Payment Reference -->
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label for="paymentReference" class="form-label">
+                                                {{ app.localize('Payment Reference') }}
+                                            </label>
+                                            <input
+                                                [(ngModel)]="purchaseOrder.paymentReference"
+                                                type="text"
+                                                id="paymentReference"
+                                                name="paymentReference"
+                                                class="form-control"
+                                                maxlength="100" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="divider"></div>
+                                <!-- Totals Summary -->
+                                <div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ app.localize('Subtotal') }}:</span>
+                                        <span class="fw-medium">{{ app.formatCurrency(getSubTotal()) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ app.localize('Discount') }}:</span>
+                                        <span class="fw-medium text-danger">
+                                            -{{
+                                                app.formatCurrency(app.localeToAPINumber(purchaseOrder.discountAmount))
+                                            }}
+                                        </span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ app.localize('Tax') }}:</span>
+                                        <span class="fw-medium">{{ app.formatCurrency(getTaxAmount()) }}</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>{{ app.localize('Shipping') }}:</span>
+                                        <span class="fw-medium">
+                                            {{ app.formatCurrency(app.localeToAPINumber(purchaseOrder.shippingCost)) }}
+                                        </span>
+                                    </div>
+                                    <div class="divider"></div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <strong class="fs-5">{{ app.localize('Total Amount') }}:</strong>
+                                        <strong class="text-primary fs-5">
+                                            {{ app.formatCurrency(getTotalAmount()) }}
+                                        </strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions mt-3">
+                        <div [ngClass]="{ disabled: isSubmitted }" class="d-flex justify-content-end gap-2">
+                            <button (click)="app.goBack()" type="button" class="btn btn-light btn-round">
+                                <i class="ri-arrow-left-line"></i>
+                                {{ app.localize('Back') }}
+                            </button>
+                            <button
+                                [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                                type="submit"
+                                class="btn btn-primary btn-round">
+                                <i class="ri-save-3-line"></i>
+                                {{ isEditMode ? app.localize('Update') : app.localize('Save') }}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

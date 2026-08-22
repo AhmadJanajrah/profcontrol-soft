@@ -1,0 +1,354 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Audit Logs') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/tools']">
+                        {{ app.localize('Tools') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Audit Logs') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <!-- Cleanup button -->
+    <div class="float-end">
+        <button
+            (click)="showCleanupModal()"
+            class="btn btn-warning btn-round me-2"
+            [appTooltip]="app.localize('Cleanup Old Logs')">
+            <i class="ri-delete-bin-6-line"></i>
+            {{ app.localize('Cleanup') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Start Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="startDate" class="form-label">
+                            {{ app.localize('Start Date') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.startDate"
+                                type="date"
+                                name="startDate"
+                                id="startDate"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.startDate) {
+                            <button
+                                (click)="filters.startDate = null"
+                                type="button"
+                                class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- End Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="endDate" class="form-label">
+                            {{ app.localize('End Date') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.endDate"
+                                type="date"
+                                name="endDate"
+                                id="endDate"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.endDate) {
+                            <button (click)="filters.endDate = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Status filter -->
+                    <div class="form-group flex-grow-1 mb-0">
+                        <label class="form-label" for="statusSelect">
+                            {{ app.localize('Status') }}
+                        </label>
+                        <ng-select
+                            id="statusSelect"
+                            name="statusSelect"
+                            [(ngModel)]="filters.status"
+                            [items]="statusOptions"
+                            [searchable]="false"
+                            [clearable]="true"
+                            [placeholder]="app.localize('All')"
+                            bindLabel="label"
+                            bindValue="value"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Audit logs data table -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-container">
+    <!-- Audit Log Detail Modal -->
+    <div
+        [ngClass]="{ show: detailModal.show }"
+        [attr.inert]="!detailModal.show ? '' : null"
+        class="modal right fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button (click)="closeDetailModal()" type="button" class="btn btn-icon btn-back">
+                        <i class="ri-arrow-left-line"></i>
+                    </button>
+                    <h5 class="modal-title ms-2 w-100">
+                        {{ detailModal.title }}
+                    </h5>
+                </div>
+                <div [ngClass]="{ 'disabled loader-full': detailModal.loading }" class="modal-body">
+                    @if (!detailModal.loading) {
+                    <!-- Audit Log Header -->
+                    <div class="d-flex gap-3 flex-wrap justify-content-between align-items-start mb-3">
+                        <div class="d-flex gap-3 align-items-center flex-grow-1">
+                            <div class="avatar bg-warning-light">
+                                <i class="ri-shield-check-line"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold">{{ auditLog.username || '&mdash;' }}</div>
+                                <div class="small text-muted mb-1">#{{ auditLog.id }}</div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <span class="badge badge-info">{{ auditLog.service || '&mdash;' }}</span>
+                                    <span class="badge badge-primary">{{ auditLog.action || '&mdash;' }}</span>
+                                    <span class="badge" [ngClass]="getStatusBadgeClass(auditLog.status)">
+                                        {{ auditLog.status || '&mdash;' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <div class="small text-muted">
+                                {{ app.localize('Created At') }}
+                            </div>
+                            <div class="fw-medium">
+                                {{ auditLog.createdAtFormatted || '&mdash;' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <!-- Audit Log Details -->
+                    <div class="audit-log-details">
+                        @if (auditLog.entityType) {
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('Entity Information') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-medium">{{ auditLog.entityType }}</div>
+                                        @if (auditLog.entityId) {
+                                        <small class="text-muted">ID: {{ auditLog.entityId }}</small>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        } @if (auditLog.description) {
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('Description') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <p class="mb-0 small">
+                                    {{ auditLog.description }}
+                                </p>
+                            </div>
+                        </div>
+                        }
+
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('IP Address') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <p class="mb-0 text-danger small">
+                                    {{ auditLog.ipAddress || '&mdash;' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        @if (auditLog.userAgent) {
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('User Agent') }}
+                            </h6>
+                            <div class="border rounded p-2">
+                                <p class="mb-0 small">
+                                    {{ auditLog.userAgent }}
+                                </p>
+                            </div>
+                        </div>
+                        } @if (auditLog.errorMessage) {
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('Error Message') }}
+                            </h6>
+                            <pre
+                                class="json-display border rounded p-2 mb-0"><code>{{ formatJsonData(auditLog.errorMessage) }}</code></pre>
+                        </div>
+                        }@if (auditLog.oldValues) {
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('Old Values') }}
+                            </h6>
+                            <pre
+                                class="json-display border rounded p-2 mb-0"><code>{{ formatJsonData(auditLog.oldValues) }}</code></pre>
+                        </div>
+                        } @if (auditLog.newValues) {
+                        <div class="mb-3">
+                            <h6 class="fw-semibold mb-2">
+                                {{ app.localize('New Values') }}
+                            </h6>
+                            <pre
+                                class="json-display border rounded p-2 mb-0"><code>{{ formatJsonData(auditLog.newValues) }}</code></pre>
+                        </div>
+                        }
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeDetailModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Cleanup confirmation modal -->
+    <div
+        [ngClass]="{ show: cleanupModal.show }"
+        [attr.inert]="!cleanupModal.show ? '' : null"
+        class="modal fade"
+        role="dialog"
+        tabindex="-1">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-delete-bin-6-line me-2 text-warning"></i>
+                        {{ app.localize('Cleanup Audit Logs') }}
+                    </h5>
+                    <button (click)="closeCleanupModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="ri-alert-line me-2"></i>
+                        {{ app.localize('This action will permanently delete old audit logs and cannot be undone.') }}
+                    </div>
+                    <form
+                        #cleanupForm="ngForm"
+                        (ngSubmit)="submitCleanup(cleanupForm)"
+                        novalidate
+                        [ngClass]="{ 'was-validated': cleanupModal.validated }">
+                        <div class="form-group">
+                            <label for="daysToKeep" class="form-label">
+                                {{ app.localize('Days to Keep') }}
+                            </label>
+                            <input
+                                [(ngModel)]="cleanupModal.daysToKeep"
+                                appIntegerOnly
+                                min="30"
+                                max="365"
+                                type="number"
+                                id="daysToKeep"
+                                name="daysToKeep"
+                                class="form-control"
+                                required />
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                            <small class="form-text text-muted">
+                                {{ app.localize('Minimum 30 days, maximum 365 days') }}
+                            </small>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <button (click)="closeCleanupModal()" type="button" class="btn btn-light btn-round">
+                                <i class="ri-close-line"></i>
+                                {{ app.localize('Cancel') }}
+                            </button>
+                            <button
+                                type="submit"
+                                [ngClass]="{ 'disabled btn-progress': cleanupModal.submitted }"
+                                class="btn btn-danger btn-round">
+                                <i class="ri-delete-bin-6-line"></i>
+                                {{ app.localize('Delete Old Logs') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <!-- Modal backdrop -->
+        <div (click)="closeCleanupModal()" class="modal-backdrop"></div>
+    </div>
+</div>

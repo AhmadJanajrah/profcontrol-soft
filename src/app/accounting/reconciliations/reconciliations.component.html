@@ -1,0 +1,306 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Reconciliations') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    {{ app.localize('Accounting') }}
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Reconciliations') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+    <div class="float-end">
+        <!-- Add new reconciliation button -->
+        <button (click)="openAddModal()" type="button" class="btn btn-primary btn-round">
+            <i class="ri-add-line"></i>
+            {{ app.localize('Add New') }}
+        </button>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Filters section -->
+    <div class="card mb-2">
+        <div class="card-body">
+            <form
+                #filterForm="ngForm"
+                [ngClass]="{ 'was-validated': filters.validated }"
+                (ngSubmit)="applyFilters(filterForm)"
+                novalidate>
+                <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                    <!-- Bank Account filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 260px">
+                        <label class="form-label">
+                            {{ app.localize('Bank Account') }}
+                        </label>
+                        <ng-select
+                            [(ngModel)]="filters.bankAccountId"
+                            [items]="bankAccounts"
+                            bindLabel="displayName"
+                            bindValue="id"
+                            name="filterBankAccountId"
+                            [clearable]="true"
+                            [placeholder]="app.localize('All')"
+                            class="form-control"
+                            appendTo="body"></ng-select>
+                    </div>
+
+                    <!-- Start Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateFrom" class="form-label">
+                            {{ app.localize('From') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateFrom"
+                                type="date"
+                                name="dateFrom"
+                                id="dateFrom"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateFrom) {
+                            <button
+                                (click)="filters.dateFrom = null"
+                                type="button"
+                                class="input-icon-end"
+                                tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- End Date filter -->
+                    <div class="form-group flex-grow-1 mb-0" style="min-width: 220px">
+                        <label for="dateTo" class="form-label">
+                            {{ app.localize('To') }}
+                        </label>
+                        <div class="input-with-icon">
+                            <input
+                                [(ngModel)]="filters.dateTo"
+                                type="date"
+                                name="dateTo"
+                                id="dateTo"
+                                onclick="this.showPicker()"
+                                class="form-control" />
+                            @if (filters.dateTo) {
+                            <button (click)="filters.dateTo = null" type="button" class="input-icon-end" tabindex="-1">
+                                <i class="ri-close-line"></i>
+                            </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Filter actions -->
+                    <div class="d-flex flex-grow-1 align-items-end gap-2 flex-shrink-0">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': filters.submitted }"
+                            [disabled]="filters.submitted"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-filter-3-line me-1"></i>
+                            {{ app.localize('Apply') }}
+                        </button>
+                        <button
+                            (click)="resetFilters()"
+                            type="button"
+                            [disabled]="filters.submitted"
+                            class="btn btn-light btn-round">
+                            <i class="ri-refresh-line me-1"></i>
+                            {{ app.localize('Reset') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- List -->
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <!-- Reconciliations DataTable -->
+                <table [dtOptions]="dtOptions" [dtTrigger]="dtTrigger" datatable class="table" id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Reconciliation modal -->
+    <div class="modal-container">
+        <div
+            [ngClass]="{ show: mainModal.show }"
+            [attr.inert]="!mainModal.show ? '' : null"
+            class="modal right fade"
+            role="dialog"
+            tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button (click)="closeMainModal()" type="button" class="btn btn-icon btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                        </button>
+                        <h5 class="modal-title ms-2 w-100">
+                            {{ mainModal.title }}
+                        </h5>
+                    </div>
+                    <div [ngClass]="{ 'disabled loader-full': mainModal.loading }" class="modal-body">
+                        @if (!mainModal.loading) {
+                        <form
+                            #frm="ngForm"
+                            [ngClass]="{ 'was-validated': mainModal.validated }"
+                            (ngSubmit)="submitForm(frm)"
+                            id="frm"
+                            autocomplete="off"
+                            novalidate>
+                            <input [(ngModel)]="reconciliation.id" type="hidden" name="id" />
+
+                            <!-- Bank Account -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Bank Account') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="reconciliation.bankAccountId"
+                                    [items]="bankAccounts"
+                                    bindLabel="displayName"
+                                    bindValue="id"
+                                    name="bankAccountId"
+                                    [clearable]="false"
+                                    [required]="true"
+                                    [class.is-invalid]="mainModal.validated && !reconciliation.bankAccountId"
+                                    placeholder="{{ app.localize('Choose an option') }}"></ng-select>
+                                @if(mainModal.validated && !reconciliation.bankAccountId){
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                                }
+                            </div>
+
+                            <div class="row">
+                                <div class="col-6">
+                                    <!-- Statement Start -->
+                                    <div class="form-group">
+                                        <label class="control-label">
+                                            {{ app.localize('Statement Start') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="reconciliation.statementStartDate"
+                                            name="statementStartDate"
+                                            type="date"
+                                            class="form-control"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <!-- Statement End -->
+                                    <div class="form-group">
+                                        <label class="control-label">
+                                            {{ app.localize('Statement End') }}
+                                            <code>*</code>
+                                        </label>
+                                        <input
+                                            [(ngModel)]="reconciliation.statementEndDate"
+                                            name="statementEndDate"
+                                            type="date"
+                                            class="form-control"
+                                            required />
+                                        <div class="invalid-feedback">
+                                            {{ app.localize('This field is required.') }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Statement Closing Balance -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Statement Closing Balance') }}
+                                    <code>*</code>
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">{{ app.getCurrencySymbol() }}</span>
+                                    </div>
+                                    <input
+                                        [(ngModel)]="reconciliation.statementClosingBalance"
+                                        [appCleaveNumber]="app.getCleaveNumberOptions(2, true)"
+                                        name="statementClosingBalance"
+                                        type="text"
+                                        inputmode="numeric"
+                                        class="form-control"
+                                        maxlength="18"
+                                        placeholder="{{ app.getNumberPlaceholder('0.00') }}"
+                                        required />
+                                    <div class="invalid-feedback">
+                                        {{ app.localize('This field is required.') }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Notes -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Notes') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="reconciliation.notes"
+                                    name="notes"
+                                    rows="2"
+                                    class="form-control"
+                                    maxlength="500"></textarea>
+                            </div>
+
+                            <div class="alert alert-info d-flex align-items-center mt-2" role="alert">
+                                <i class="ri-information-line me-2"></i>
+                                <div>
+                                    {{
+                                        app.localize(
+                                            'System closing balance and difference will be calculated after saving.'
+                                        )
+                                    }}
+                                </div>
+                            </div>
+
+                            <div class="pb-5"></div>
+                            <!-- Form actions -->
+                            <div [ngClass]="{ disabled: mainModal.submitted }" class="form-actions py-0">
+                                <button (click)="closeMainModal()" type="button" class="btn btn-light btn-round me-2">
+                                    <i class="ri-close-line"></i>
+                                    {{ mainModal.btnCancelText }}
+                                </button>
+                                <button
+                                    [ngClass]="{ 'disabled btn-progress': mainModal.submitted }"
+                                    type="submit"
+                                    class="btn btn-primary btn-round">
+                                    <i class="ri-save-3-line"></i>
+                                    {{ mainModal.btnSaveText }}
+                                </button>
+                            </div>
+                        </form>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div (click)="closeMainModal()" class="modal-backdrop"></div>
+        </div>
+    </div>
+</div>

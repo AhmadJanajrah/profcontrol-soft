@@ -1,0 +1,241 @@
+<!-- Page header with title and breadcrumbs -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ app.localize('Database') }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/tools']">
+                        {{ app.localize('Tools') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ app.localize('Database') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <!-- Database Management Card -->
+    <div class="card">
+        <!-- Card Body with Tab Content -->
+        <div class="card-body p-2">
+            <div class="nav nav-tabs style-1 mb-2" id="nav-tab" role="tablist">
+                <button
+                    class="nav-link active"
+                    id="nav-backup-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#nav-backup"
+                    type="button"
+                    role="tab"
+                    aria-controls="nav-backup"
+                    aria-selected="true">
+                    <i class="ri-download-cloud-2-line me-1"></i>
+                    {{ app.localize('Backup') }}
+                </button>
+                <button
+                    class="nav-link"
+                    id="nav-restore-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#nav-restore"
+                    type="button"
+                    role="tab"
+                    aria-controls="nav-restore"
+                    aria-selected="false">
+                    <i class="ri-upload-cloud-2-line me-1"></i>
+                    {{ app.localize('Restore') }}
+                </button>
+                <button
+                    class="nav-link"
+                    id="nav-export-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#nav-export"
+                    type="button"
+                    role="tab"
+                    aria-controls="nav-export"
+                    aria-selected="false">
+                    <i class="ri-file-download-line me-1"></i>
+                    {{ app.localize('Export Data') }}
+                </button>
+                <button
+                    class="nav-link"
+                    id="nav-import-tab"
+                    data-bs-toggle="tab"
+                    data-bs-target="#nav-import"
+                    type="button"
+                    role="tab"
+                    aria-controls="nav-import"
+                    aria-selected="false">
+                    <i class="ri-file-upload-line me-1"></i>
+                    {{ app.localize('Import Data') }}
+                </button>
+            </div>
+            <div class="tab-content border-dashed p-2" id="nav-tabContent">
+                <!-- Database Backup Tab -->
+                <div class="tab-pane fade show active" id="nav-backup" role="tabpanel" aria-labelledby="nav-backup-tab">
+                    <div class="alert alert-info" role="alert">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="ri-information-line fs-4 me-2"></i>
+                            <h4 class="alert-heading mb-0">
+                                {{ app.localize('Database Backup!') }}
+                            </h4>
+                        </div>
+                        <ul class="list-unstyled">
+                            <li>
+                                <i class="ri-check-line text-success me-2"></i>
+                                {{ app.localize('Full database backup with compression.') }}
+                            </li>
+                            <li>
+                                <i class="ri-check-line text-success me-2"></i>
+                                {{ app.localize('Includes all tables, data, and schema.') }}
+                            </li>
+                            <li>
+                                <i class="ri-check-line text-success me-2"></i>
+                                {{ app.localize('Checksum verification for data integrity.') }}
+                            </li>
+                            <li>
+                                <i class="ri-check-line text-success me-2"></i>
+                                {{ app.localize('Compatible with SQL Server restore operations.') }}
+                            </li>
+                            <li>
+                                <i class="ri-check-line text-success me-2"></i>
+                                {{ app.localize('Automatic timestamp in filename.') }}
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="mt-4 mb-2">
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': backupState.loading }"
+                            [disabled]="backupState.loading"
+                            (click)="downloadBackup()"
+                            type="button"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-download-cloud-2-line"></i>
+                            {{ app.localize('Download Backup') }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Database Restore Tab -->
+                <div class="tab-pane fade" id="nav-restore" role="tabpanel" aria-labelledby="nav-restore-tab">
+                    <div class="alert alert-danger" role="alert">
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="ri-alert-line fs-4 me-2"></i>
+                            <h4 class="alert-heading mb-0">
+                                {{ app.localize('Database Restore!') }}
+                            </h4>
+                        </div>
+                        <small>
+                            {{ app.localize('Restoring a database will completely replace all current data.') }}
+                            {{ app.localize('This action cannot be undone.') }}
+                            {{ app.localize('Please ensure you have a current backup before proceeding.') }}
+                        </small>
+                    </div>
+
+                    <!-- Restore Form -->
+                    <form
+                        #restoreFrm="ngForm"
+                        [ngClass]="{ 'was-validated': restoreForm.validated }"
+                        (ngSubmit)="submitRestoreForm(restoreFrm)"
+                        autocomplete="off"
+                        novalidate>
+                        <div class="form-group">
+                            <div class="heading heading-sub">
+                                <h4>{{ app.localize('Select Backup File') }}</h4>
+                                <p>
+                                    {{
+                                        app.localize(
+                                            'Choose a .bak file created by SQL Server backup operations. Maximum file size: 1GB.'
+                                        )
+                                    }}
+                                </p>
+                            </div>
+
+                            <!-- File Upload -->
+                            <div class="upload-single w-100">
+                                <input
+                                    [ngModel]
+                                    (change)="onFileInputChange($event)"
+                                    type="file"
+                                    name="backupFileInput"
+                                    id="backupFileInput"
+                                    accept=".bak"
+                                    class="upload-single-input"
+                                    required />
+                                <label for="backupFileInput" class="upload-single-box">
+                                    <div class="upload-single-placeholder">
+                                        <i class="ri-upload-cloud-2-line fs-3"></i>
+                                        @if (selectedBackupFileName) {
+                                        <div class="upload-single-text">
+                                            <strong>{{ selectedBackupFileName }}</strong>
+                                            <small class="d-block text-muted">
+                                                {{ getFormattedFileSize() }}
+                                            </small>
+                                        </div>
+                                        } @else {
+                                        <div class="upload-single-text">
+                                            {{ app.localize('Drop backup file here or') }}
+                                            <span class="upload-single-browse">
+                                                {{ app.localize('browse') }}
+                                            </span>
+                                            <small class="d-block text-muted">
+                                                {{ app.localize('Only .bak files accepted') }}
+                                            </small>
+                                        </div>
+                                        }
+                                    </div>
+                                    <div class="upload-single-btn btn-round">
+                                        <i class="ri-folder-open-line me-2"></i>
+                                        {{ app.localize('Choose Backup File') }}
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="row mt-4 mb-2">
+                            <div class="col-md-12">
+                                <div [ngClass]="{ disabled: restoreForm.loading }" class="restore-actions">
+                                    <!-- Restore Button -->
+                                    <button
+                                        [ngClass]="{ 'disabled btn-progress': restoreForm.loading }"
+                                        [disabled]="!isRestoreFormReady"
+                                        type="submit"
+                                        class="btn btn-danger btn-round me-2">
+                                        <i class="ri-upload-cloud-2-line"></i>
+                                        {{ app.localize('Restore Database') }}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Data Export Tab -->
+                <div class="tab-pane fade" id="nav-export" role="tabpanel" aria-labelledby="nav-export-tab">
+                    <div class="text-center py-4">
+                        <i class="ri-file-upload-line fs-3 text-muted"></i>
+                        <h5 class="mt-2">{{ 'Coming Soon' }}</h5>
+                    </div>
+                </div>
+
+                <!-- Data Import Tab -->
+                <div class="tab-pane fade" id="nav-import" role="tabpanel" aria-labelledby="nav-import-tab">
+                    <div class="text-center py-4">
+                        <i class="ri-file-upload-line fs-3 text-muted"></i>
+                        <h5 class="mt-2">{{ 'Coming Soon' }}</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
