@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiOrigin: 'http://prof-api.profcontrol-soft.com'
+  apiOrigin: 'https://prof-api.profcontrol-soft.com'
 };

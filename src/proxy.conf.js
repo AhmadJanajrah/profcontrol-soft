@@ -4,8 +4,8 @@ const PROXY_CONFIG = [
       "/api",
       "/hub/notificationhub",
     ],
-    target: 'http://prof-api.profcontrol-soft.com',
-    secure: false,
+    target: 'https://prof-api.profcontrol-soft.com',
+    secure: true,
     ws: true,
     changeOrigin: true,
     headers: {
