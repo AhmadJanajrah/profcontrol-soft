@@ -65,8 +65,8 @@ export class ItemViewComponent implements OnInit, OnDestroy {
 				if (this.item.itemImages && this.item.itemImages.length > 0) {
 					this.item.itemImages = this.item.itemImages.map((img: any) => ({
 						...img,
-						imageUrl: this.app.apiUrl(`/api/media/getimage/items/${img.imageUrl}`),
-						thumbnailUrl: this.app.apiUrl(`/api/media/getthumbnailimage/items/${img.imageUrl}`)
+						imageUrl: this.app.itemImageUrl(img.imageUrl, false) || 'assets/images/default.png',
+						thumbnailUrl: this.app.itemImageUrl(img.imageUrl) || 'assets/images/default.png'
 					}));
 				}
 

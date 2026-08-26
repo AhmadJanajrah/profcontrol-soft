@@ -541,7 +541,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     this.items.forEach((item: any) => {
-      item.imageUrl = item.itemImages?.length ? this.app.apiUrl(`/api/media/getthumbnailimage/items/${item.itemImages[0].imageUrl}`) : '';
+      item.imageUrl = this.app.itemImageUrl(item.itemImages?.[0]?.imageUrl || item.imageUrl);
     });
 
     this.taxRates.forEach((tax: any) => {
@@ -2627,7 +2627,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   public getCurrentImage(): any {
     if (this.modals.itemDetail.item?.itemImages) {
       const image = this.modals.itemDetail.item.itemImages[this.modals.itemDetail.selectedImageIndex] || null;
-      return this.app.apiUrl(`/api/media/getimage/items/${image?.imageUrl}`);
+      return this.app.itemImageUrl(image?.imageUrl, false) || 'assets/images/default.png';
     }
     return 'assets/images/default.png';
   }

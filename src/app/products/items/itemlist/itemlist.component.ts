@@ -142,7 +142,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 							categoryName: item.category?.categoryName || '—',
 							price: this.app.formatCurrency(item.price || 0),
 							cost: item.itemType == 1 || item.itemType == 4 ? '—' : this.app.formatCurrency(item.cost || 0),
-							primaryImageUrl: item.itemImages?.length ? item.itemImages[0].imageUrl : ''
+							primaryImageUrl: this.app.mediaFileName(item.itemImages?.[0]?.imageUrl || item.imageUrl)
 						}));
 						this.filters.submitted = false;
 						this.filters.validated = false;
@@ -193,9 +193,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 
 	// Render item column with image and name
 	private renderItemColumn(data: string, row: any): string {
-		const imageUrl = row.primaryImageUrl
-			? this.app.apiUrl(`/api/media/getthumbnailimage/items/${row.primaryImageUrl}`)
-			: 'assets/images/default.png';
+		const imageUrl = this.app.itemImageUrl(row.primaryImageUrl) || 'assets/images/default.png';
 
 		return `
         <div class="table-img-text">

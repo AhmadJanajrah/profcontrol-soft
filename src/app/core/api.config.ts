@@ -5,9 +5,11 @@ export const API_BASE_URL = `${API_ORIGIN}/api`;
 
 function toPascalApiPath(path: string): string {
   const [pathname, query] = path.split('?');
+  // /api/{controller}/{action}/{...resource} — only controller and action are PascalCased.
+  // Folders and filenames (e.g. items/photo.jpg) must keep their original casing.
   const converted = pathname
     .split('/')
-    .map((segment) => {
+    .map((segment, index) => {
       if (!segment) {
         return segment;
       }
@@ -17,11 +19,15 @@ function toPascalApiPath(path: string): string {
         return lower;
       }
 
-      if (/^\d+$/.test(segment) || segment.includes('.')) {
+      if (/^\d+$/.test(segment) || segment.includes('.') || segment.includes('-')) {
         return segment;
       }
 
-      return segment.charAt(0).toUpperCase() + segment.slice(1);
+      if (index === 2 || index === 3) {
+        return segment.charAt(0).toUpperCase() + segment.slice(1);
+      }
+
+      return segment;
     })
     .join('/');
 

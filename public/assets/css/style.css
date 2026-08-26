@@ -4999,6 +4999,23 @@ main {
      object-fit: cover;
 }
 
+.image-grid .image-item .image-badge {
+     position: absolute;
+     inset-block-end: 0;
+     inset-inline-start: 0;
+     inset-inline-end: 0;
+     background: rgba(0, 0, 0, 0.55);
+     color: #fff;
+     font-size: 10px;
+     line-height: 1.2;
+     text-align: center;
+     padding: 2px 4px;
+}
+
+.image-grid .image-item .image-badge.new {
+     background: rgba(25, 135, 84, 0.75);
+}
+
 .image-grid .image-item .remove-btn {
      position: absolute;
      inset-block-start: 2px;

@@ -205,7 +205,7 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                     // Map inner objects with proper structure
                     itemImages: itemData.itemImages?.map((img: any) => ({
                         id: img.id,
-                        imageUrl: img.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/items/${img.imageUrl}`) : 'assets/images/default.png'
+                        imageUrl: this.app.itemImageUrl(img.imageUrl) || 'assets/images/default.png'
                     })) || [],
 
                     recipeItemItems: itemData.recipeItemItems?.map((ri: any) => ({
@@ -501,10 +501,6 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
         }
 
         input.value = '';
-
-        setTimeout(() => {
-            this.app.loadImages('[data-form-img="true"]');
-        }, 100);
     }
 
     // Validate image file
@@ -590,7 +586,17 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
 
                 this.app.showSuccessMessage(this.app.localize('Success!'), successMessage);
 
-                if (!this.isEditMode) {
+                if (this.isEditMode) {
+                    this.imagePreviewUrls.forEach(url => {
+                        if (url?.startsWith('blob:')) {
+                            URL.revokeObjectURL(url);
+                        }
+                    });
+                    this.selectedImageFiles = [];
+                    this.imagePreviewUrls = [];
+                    this.imagesToDelete = [];
+                    this.loadItemData(this.item.id);
+                } else {
                     this.resetFormData();
                 }
                 this.isValidated = false;

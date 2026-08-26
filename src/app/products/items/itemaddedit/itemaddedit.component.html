@@ -433,9 +433,7 @@
                             @for (previewUrl of imagePreviewUrls; track $index; let i = $index) {
                             <div class="image-item" cdkDrag>
                                 <img
-                                    src="assets/images/default.png"
-                                    [attr.data-url]="previewUrl"
-                                    [attr.data-form-img]="true"
+                                    [src]="previewUrl"
                                     [alt]="item.itemName"
                                     class="preview-image" />
                                 <button (click)="removeSelectedImage(i)" type="button" class="remove-btn">

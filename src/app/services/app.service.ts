@@ -437,6 +437,23 @@ export class AppService {
     return resolveApiUrl(path);
   }
 
+  public mediaFileName(value?: string | null): string {
+    if (!value) {
+      return '';
+    }
+    const name = value.replace(/\\/g, '/').split('?')[0].split('/').pop() || '';
+    return name;
+  }
+
+  public itemImageUrl(fileName?: string | null, thumbnail = true): string {
+    const name = this.mediaFileName(fileName);
+    if (!name) {
+      return '';
+    }
+    const action = thumbnail ? 'getthumbnailimage' : 'getimage';
+    return this.apiUrl(`/api/media/${action}/items/${encodeURIComponent(name)}`);
+  }
+
   public hubUrl(): string {
     return resolveHubUrl();
   }
@@ -980,13 +997,23 @@ export class AppService {
   public async loadImages(selector: string, isBackground = false): Promise<void> {
     setTimeout(async () => {
       const elements = document.querySelectorAll(selector);
-      const cache = await caches.open('image-cache');
+      if (!elements.length) {
+        return;
+      }
+
+      let cache: Cache | null = null;
+      try {
+        cache = await caches.open('image-cache');
+      } catch {
+        cache = null;
+      }
 
       for (const element of Array.from(elements)) {
-        const imageUrl = (element as HTMLElement).getAttribute('data-url');
+        const el = element as HTMLElement;
+        const imageUrl = el.getAttribute('data-url');
         if (!imageUrl) {
           if (isBackground) {
-            (element as HTMLElement).style.backgroundImage = 'url()';
+            el.style.backgroundImage = 'url()';
           }
           continue;
         }
@@ -994,32 +1021,46 @@ export class AppService {
         try {
           if (imageUrl.startsWith('blob:') || imageUrl.startsWith('data:')) {
             if (isBackground) {
-              (element as HTMLElement).style.backgroundImage = `url(${imageUrl})`;
+              el.style.backgroundImage = `url(${imageUrl})`;
             } else {
-              (element as HTMLImageElement).src = imageUrl;
+              (el as HTMLImageElement).src = imageUrl;
             }
             continue;
           }
 
-          const cachedResponse = await cache.match(imageUrl);
-          if (cachedResponse) {
-            const blob = await cachedResponse.blob();
-            if (isBackground) {
-              (element as HTMLElement).style.backgroundImage = `url(${URL.createObjectURL(blob)})`;
-            } else {
-              (element as HTMLImageElement).src = URL.createObjectURL(blob);
+          let blob: Blob | null = null;
+          if (cache) {
+            const cachedResponse = await cache.match(imageUrl);
+            if (cachedResponse) {
+              blob = await cachedResponse.blob();
             }
+          }
+
+          if (!blob) {
+            blob = await this.http.get(imageUrl, { responseType: 'blob' }).toPromise() as Blob;
+            if (blob && cache && !/json|html|text|xml/i.test(blob.type || '')) {
+              try {
+                await cache.put(imageUrl, new Response(blob));
+              } catch {
+                // Ignore cache quota / CORS put failures so the image still displays
+              }
+            }
+          }
+
+          if (!blob || /json|html|text|xml/i.test(blob.type || '')) {
+            throw new Error('Not an image');
+          }
+
+          const objectUrl = URL.createObjectURL(blob);
+          if (isBackground) {
+            el.style.backgroundImage = `url(${objectUrl})`;
           } else {
-            const response: any = await this.http.get(imageUrl, { responseType: 'blob' }).toPromise();
-            if (isBackground) {
-              (element as HTMLElement).style.backgroundImage = `url(${URL.createObjectURL(response)})`;
-            } else {
-              (element as HTMLImageElement).src = URL.createObjectURL(response);
-            }
-            cache.put(imageUrl, new Response(response));
+            (el as HTMLImageElement).src = objectUrl;
           }
         } catch {
-          (element as HTMLImageElement).src = 'assets/images/default.png';
+          if (!isBackground) {
+            (el as HTMLImageElement).src = 'assets/images/default.png';
+          }
         }
       }
     }, 100);
