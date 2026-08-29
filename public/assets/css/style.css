@@ -6046,25 +6046,20 @@ main {
 
 .zpos .categories {
      display: flex;
+     flex-wrap: wrap;
      gap: 8px;
-     overflow-x: auto;
      padding: 12px;
      background-color: var(--bg-main);
      box-shadow: var(--shadow-sm);
      border-block-end: 1px solid var(--border-light);
-     overflow: auto;
-     scrollbar-width: none;
-     -ms-overflow-style: none;
-}
-
-.zpos .categories::-webkit-scrollbar {
-     display: none;
+     overflow: visible;
 }
 
 .zpos .categories .category-item {
      display: flex;
      align-items: center;
      gap: 6px;
+     flex: 0 0 auto;
      min-width: 120px;
      max-width: 200px;
      background-color: var(--bg-main);
