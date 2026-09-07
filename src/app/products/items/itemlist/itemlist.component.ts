@@ -98,7 +98,13 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 				}
 			},
 			columns: [
-				{ title: this.app.localize('#'), data: 'id', orderSequence: ['asc', 'desc'], width: '60px' },
+				{
+					title: this.app.localize('#'),
+					data: 'rowNumber',
+					orderable: false,
+					searchable: false,
+					width: '60px'
+				},
 				{
 					title: this.app.localize('Item Name'),
 					data: 'itemName',
@@ -137,8 +143,10 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 				const query = this.buildDataTableQuery(params);
 				this.http.get<any>('/api/products/getitems', { params: query as any }).subscribe({
 					next: response => {
-						const formattedData = (response.data || []).map((item: any) => ({
+						const start = params.start || 0;
+						const formattedData = (response.data || []).map((item: any, index: number) => ({
 							...item,
+							rowNumber: start + index + 1,
 							categoryName: item.category?.categoryName || '—',
 							price: this.app.formatCurrency(item.price || 0),
 							cost: item.itemType == 1 || item.itemType == 4 ? '—' : this.app.formatCurrency(item.cost || 0),

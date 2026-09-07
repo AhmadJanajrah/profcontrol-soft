@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Location } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
 import { resolveApiUrl, resolveHubUrl } from '../core/api.config';
+import arTranslations from '../../../public/assets/i18n/ar.json';
 
 // External library declarations
 declare var $: any;
@@ -165,7 +166,29 @@ export class AppService {
     this.decimalSeparator = data.decimalSeparator || '.';
     this.groupSeparator = data.groupSeparator || ',';
     this.currencySymbol = data.currencySymbol || '$';
+    this.applyLocalTranslationFallbacks(
+      data.languageCode || this.getCookie('gorestofy_Language') || this.appConfig['language'] || 'en-US'
+    );
     this.changeDirection(data.isRtl ? 'rtl' : 'ltr');
+  }
+
+  private getLocalFallbackTranslations(languageCode: string): Record<string, string> {
+    const lang = (languageCode || '').toLowerCase();
+    if (lang.startsWith('ar')) {
+      return arTranslations as Record<string, string>;
+    }
+
+    return {};
+  }
+
+  private applyLocalTranslationFallbacks(languageCode: string): void {
+    const fallbacks = this.getLocalFallbackTranslations(languageCode);
+
+    for (const [key, value] of Object.entries(fallbacks)) {
+      if (!this.stringResources[key]) {
+        this.stringResources[key] = value;
+      }
+    }
   }
 
   // ==================== Simplified Layout Management ====================

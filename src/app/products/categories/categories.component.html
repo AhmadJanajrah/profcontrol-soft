@@ -103,6 +103,30 @@
                                     maxlength="255"></textarea>
                             </div>
 
+                            <!-- Printer Name -->
+                            <div class="form-group">
+                                <label class="control-label">
+                                    {{ app.localize('Printer Name') }}
+                                    <a
+                                        href="javascript:void(0)"
+                                        class="btn-link-icon"
+                                        [appTooltip]="
+                                            app.localize(
+                                                'Link this category to a printer so its items can be printed in their department.'
+                                            )
+                                        ">
+                                        <i class="ri-information-line ms-2"></i>
+                                    </a>
+                                </label>
+                                <input
+                                    [(ngModel)]="category.printerId"
+                                    name="printerId"
+                                    type="text"
+                                    class="form-control"
+                                    maxlength="255"
+                                    placeholder="{{ app.localize('Printer Name') }}" />
+                            </div>
+
                             <!-- Status -->
                             <div class="form-group">
                                 <div class="form-check form-switch">

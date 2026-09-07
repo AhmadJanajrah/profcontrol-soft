@@ -12,6 +12,7 @@ interface Category {
 	description: string;
 	imageUrl: string;
 	isActive: boolean;
+	printerId: string;
 }
 
 @Component({
@@ -109,6 +110,12 @@ export class CategoriesComponent implements OnInit, AfterViewInit, OnDestroy {
 					title: this.app.localize('Category Name'), 
 					data: 'categoryName', orderSequence:  ['asc', 'desc'],
 					render: (data: any, type: any, row: any) => this.renderCategoryColumn(data, row)
+				},
+				{
+					title: this.app.localize('Printer Name'),
+					data: 'printerId',
+					orderable: false,
+					render: (data: any) => data || '—'
 				},
 				{ 
 					title: this.app.localize('Status'), 
@@ -238,7 +245,8 @@ export class CategoriesComponent implements OnInit, AfterViewInit, OnDestroy {
 			categoryName: '',
 			description: '',
 			imageUrl: '',
-			isActive: true
+			isActive: true,
+			printerId: ''
 		};
 		this.imageFile = null;
 		this.deleteOldImage = false;
@@ -275,7 +283,8 @@ export class CategoriesComponent implements OnInit, AfterViewInit, OnDestroy {
 						categoryName: c.categoryName,
 						description: c.description || '',
 						imageUrl: c.imageUrl || '',
-						isActive: c.isActive
+						isActive: c.isActive,
+						printerId: c.printerId || ''
 					};
 					this.imagePreviewUrl = this.category.imageUrl ? this.app.apiUrl(`/api/media/getthumbnailimage/categories/${this.category.imageUrl}`) : '';
 					this.mainModal.loading = false;

@@ -122,6 +122,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   public cashRegisters: any[] = [];
   public openedCashRegisters: any[] = [];
   public activeOrders: any[] = [];
+  public printingOrderId: number | null = null;
   public offlineOrders: any[] = [];
   public heldOrder: any = null;
   public waiterOrDrivers: any[] = [];
@@ -801,6 +802,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   private resetActiveOrdersModal(): void {
     this.modals.activeOrders.show = false;
     this.modals.activeOrders.loading = false;
+    this.printingOrderId = null;
   }
 
   private resetSplitBillModal(): void {
@@ -2700,6 +2702,33 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   public closeActiveOrdersModal(): void {
     this.resetActiveOrdersModal();
     history.back();
+  }
+
+  public printActiveOrder(event: Event, order: any): void {
+    event.stopPropagation();
+
+    if (!order?.id || this.printingOrderId) {
+      return;
+    }
+
+    this.printingOrderId = order.id;
+
+    this.http.get(`/api/sales/viewinvoice/${order.id}`, {
+      params: {
+        locationId: (this.locationId || 0).toString(),
+        isReturnInvoice: 'false'
+      },
+      responseType: 'text'
+    }).subscribe({
+      next: html => {
+        this.printingOrderId = null;
+        this.printReceiptAfterPayment(html);
+      },
+      error: error => {
+        this.printingOrderId = null;
+        this.app.handleApiError(error);
+      }
+    });
   }
 
   /*
