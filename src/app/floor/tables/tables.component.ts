@@ -159,7 +159,13 @@ export class TablesComponent implements OnInit, AfterViewInit, OnDestroy {
 				}
 			},
 			columns: [
-				{ title: this.app.localize('#'), data: 'id', orderSequence: ['desc', 'asc'], width: '60px' },
+				{
+					title: this.app.localize('#'),
+					data: 'rowNumber',
+					orderable: false,
+					searchable: false,
+					width: '60px'
+				},
 				{ title: this.app.localize('Table'), data: 'tableNumber', orderSequence: ['asc', 'desc'] },
 				{ title: this.app.localize('Floor Area'), data: 'floorAreaName', orderSequence: ['asc', 'desc'] },
 				{ title: this.app.localize('Capacity'), data: 'capacity', orderSequence: ['asc', 'desc'] },
@@ -200,8 +206,10 @@ export class TablesComponent implements OnInit, AfterViewInit, OnDestroy {
 				const q = this.buildQuery(params);
 				this.floorService.getTables(q as any).subscribe({
 					next: response => {
-						const data = (response.data || []).map((t: any) => ({
+						const start = params.start || 0;
+						const data = (response.data || []).map((t: any, index: number) => ({
 							...t,
+							rowNumber: start + index + 1,
 							floorAreaName: t.floorArea?.areaName || '',
 							locationName: t.floorArea?.location?.locationName || ''
 						}));

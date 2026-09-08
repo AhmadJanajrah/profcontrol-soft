@@ -1231,7 +1231,7 @@ export class AppService {
     toast.innerHTML = toastHtml;
     toaster.prepend(toast);
 
-    const timeoutDuration = 20000;
+    const timeoutDuration = 3000;
     let startTime = Date.now();
     let remaining = timeoutDuration;
     let timeoutId: ReturnType<typeof setTimeout>;

@@ -174,10 +174,48 @@ export class MyProfileComponent implements OnInit {
 		});
 	}
 
-	// Toggle 2FA
-	public toggleTwoFactor(): void {
-		const prev = this.profile.isTwoFactorEnabled;
-		// optimistic UI
+	public onTwoFactorClick(event: Event): void {
+		event.preventDefault();
+		event.stopPropagation();
+
+		const input = event.currentTarget as HTMLInputElement;
+		input.checked = !!this.profile.isTwoFactorEnabled;
+
+		if (this.profile.isTwoFactorEnabled) {
+			this.submitTwoFactorToggle(true);
+			return;
+		}
+
+		this.http.get<any>('/api/settings/getemailsettings').subscribe({
+			next: res => {
+				if (!this.isEmailServiceActive(res)) {
+					this.blockTwoFactorEnable(input);
+					return;
+				}
+				this.submitTwoFactorToggle(false);
+			},
+			error: () => this.blockTwoFactorEnable(input)
+		});
+	}
+
+	private isEmailServiceActive(res: any): boolean {
+		const settings = res?.settings ?? res ?? {};
+		const value = settings.isActive ?? settings.IsActive;
+		return value === true || value === 1 || value === 'true' || value === 'True';
+	}
+
+	private blockTwoFactorEnable(input?: HTMLInputElement): void {
+		this.profile.isTwoFactorEnabled = false;
+		if (input) {
+			input.checked = false;
+		}
+		this.app.showInfoMessage(
+			this.app.localize('Info'),
+			this.app.localize('Email service must be enabled to use two-factor authentication.')
+		);
+	}
+
+	private submitTwoFactorToggle(prev: boolean): void {
 		this.profile.isTwoFactorEnabled = !prev;
 		this.http.post<any>('/api/profile/toggletwofactorauth', {}).subscribe({
 			next: () => {
@@ -185,7 +223,6 @@ export class MyProfileComponent implements OnInit {
 				this.app.showSuccessMessage(this.app.localize('Success!'), msg);
 			},
 			error: err => {
-				// rollback on error
 				this.profile.isTwoFactorEnabled = prev;
 				this.app.handleApiError(err);
 			}

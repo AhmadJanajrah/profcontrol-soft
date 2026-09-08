@@ -315,7 +315,7 @@
                                                 type="checkbox"
                                                 id="twoFactor"
                                                 [checked]="profile.isTwoFactorEnabled"
-                                                (change)="toggleTwoFactor()" />
+                                                (click)="onTwoFactorClick($event)" />
                                             <label class="form-check-label" for="twoFactor">
                                                 {{
                                                     profile.isTwoFactorEnabled

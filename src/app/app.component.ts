@@ -177,7 +177,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 	// ==================== Initialization Methods ====================
 
 	private initializeIdleTimeout(): void {
-		this.idle.setIdle(900); // 	15 minutes
+		this.idle.setIdle(7200); // 2 hours
 		this.idle.setTimeout(30);
 		this.idle.setInterrupts(DEFAULT_INTERRUPTSOURCES);
 
