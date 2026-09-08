@@ -69,6 +69,7 @@ export enum ItemType {
 })
 export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('floorCanvas') floorCanvasRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('cartItemsList') cartItemsListRef?: ElementRef<HTMLDivElement>;
 
   // Lifecycle management
   private destroy$ = new Subject<void>();
@@ -1157,6 +1158,18 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.calculateOrderTotals();
     this.app.loadImages('[data-cart-img="true"]');
     this.sound.addItem();
+    this.scrollCartToLastItem();
+  }
+
+  private scrollCartToLastItem(): void {
+    setTimeout(() => {
+      const container = this.cartItemsListRef?.nativeElement;
+      if (!container) {
+        return;
+      }
+
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    });
   }
 
   private updateCartItem(cartItemId: string, quantity: number, modifiers: any[], notes: string): void {
@@ -2707,7 +2720,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   public printActiveOrder(event: Event, order: any): void {
     event.stopPropagation();
 
-    if (!order?.id || this.printingOrderId) {
+    if (!order?.id || this.printingOrderId || order.orderType !== OrderType.DineIn) {
       return;
     }
 
