@@ -1174,13 +1174,9 @@
                                                 <code>*</code>
                                             </label>
                                             <ng-select [(ngModel)]="modals.customerChange.newCustomer.customerType"
-                                                [items]="[
-                                                    { id: 'Regular', name: app.localize('Regular') },
-                                                    { id: 'VIP', name: app.localize('VIP') },
-                                                    { id: 'Corporate', name: app.localize('Corporate') }
-                                                ]" [clearable]="false" [searchable]="false"
+                                                [items]="customerTypes" [clearable]="false" [searchable]="false"
                                                 [placeholder]="app.localize('Choose an option')" bindLabel="name"
-                                                bindValue="id" [bindValue]="'Regular'" name="customerType"
+                                                bindValue="id" name="customerType" required
                                                 class="form-control"></ng-select>
                                         </div>
                                     </div>

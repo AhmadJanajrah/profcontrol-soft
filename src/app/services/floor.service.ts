@@ -19,6 +19,7 @@ export interface FloorTable {
   status: number;
   floorAreaId: number;
   floorArea?: any;
+  locationId?: number;
   posX: number;
   posY: number;
   rotation: number;
@@ -207,19 +208,38 @@ export class FloorService {
   }
 
   getTable(id: number, locationId: number): Observable<{ table: any }> {
-    return this.http.get<{ table: any }>(`/api/floor/gettable/${id}`);
+    const params = new HttpParams().set('locationId', String(locationId || 0));
+    return this.http.get<{ table: any }>(`/api/floor/gettable/${id}`, { params });
   }
 
   createTable(table: FloorTable, locationId: number): Observable<any> {
-    return this.http.post('/api/floor/createtable', table);
+    return this.http.post('/api/floor/createtable', this.buildTablePayload(table, locationId, 0));
   }
 
   updateTable(id: number, table: FloorTable, locationId: number): Observable<any> {
-    return this.http.put(`/api/floor/updatetable/${id}`, table);
+    return this.http.put(`/api/floor/updatetable/${id}`, this.buildTablePayload(table, locationId, id));
+  }
+
+  private buildTablePayload(table: FloorTable, _locationId: number, id: number): Record<string, any> {
+    return {
+      id: Number(id) || 0,
+      floorAreaId: Number(table.floorAreaId) || 0,
+      tableNumber: table.tableNumber ?? '',
+      description: table.description ?? '',
+      capacity: Number(table.capacity) || 4,
+      shapeType: Number(table.shapeType) || 1,
+      posX: Math.round(Number(table.posX) || 0),
+      posY: Math.round(Number(table.posY) || 0),
+      rotation: Math.round(Number(table.rotation) || 0),
+      qrcode: table.qrcode ?? null,
+      status: Number(table.status) || 1,
+      allowSelfOrdering: !!table.allowSelfOrdering
+    };
   }
 
   deleteTable(id: number, locationId: number): Observable<any> {
-    return this.http.delete(`/api/floor/deletetable/${id}`);
+    const params = new HttpParams().set('locationId', locationId);
+    return this.http.delete(`/api/floor/deletetable/${id}`, { params });
   }
 
   updateTableStatus(tableId: number, status: number, locationId: number): Observable<any> {

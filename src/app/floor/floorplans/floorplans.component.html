@@ -229,7 +229,6 @@
                     @if (!modals.table.loading) {
                     <form #tableForm="ngForm" [ngClass]="{ 'was-validated': modals.table.validated }"
                         (ngSubmit)="submitTableForm(tableForm)" autocomplete="off" novalidate>
-                        @if (!modals.table.isEdit) {
                         <div class="form-group">
                             <label class="form-label">
                                 {{ app.localize('Floor Area') }}
@@ -242,7 +241,6 @@
                             <div class="invalid-feedback d-block">{{ app.localize('This field is required.') }}</div>
                             }
                         </div>
-                        }
 
                         <div class="row">
                             <div class="col-md-6">

@@ -100,6 +100,12 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     { value: OrderType.Delivery, label: 'Delivery', class: 'badge-success', icon: 'ri-truck-line' },
   ];
 
+  public customerTypes = [
+    { id: 'Regular', name: 'Regular' },
+    { id: 'VIP', name: 'VIP' },
+    { id: 'Corporate', name: 'Corporate' }
+  ];
+
   // Loading and connection states
   public isLoading = true;
   public isLoadingItems = false;
@@ -263,7 +269,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       loading: false,
       activeTab: 'search',
       searchValue: '',
-      newCustomer: {} as any,
+      newCustomer: this.createEmptyCustomer(),
       validated: false,
       submitted: false,
       searchResults: [] as any[]
@@ -290,6 +296,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   ) {
     this.orderStatusOptions.forEach(opt => { opt.label = this.app.localize(opt.label); });
     this.orderTypeOptions.forEach(opt => { opt.label = this.app.localize(opt.label); });
+    this.customerTypes.forEach(type => { type.name = this.app.localize(type.name); });
 
     this.locationId = this.app.getSelectedLocationId() || 1;
     this.setupSearch();
@@ -779,6 +786,25 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.modals.orderConfig.validated = false;
   }
 
+  private createEmptyCustomer(): any {
+    return {
+      id: 0,
+      customerType: 'Regular',
+      fullName: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      country: '',
+      postalCode: '',
+      birthDate: null,
+      notes: '',
+      taxIdentificationNumber: '',
+      isActive: true
+    };
+  }
+
   private resetCustomerChangeModal(): void {
     this.modals.customerChange.show = false;
     this.modals.customerChange.loading = false;
@@ -787,7 +813,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.modals.customerChange.activeTab = 'search';
     this.modals.customerChange.searchValue = '';
     this.modals.customerChange.searchResults = [];
-    this.modals.customerChange.newCustomer = { customerType: null, isActive: true };
+    this.modals.customerChange.newCustomer = this.createEmptyCustomer();
   }
 
   private resetCashRegisterModal(): void {
@@ -1287,7 +1313,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.modals.customerChange.submitted = false;
     this.modals.customerChange.searchValue = '';
     this.modals.customerChange.searchResults = [];
-    this.modals.customerChange.newCustomer = { customerType: null, isActive: true };
+    this.modals.customerChange.newCustomer = this.createEmptyCustomer();
     history.pushState(null, '', window.location.pathname);
   }
 
@@ -1334,11 +1360,12 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.modals.customerChange.submitted = true;
 
-    this.http.post<any>('/api/customers/createcustomer', form.value).subscribe({
+    this.http.post<any>('/api/customers/createcustomer', this.modals.customerChange.newCustomer).subscribe({
       next: (response) => {
-        this.order.customer = response.customer;
-        this.order.customerId = response.customer.id;
-        this.order.customerName = response.customer.fullName || '';
+        const customer = response?.customer || response;
+        this.order.customer = customer;
+        this.order.customerId = customer?.id;
+        this.order.customerName = customer?.fullName || this.modals.customerChange.newCustomer.fullName || '';
         this.modals.customerChange.submitted = false;
         this.modals.customerChange.validated = false;
         this.closeCustomerChangeModal();
@@ -1347,7 +1374,6 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (error) => {
         this.app.handleApiError(error);
         this.modals.customerChange.submitted = false;
-        this.modals.customerChange.validated = false;
       }
     });
   }

@@ -367,15 +367,17 @@ export class TablesComponent implements OnInit, AfterViewInit, OnDestroy {
 			this.mainModal.loading = true;
 			this.floorService.getTable(id, this.locationId).subscribe({
 				next: res => {
-					const t = res.table;
+					const t = res?.table ?? res;
 					this.table = {
-						id: t.id, floorAreaId: t.floorAreaId, tableNumber: t.tableNumber,
+						id: Number(t?.id ?? t?.tableId ?? id) || id,
+						floorAreaId: Number(t?.floorAreaId) || Number(t?.floorArea?.id) || 0,
+						tableNumber: t.tableNumber,
 						capacity: t.capacity, shapeType: t.shapeType, posX: t.posX, posY: t.posY,
 						rotation: t.rotation || 0, status: t.status, allowSelfOrdering: !!t.allowSelfOrdering,
-						description: t.description || ''
+						description: t.description || '',
+						locationId: this.locationId
 					};
 					this.mainModal.loading = false;
-					console.log(t);
 				},
 				error: err => {
 					this.app.handleApiError(err);
@@ -410,9 +412,17 @@ export class TablesComponent implements OnInit, AfterViewInit, OnDestroy {
 		}
 		this.mainModal.submitted = true;
 
-		const req$ = this.table.id > 0
-			? this.floorService.updateTable(this.table.id, this.table as FloorTable, this.locationId)
-			: this.floorService.createTable(this.table as FloorTable, this.locationId);
+		const tableId = Number(this.table.id) || 0;
+		const locationId = this.app.getSelectedLocationId() || this.locationId;
+		const payload = {
+			...this.table,
+			id: tableId,
+			floorAreaId: Number(this.table.floorAreaId) || 0,
+			locationId
+		} as FloorTable;
+		const req$ = tableId > 0
+			? this.floorService.updateTable(tableId, payload, locationId)
+			: this.floorService.createTable({ ...payload, id: 0 }, locationId);
 
 		req$.subscribe({
 			next: () => {

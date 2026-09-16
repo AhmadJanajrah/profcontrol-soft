@@ -360,7 +360,8 @@ export class CampaignsComponent implements OnInit, AfterViewInit, OnDestroy {
                         channel: campaign.channel,
                         startDate: campaign.startDate ? this.app.APIDateTimeToHTMLDate(campaign.startDate) : '',
                         endDate: campaign.endDate ? this.app.APIDateTimeToHTMLDate(campaign.endDate) : '',
-                        timing: campaign.timing ? this.app.APITimeToHTMLTime(campaign.timing) : '',
+                        // Wall-clock send time bound to CampaignRequest.timing
+                        timing: this.toHtmlTime(campaign.timing ?? campaign.time ?? campaign.scheduledTime ?? campaign.sendTime),
                         message: campaign.message,
                         sendToAll: campaign.sendToAll,
                         recipientIds: campaign.campaignRecipients?.map((r: any) => r.customerId) || []
@@ -417,7 +418,7 @@ export class CampaignsComponent implements OnInit, AfterViewInit, OnDestroy {
             channel: this.campaign.channel,
             startDate: this.campaign.startDate ? `${this.campaign.startDate}T00:00:00` : null,
             endDate: this.campaign.endDate ? `${this.campaign.endDate}T00:00:00` : null,
-            timing: this.campaign.timing ? `${this.campaign.timing}:00` : '00:00:00',
+            timing: this.toApiTime(this.campaign.timing),
             message: messageContent,
             sendToAll: this.campaign.sendToAll,
             recipientIds: this.campaign.sendToAll ? [] : (this.campaign.recipientIds || [])
@@ -500,6 +501,50 @@ export class CampaignsComponent implements OnInit, AfterViewInit, OnDestroy {
                 this.app.closeLoadingDialog(dialogId);
             }
         });
+    }
+
+    // Normalize CampaignRequest.timing to HH:mm for <input type="time">.
+    private toHtmlTime(value: any): string {
+        if (value == null || value === '') {
+            return '';
+        }
+
+        if (value instanceof Date && !isNaN(value.getTime())) {
+            return `${String(value.getHours()).padStart(2, '0')}:${String(value.getMinutes()).padStart(2, '0')}`;
+        }
+
+        if (typeof value === 'object') {
+            const hour = value.hour ?? value.hours;
+            const minute = value.minute ?? value.minutes;
+            if (hour == null || minute == null) {
+                return '';
+            }
+            return `${String(Number(hour)).padStart(2, '0')}:${String(Number(minute)).padStart(2, '0')}`;
+        }
+
+        const str = String(value).trim();
+        if (!str) {
+            return '';
+        }
+
+        const isoMatch = str.match(/T(\d{1,2}):(\d{2})/i);
+        if (isoMatch) {
+            return `${isoMatch[1].padStart(2, '0')}:${isoMatch[2]}`;
+        }
+
+        const timeMatch = str.match(/^(\d{1,2}):(\d{2})/);
+        if (timeMatch) {
+            return `${timeMatch[1].padStart(2, '0')}:${timeMatch[2]}`;
+        }
+
+        return '';
+    }
+
+    private toApiTime(htmlTime: string): string {
+        if (!htmlTime) {
+            return '00:00:00';
+        }
+        return this.app.HTMLTimeToAPITime(htmlTime);
     }
 
     // Get default email template for summernote

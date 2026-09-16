@@ -78,6 +78,7 @@ export class FloorPlansComponent implements OnInit, OnDestroy, AfterViewInit {
   // Forms
   public floorArea: FloorAreaForm = {} as FloorAreaForm;
   public table: TableForm = {} as TableForm;
+  private editingTableId = 0;
 
   // Drag & drop
   private draggedTable: FloorTable | null = null;
@@ -115,7 +116,7 @@ export class FloorPlansComponent implements OnInit, OnDestroy, AfterViewInit {
   */
 
   ngOnInit(): void {
-    this.locationId = this.app.getSelectedLocationId() || 1;
+    this.locationId = this.app.getSelectedLocationId();
     this.loadFormData();
 
     this.floorService.selectedTable$.pipe(takeUntil(this.destroy$)).subscribe(t => {
@@ -583,27 +584,47 @@ export class FloorPlansComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private resetTableModal() {
     this.modals.table = { show: false, submitted: false, loading: false, validated: false, isEdit: false, title: '', btnText: '' };
+    this.editingTableId = 0;
+  }
+
+  private toTableForm(t: any, fallbackId = 0): TableForm {
+    const id = Number(t?.id ?? t?.tableId ?? fallbackId) || fallbackId;
+    return {
+      id,
+      floorAreaId: Number(t?.floorAreaId) || Number(t?.floorArea?.id) || Number(this.selectedFloorId) || 0,
+      tableNumber: t?.tableNumber ?? '',
+      capacity: Number(t?.capacity) || 4,
+      shapeType: Number(t?.shapeType) || 1,
+      posX: Number(t?.posX) || 100,
+      posY: Number(t?.posY) || 100,
+      rotation: Number(t?.rotation) || 0,
+      status: Number(t?.status) || 1,
+      allowSelfOrdering: t?.allowSelfOrdering !== false,
+      description: t?.description || ''
+    };
   }
 
   public showTableModal(id: number = 0): void {
+    const source = this.tables.find(t => t.id === id) || (this.selectedTable?.id === id ? this.selectedTable : null);
+    const tableId = Number(id || source?.id) || 0;
+    this.editingTableId = tableId;
+
     this.modals.table = {
       show: true, submitted: false, loading: false, validated: false,
-      isEdit: id > 0,
-      title: id > 0 ? this.app.localize('Edit Table') : this.app.localize('Add Table'),
-      btnText: id > 0 ? this.app.localize('Update') : this.app.localize('Save')
+      isEdit: tableId > 0,
+      title: tableId > 0 ? this.app.localize('Edit Table') : this.app.localize('Add Table'),
+      btnText: tableId > 0 ? this.app.localize('Update') : this.app.localize('Save')
     };
 
-    if (id > 0) {
-      this.modals.table.loading = true;
-      this.floorService.getTable(id, this.locationId).subscribe({
+    if (tableId > 0) {
+      if (source) {
+        this.table = this.toTableForm(source, tableId);
+      }
+      this.modals.table.loading = !source;
+      this.floorService.getTable(tableId, this.locationId).subscribe({
         next: res => {
-          const t = res.table;
-          this.table = {
-            id: t.id, floorAreaId: t.floorAreaId, tableNumber: t.tableNumber,
-            capacity: t.capacity, shapeType: t.shapeType, posX: t.posX, posY: t.posY,
-            rotation: t.rotation || 0, status: t.status, allowSelfOrdering: !!t.allowSelfOrdering,
-            description: t.description || ''
-          };
+          const t = res?.table ?? res;
+          this.table = this.toTableForm(t, tableId);
           this.modals.table.loading = false;
         },
         error: err => {
@@ -631,16 +652,26 @@ export class FloorPlansComponent implements OnInit, OnDestroy, AfterViewInit {
     }
     this.modals.table.submitted = true;
 
-    const req$ = this.modals.table.isEdit
-      ? this.floorService.updateTable(this.table.id, this.table as any, this.locationId)
-      : this.floorService.createTable(this.table as any, this.locationId);
+    const tableId = Number(this.table.id || this.editingTableId) || 0;
+    const isEdit = this.modals.table.isEdit && tableId > 0;
+    const locationId = this.app.getSelectedLocationId() || this.locationId;
+    const payload = {
+      ...this.table,
+      id: isEdit ? tableId : 0,
+      floorAreaId: Number(this.table.floorAreaId) || Number(this.selectedFloorId) || 0,
+      locationId
+    } as FloorTable;
+
+    const req$ = isEdit
+      ? this.floorService.updateTable(tableId, payload, locationId)
+      : this.floorService.createTable({ ...payload, id: 0 }, locationId);
 
     req$.subscribe({
       next: (response) => {
         this.app.showSuccessMessage(this.app.localize('Success!'), this.app.localize('Table saved successfully.'));
-        if (this.modals.table.isEdit) {
-          const i = this.tables.findIndex(t => t.id === this.table.id);
-          if (i >= 0) this.tables[i] = { ...this.tables[i], ...this.table } as any;
+        if (isEdit) {
+          const i = this.tables.findIndex(t => t.id === tableId);
+          if (i >= 0) this.tables[i] = { ...this.tables[i], ...payload, id: tableId } as any;
         } else if (response?.table) {
           if (response.table.floorAreaId == this.selectedFloorId)
             this.tables.push(response.table);
