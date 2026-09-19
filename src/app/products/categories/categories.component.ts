@@ -105,7 +105,13 @@ export class CategoriesComponent implements OnInit, AfterViewInit, OnDestroy {
 				}
 			},
 			columns: [
-				{ title: this.app.localize('#'), data: 'id', orderSequence: ['asc', 'desc'], width: '60px' },
+				{
+					title: this.app.localize('#'),
+					data: 'rowNumber',
+					orderable: false,
+					searchable: false,
+					width: '60px'
+				},
 				{ 
 					title: this.app.localize('Category Name'), 
 					data: 'categoryName', orderSequence:  ['asc', 'desc'],
@@ -140,10 +146,15 @@ export class CategoriesComponent implements OnInit, AfterViewInit, OnDestroy {
 				const query = this.buildDataTableQuery(params);
 				this.http.get<any>('/api/products/getcategories', { params: query as any }).subscribe({
 					next: response => {
+						const start = params.start || 0;
+						const formattedData = (response.data || []).map((item: any, index: number) => ({
+							...item,
+							rowNumber: start + index + 1
+						}));
 						callback({
 							recordsTotal: response.recordsTotal,
 							recordsFiltered: response.recordsFiltered,
-							data: response.data || []
+							data: formattedData
 						});
 						this.app.loadImages('[data-img="true"]');
 					},

@@ -181,6 +181,22 @@
                             </div>
                         </div>
 
+                        <!-- Country -->
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="country" class="form-label">
+                                    {{ app.localize('Country') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="customer.country"
+                                    type="text"
+                                    id="country"
+                                    name="country"
+                                    class="form-control"
+                                    maxlength="100" />
+                            </div>
+                        </div>
+
                         <!-- City -->
                         <div class="col-md-3">
                             <div class="form-group">
@@ -226,22 +242,6 @@
                                     name="postalCode"
                                     class="form-control"
                                     maxlength="20" />
-                            </div>
-                        </div>
-
-                        <!-- Country -->
-                        <div class="col-md-3">
-                            <div class="form-group">
-                                <label for="country" class="form-label">
-                                    {{ app.localize('Country') }}
-                                </label>
-                                <input
-                                    [(ngModel)]="customer.country"
-                                    type="text"
-                                    id="country"
-                                    name="country"
-                                    class="form-control"
-                                    maxlength="100" />
                             </div>
                         </div>
 

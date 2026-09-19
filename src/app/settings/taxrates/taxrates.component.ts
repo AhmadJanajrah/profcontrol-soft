@@ -91,7 +91,13 @@ export class TaxRatesComponent implements OnInit, AfterViewInit, OnDestroy {
 				}
 			},
 			columns: [
-				{ title: this.app.localize('#'), data: 'id', orderSequence: ['asc', 'desc'], width: '60px' },
+				{
+					title: this.app.localize('#'),
+					data: 'rowNumber',
+					orderable: false,
+					searchable: false,
+					width: '60px'
+				},
 				{ title: this.app.localize('Tax Name'), data: 'taxName', orderSequence: ['asc', 'desc'] },
 				{ title: this.app.localize('Tax Value'), data: 'taxValue', orderable: false },
 				{ title: this.app.localize('Description'), data: 'description', orderable: false },
@@ -118,8 +124,10 @@ export class TaxRatesComponent implements OnInit, AfterViewInit, OnDestroy {
 				const query = this.buildDataTableQuery(params);
 				this.http.get<any>('/api/settings/gettaxrates', { params: query }).subscribe({
 					next: response => {
-						const formattedData = (response.data || []).map((item: any) => ({
+						const start = params.start || 0;
+						const formattedData = (response.data || []).map((item: any, index: number) => ({
 							...item,
+							rowNumber: start + index + 1,
 							taxValue: item.isPercentage ? this.app.formatPercent(item.taxValue) : this.app.formatCurrency(item.taxValue),
 							description: item.description || `—`
 						}));
@@ -151,8 +159,8 @@ export class TaxRatesComponent implements OnInit, AfterViewInit, OnDestroy {
 			start: params.start,
 			length: params.length,
 			searchValue: params.search.value,
-			sortColumn: params.order[0].column,
-			sortDirection: params.order[0].dir
+			sortColumn: params.order[0]?.column ?? 0,
+			sortDirection: params.order[0]?.dir ?? 'desc'
 		};
 	}
 

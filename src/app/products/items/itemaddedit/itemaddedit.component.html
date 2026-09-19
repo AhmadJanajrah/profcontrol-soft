@@ -25,6 +25,12 @@
             </ol>
         </nav>
     </div>
+    <div class="float-end">
+        <button (click)="app.goBack()" type="button" class="btn btn-light btn-round">
+            <i class="ri-arrow-left-line"></i>
+            {{ app.localize('Back') }}
+        </button>
+    </div>
 </div>
 
 <div class="main-content">

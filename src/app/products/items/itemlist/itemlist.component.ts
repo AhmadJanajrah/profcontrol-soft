@@ -30,6 +30,8 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 		{ value: 5, label: 'Service', badge: 'light' }
 	];
 
+	private static readonly FILTERS_STORAGE_KEY = 'gorestofy_ItemListFilters';
+
 	// Filters
 	public filters = {
 		categoryId: null as number | null,
@@ -49,6 +51,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 			type.label = this.app.localize(type.label);
 		});
 		this.filters.itemType = 1; // Default to Recipe
+		this.restoreFilters();
 	}
 
 	// Lifecycle hooks
@@ -63,6 +66,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 	}
 
 	ngOnDestroy(): void {
+		this.persistFilters();
 		this.dtTrigger.unsubscribe();
 	}
 
@@ -282,6 +286,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 	public applyFilters(filterForm: NgForm): void {
 		if (filterForm.valid) {
 			this.filters.submitted = true;
+			this.persistFilters();
 			if (this.dtElement?.dtInstance) {
 				this.dtElement.dtInstance.then(dt => {
 					dt.page(0).draw(false); // Reset to first page and redraw
@@ -300,12 +305,39 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 		this.filters.itemType = null;
 		this.filters.validated = false;
 		this.filters.submitted = false;
+		this.persistFilters();
 		if (this.dtElement?.dtInstance) {
 			this.dtElement.dtInstance.then(dt => {
 				dt.page(0).draw(false); // Reset to first page and redraw
 			});
 		} else {
 			this.reloadDataTable(true);
+		}
+	}
+
+	private persistFilters(): void {
+		try {
+			sessionStorage.setItem(ItemListComponent.FILTERS_STORAGE_KEY, JSON.stringify({
+				categoryId: this.filters.categoryId,
+				itemType: this.filters.itemType
+			}));
+		} catch {
+			// Ignore storage errors
+		}
+	}
+
+	private restoreFilters(): void {
+		try {
+			const saved = sessionStorage.getItem(ItemListComponent.FILTERS_STORAGE_KEY);
+			if (!saved) {
+				return;
+			}
+
+			const parsed = JSON.parse(saved);
+			this.filters.categoryId = parsed.categoryId ?? null;
+			this.filters.itemType = parsed.itemType ?? null;
+		} catch {
+			sessionStorage.removeItem(ItemListComponent.FILTERS_STORAGE_KEY);
 		}
 	}
 
