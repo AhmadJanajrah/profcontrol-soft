@@ -6,6 +6,7 @@ import { FloorService, FloorArea, FloorTable } from '../../services/floor.servic
 import * as signalR from '@microsoft/signalr';
 import { NgForm } from '@angular/forms';
 import { SoundService } from '../../services/sound.service';
+import { KitchenPrintMeta, PosPrintService } from '../../services/pos-print.service';
 import { AppImports } from '../../app.imports';
 
 // Enums matching SalesController exactly
@@ -292,7 +293,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     private http: HttpClient,
     public app: AppService,
     public floorService: FloorService,
-    private sound: SoundService
+    private sound: SoundService,
+    private posPrint: PosPrintService
   ) {
     this.orderStatusOptions.forEach(opt => { opt.label = this.app.localize(opt.label); });
     this.orderTypeOptions.forEach(opt => { opt.label = this.app.localize(opt.label); });
@@ -1660,10 +1662,18 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     return true;
   }
 
+  public canFireOrder(): boolean {
+    return this.isOrderValid() && this.order.orderType !== OrderType.Takeaway;
+  }
+
   /**
    * Save order
    */
   public saveOrder(): void {
+    if (!this.canFireOrder()) {
+      return;
+    }
+
     const orderRequest = {
       orderId: this.order.id,
       locationId: this.locationId,
@@ -1699,6 +1709,10 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
 
     apiCall.subscribe({
       next: (response) => {
+        const orderId = response.orderId || this.order.id;
+        const orderType = this.order.orderType;
+        const printMeta = this.buildKitchenPrintMeta(orderId);
+
         this.app.showSuccessMessage(
           this.app.localize('Success!'),
           this.order.id > 0
@@ -1717,6 +1731,10 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         this.resetOrderState();
 
         this.showMobileCart = false;
+
+        if (orderType === OrderType.DineIn && orderId) {
+          this.posPrint.printAfterDineInFire(orderId, this.locationId, printMeta).catch(() => { });
+        }
       },
       error: (error) => {
         this.app.handleApiError(error);
@@ -1989,6 +2007,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     createOrderCall.subscribe({
       next: (response) => {
         const orderId = response.orderId || this.order.id;
+        const orderType = this.order.orderType;
+        const printMeta = this.buildKitchenPrintMeta(orderId);
 
         const paymentRequest = {
           locationId: this.locationId,
@@ -2001,14 +2021,28 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         };
 
         this.http.post<any>('/api/sales/processorder', paymentRequest).subscribe({
-          next: (response) => {
+          next: (payResponse) => {
             this.app.showSuccessMessage(
               this.app.localize('Success!'),
               this.app.localize('Payment processed successfully.')
             );
 
+            const invoiceHtml = payResponse.invoice;
+            const shouldPrintKitchenQueues = orderType === OrderType.Takeaway || orderType === OrderType.Delivery;
+
             setTimeout(() => {
-              this.printReceiptAfterPayment(response.invoice);
+              if (shouldPrintKitchenQueues && orderId) {
+                this.posPrint.printAfterTakeawayOrDeliveryPayment(
+                  orderId,
+                  this.locationId,
+                  printMeta,
+                  invoiceHtml
+                ).catch(() => {
+                  this.printReceiptAfterPayment(invoiceHtml);
+                });
+              } else {
+                this.printReceiptAfterPayment(invoiceHtml);
+              }
             }, 300);
 
             this.clearCart();
@@ -2034,42 +2068,21 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private printReceiptAfterPayment(html: any): void {
-    const printWindow = window.open('', '', 'width=900,height=650');
-    if (!printWindow) {
-      this.app.showErrorMessage(
-        this.app.localize('Error!'),
-        this.app.localize('Popup blocked. Please allow popups to print receipts.')
-      );
-      return;
-    }
+    this.posPrint.printOnDefaultPrinter(html);
+  }
 
-    try {
-      const content = String(html || '');
-      if (printWindow.document && printWindow.document.documentElement) {
-        printWindow.document.documentElement.innerHTML = content;
-      } else if (printWindow.document && printWindow.document.body) {
-        printWindow.document.body.innerHTML = content;
-      } else {
-        const blob = new Blob([content], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        printWindow.location.href = url;
-      }
-    } catch (e) {
-      const blob = new Blob([String(html || '')], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      printWindow.location.href = url;
-    }
-
-    setTimeout(() => {
-      try {
-        printWindow.focus();
-        printWindow.print();
-      } catch (err) {
-        // ignore
-      } finally {
-        try { printWindow.close(); } catch { /* ignore */ }
-      }
-    }, 600);
+  private buildKitchenPrintMeta(orderId: number): KitchenPrintMeta {
+    return {
+      orderNumber: orderId,
+      table: this.order.table?.tableNumber || '',
+      orderType: this.getOrderTypeText(this.order.orderType),
+      orderDate: this.order.orderDate
+        ? this.app.formatDateTime(this.order.orderDate)
+        : this.app.getLocalCurrentDateTime(),
+      branchName: this.app.getSelectedLocationName(),
+      waiterOrDriver: this.order.waiterOrDriver || '',
+      specialInstructions: this.order.specialInstructions || ''
+    };
   }
 
   /*

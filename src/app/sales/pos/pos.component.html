@@ -399,7 +399,7 @@
                                 <i class="ri-scissors-line"></i>
                             </button>
 
-                            <button (click)="saveOrder()" [disabled]="!isOrderValid()"
+                            <button (click)="saveOrder()" [disabled]="!canFireOrder()"
                                 class="btn btn-warning btn-round flex-grow-1">
                                 <i class="ri-fire-line"></i>
                                 {{ currentOrder.id > 0 ? app.localize('Update') : app.localize('Fire') }}
