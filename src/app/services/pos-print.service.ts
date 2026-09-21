@@ -10,6 +10,24 @@ export interface KitchenTicketItem {
   quantity: number;
   status?: number;
   createdAt?: string;
+  notes?: string;
+  modifiers?: Array<string | KitchenTicketModifier>;
+  orderItemModifiers?: KitchenTicketModifier[];
+}
+
+export interface KitchenTicketModifier {
+  optionName?: string;
+  modifierName?: string;
+  modifierOption?: {
+    optionName?: string;
+  };
+}
+
+export interface CartPrintItem {
+  itemId: number;
+  quantity: number;
+  modifiers: string[];
+  notes?: string;
 }
 
 export interface KitchenGroup {
@@ -64,8 +82,16 @@ export class PosPrintService {
   /**
    * Dine-in Fire: send to kitchens and print each group on its printer. No queue tickets.
    */
-  public async printAfterDineInFire(orderId: number, locationId: number, meta: KitchenPrintMeta): Promise<void> {
-    const kitchens = await this.sendOrderToKitchensSafe(orderId, locationId);
+  public async printAfterDineInFire(
+    orderId: number,
+    locationId: number,
+    meta: KitchenPrintMeta,
+    cartItems: CartPrintItem[] = []
+  ): Promise<void> {
+    const kitchens = this.enrichKitchenItems(
+      await this.sendOrderToKitchensSafe(orderId, locationId),
+      cartItems
+    );
     await this.printKitchenTickets(kitchens, meta);
   }
 
@@ -79,12 +105,15 @@ export class PosPrintService {
     orderId: number,
     locationId: number,
     meta: KitchenPrintMeta,
-    invoiceHtml: string
+    invoiceHtml: string,
+    cartItems: CartPrintItem[] = []
   ): Promise<void> {
-    const kitchensPromise = this.sendOrderToKitchensSafe(orderId, locationId);
-    await this.printOnDefaultPrinter(invoiceHtml);
-    const kitchens = await kitchensPromise;
+    const kitchens = this.enrichKitchenItems(
+      await this.sendOrderToKitchensSafe(orderId, locationId),
+      cartItems
+    );
     await this.printKitchenTickets(kitchens, meta);
+    await this.printOnDefaultPrinter(invoiceHtml);
     await this.printQueueTickets(kitchens);
   }
 
@@ -99,6 +128,80 @@ export class PosPrintService {
       this.app.handleApiError(error);
       return [];
     }
+  }
+
+  private enrichKitchenItems(kitchens: KitchenGroup[], cartItems: CartPrintItem[] = []): KitchenGroup[] {
+    const remaining = (cartItems || []).map(item => ({
+      ...item,
+      modifiers: [...(item.modifiers || [])]
+    }));
+
+    return (kitchens || []).map(kitchen => ({
+      ...kitchen,
+      items: (kitchen.items || []).map(item => {
+        const apiModifiers = this.getItemModifierNames(item);
+        const matchIndex = this.findCartMatchIndex(remaining, item);
+        const match = matchIndex >= 0 ? remaining.splice(matchIndex, 1)[0] : null;
+
+        return {
+          ...item,
+          modifiers: apiModifiers.length ? apiModifiers : (match?.modifiers || []),
+          notes: item.notes || match?.notes || ''
+        };
+      })
+    }));
+  }
+
+  private findCartMatchIndex(remaining: CartPrintItem[], item: KitchenTicketItem): number {
+    const itemId = Number(item.itemId);
+    const quantity = Number(item.quantity);
+    const exactIndex = remaining.findIndex(
+      cartItem => Number(cartItem.itemId) === itemId && Number(cartItem.quantity) === quantity
+    );
+    if (exactIndex >= 0) {
+      return exactIndex;
+    }
+    return remaining.findIndex(cartItem => Number(cartItem.itemId) === itemId);
+  }
+
+  private getItemModifierNames(item: KitchenTicketItem): string[] {
+    const source = (Array.isArray(item.modifiers) && item.modifiers.length)
+      ? item.modifiers
+      : (item.orderItemModifiers || []);
+
+    return source
+      .map(modifier => {
+        if (typeof modifier === 'string') {
+          return modifier.trim();
+        }
+        return String(
+          modifier?.optionName ||
+          modifier?.modifierOption?.optionName ||
+          ''
+        ).trim();
+      })
+      .filter(Boolean);
+  }
+
+  private buildItemRow(item: KitchenTicketItem, qtyClass: string): string {
+    const modifiers = this.getItemModifierNames(item);
+    const modifierHtml = modifiers.length
+      ? `<div class="modifiers">${modifiers.map(name => `<div class="modifier">+ ${this.escapeHtml(name)}</div>`).join('')}</div>`
+      : '';
+    const notesHtml = item.notes
+      ? `<div class="notes">${this.escapeHtml(item.notes)}</div>`
+      : '';
+
+    return `
+      <tr>
+        <td>
+          ${this.escapeHtml(item.itemName || '')}
+          ${modifierHtml}
+          ${notesHtml}
+        </td>
+        <td class="${qtyClass}">${this.escapeHtml(String(item.quantity ?? ''))}</td>
+      </tr>
+    `;
   }
 
   private async printKitchenTickets(kitchens: KitchenGroup[], meta: KitchenPrintMeta): Promise<void> {
@@ -274,7 +377,7 @@ export class PosPrintService {
       <html dir="${dir}">
       <head>
         <meta charset="utf-8">
-        <title>${this.escapeHtml(this.app.localize('Queue No'))} ${this.escapeHtml(String(kitchen.queueNo ?? ''))}</title>
+        <title>${this.escapeHtml('رقم الدور')} ${this.escapeHtml(String(kitchen.queueNo ?? ''))}</title>
         ${this.queueTicketStyles()}
       </head>
       <body>
@@ -285,12 +388,8 @@ export class PosPrintService {
 
   private buildKitchenTicketHtml(kitchen: KitchenGroup, meta: KitchenPrintMeta): string {
     const dir = document.documentElement.dir || 'ltr';
-    const itemRows = (kitchen.items || []).map(item => `
-      <tr>
-        <td>${this.escapeHtml(item.itemName || '')}</td>
-        <td class="text-end">${this.escapeHtml(String(item.quantity ?? ''))}</td>
-      </tr>
-    `).join('');
+    const itemRows = (kitchen.items || []).map(item => this.buildItemRow(item, 'text-end')).join('');
+    const queueNo = String(kitchen.queueNo ?? '');
 
     const tableRow = meta.table
       ? `<div class="mb-1">${this.escapeHtml(this.app.localize('Table'))}: ${this.escapeHtml(meta.table)}</div>`
@@ -306,21 +405,21 @@ export class PosPrintService {
       <html dir="${dir}">
       <head>
         <meta charset="utf-8">
-        <title>${this.escapeHtml(kitchen.printerId || this.app.localize('Kitchen Order'))}</title>
+        <title>${this.escapeHtml('رقم الدور')} ${this.escapeHtml(queueNo)}</title>
         ${this.ticketStyles()}
       </head>
       <body>
         <div class="kitchen-ticket">
           <div class="header">
             <h4>${this.escapeHtml(this.app.localize('KITCHEN ORDER'))}</h4>
+            <div class="queue-no">${this.escapeHtml('رقم الدور')} ${this.escapeHtml(queueNo)}</div>
             <small>${this.escapeHtml(meta.branchName || '')}</small>
           </div>
           <div class="order-info">
             <div class="d-flex">
-              <div>${this.escapeHtml(this.app.localize('Order #'))}${this.escapeHtml(String(meta.orderNumber || kitchen.invoiceNo || ''))}</div>
+              <div>${this.escapeHtml(this.app.localize('Order Type'))}: ${this.escapeHtml(meta.orderType || '')}</div>
               <div>${this.escapeHtml(meta.orderDate || '')}</div>
             </div>
-            <div class="mb-1">${this.escapeHtml(this.app.localize('Order Type'))}: ${this.escapeHtml(meta.orderType || '')}</div>
             ${tableRow}
             ${waiterRow}
           </div>
@@ -340,16 +439,11 @@ export class PosPrintService {
   }
 
   private buildQueueTicketMarkup(kitchen: KitchenGroup): string {
-    const itemRows = (kitchen.items || []).map(item => `
-      <tr>
-        <td>${this.escapeHtml(item.itemName || '')}</td>
-        <td class="qty">${this.escapeHtml(String(item.quantity ?? ''))}</td>
-      </tr>
-    `).join('');
+    const itemRows = (kitchen.items || []).map(item => this.buildItemRow(item, 'qty')).join('');
 
     return `
       <div class="queue-ticket">
-        <div class="queue-no">${this.escapeHtml(this.app.localize('Queue No'))} ${this.escapeHtml(String(kitchen.queueNo ?? ''))}</div>
+        <div class="queue-no">${this.escapeHtml('رقم الدور')} ${this.escapeHtml(String(kitchen.queueNo ?? ''))}</div>
         <table>
           <thead>
             <tr>
@@ -390,9 +484,24 @@ export class PosPrintService {
         margin: 0;
         text-transform: uppercase;
       }
+      .kitchen-ticket .queue-no {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.2;
+        margin: 4px 0;
+      }
       .kitchen-ticket .header small {
         font-size: 11px;
         display: block;
+      }
+      .kitchen-ticket .modifiers,
+      .kitchen-ticket .notes {
+        font-size: 11px;
+        font-weight: normal;
+        margin-top: 2px;
+      }
+      .kitchen-ticket .modifier {
+        padding-inline-start: 8px;
       }
       .kitchen-ticket .order-info {
         border-bottom: 1px dashed #000;
@@ -474,6 +583,15 @@ export class PosPrintService {
       .queue-ticket .qty {
         text-align: end;
         width: 28px;
+      }
+      .queue-ticket .modifiers,
+      .queue-ticket .notes {
+        font-size: 11px;
+        font-weight: normal;
+        margin-top: 2px;
+      }
+      .queue-ticket .modifier {
+        padding-inline-start: 8px;
       }
     </style>`;
   }

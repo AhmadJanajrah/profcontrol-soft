@@ -6,7 +6,7 @@ import { FloorService, FloorArea, FloorTable } from '../../services/floor.servic
 import * as signalR from '@microsoft/signalr';
 import { NgForm } from '@angular/forms';
 import { SoundService } from '../../services/sound.service';
-import { KitchenPrintMeta, PosPrintService } from '../../services/pos-print.service';
+import { KitchenPrintMeta, CartPrintItem, PosPrintService } from '../../services/pos-print.service';
 import { AppImports } from '../../app.imports';
 
 // Enums matching SalesController exactly
@@ -1712,6 +1712,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         const orderId = response.orderId || this.order.id;
         const orderType = this.order.orderType;
         const printMeta = this.buildKitchenPrintMeta(orderId);
+        const printItems = this.snapshotCartPrintItems();
 
         this.app.showSuccessMessage(
           this.app.localize('Success!'),
@@ -1733,7 +1734,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         this.showMobileCart = false;
 
         if (orderType === OrderType.DineIn && orderId) {
-          this.posPrint.printAfterDineInFire(orderId, this.locationId, printMeta).catch(() => { });
+          this.posPrint.printAfterDineInFire(orderId, this.locationId, printMeta, printItems).catch(() => { });
         }
       },
       error: (error) => {
@@ -2009,6 +2010,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         const orderId = response.orderId || this.order.id;
         const orderType = this.order.orderType;
         const printMeta = this.buildKitchenPrintMeta(orderId);
+        const printItems = this.snapshotCartPrintItems();
 
         const paymentRequest = {
           locationId: this.locationId,
@@ -2036,7 +2038,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
                   orderId,
                   this.locationId,
                   printMeta,
-                  invoiceHtml
+                  invoiceHtml,
+                  printItems
                 ).catch(() => {
                   this.printReceiptAfterPayment(invoiceHtml);
                 });
@@ -2069,6 +2072,17 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private printReceiptAfterPayment(html: any): void {
     this.posPrint.printOnDefaultPrinter(html);
+  }
+
+  private snapshotCartPrintItems(): CartPrintItem[] {
+    return (this.cart || []).map((item: any) => ({
+      itemId: Number(item.itemId),
+      quantity: Number(item.quantity || 0),
+      modifiers: (item.modifiers || [])
+        .map((modifier: any) => String(modifier?.optionName || '').trim())
+        .filter(Boolean),
+      notes: item.notes || ''
+    }));
   }
 
   private buildKitchenPrintMeta(orderId: number): KitchenPrintMeta {

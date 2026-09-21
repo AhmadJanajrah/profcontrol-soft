@@ -1,10 +1,10 @@
 import { Component, ViewChild, OnInit, AfterViewInit, OnDestroy, Renderer2, ElementRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { NgForm } from '@angular/forms';
-import { Subject } from 'rxjs';
+import { Subject, Subscription, filter } from 'rxjs';
 import { DataTableDirective } from 'angular-datatables';
 import { AppService } from '../../../services/app.service';
-import { Router } from '@angular/router';
+import { NavigationStart, Router } from '@angular/router';
 import { AppImports } from '../../../app.imports';
 
 @Component({
@@ -31,6 +31,8 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 	];
 
 	private static readonly FILTERS_STORAGE_KEY = 'gorestofy_ItemListFilters';
+	private static readonly RESTORE_FILTERS_KEY = 'gorestofy_ItemListRestoreFilters';
+	private routerSub?: Subscription;
 
 	// Filters
 	public filters = {
@@ -50,7 +52,6 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 		this.itemTypes.forEach(type => {
 			type.label = this.app.localize(type.label);
 		});
-		this.filters.itemType = 1; // Default to Recipe
 		this.restoreFilters();
 	}
 
@@ -58,6 +59,13 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 	ngOnInit(): void {
 		this.initDataTable();
 		this.loadFormData();
+		this.routerSub = this.router.events
+			.pipe(filter((event): event is NavigationStart => event instanceof NavigationStart))
+			.subscribe(event => {
+				if (this.isItemDetailUrl(event.url)) {
+					this.markFiltersForRestore();
+				}
+			});
 	}
 
 	ngAfterViewInit(): void {
@@ -67,6 +75,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 
 	ngOnDestroy(): void {
 		this.persistFilters();
+		this.routerSub?.unsubscribe();
 		this.dtTrigger.unsubscribe();
 	}
 
@@ -326,8 +335,32 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 		}
 	}
 
+	private markFiltersForRestore(): void {
+		try {
+			sessionStorage.setItem(ItemListComponent.RESTORE_FILTERS_KEY, '1');
+		} catch {
+			// Ignore storage errors
+		}
+	}
+
+	private isItemDetailUrl(url: string): boolean {
+		const path = url.split('?')[0];
+		return path.includes('/products/items/add')
+			|| path.includes('/products/items/view/')
+			|| path.includes('/products/items/edit/');
+	}
+
 	private restoreFilters(): void {
 		try {
+			const shouldRestore = sessionStorage.getItem(ItemListComponent.RESTORE_FILTERS_KEY) === '1';
+			sessionStorage.removeItem(ItemListComponent.RESTORE_FILTERS_KEY);
+
+			if (!shouldRestore) {
+				this.filters.categoryId = null;
+				this.filters.itemType = null;
+				return;
+			}
+
 			const saved = sessionStorage.getItem(ItemListComponent.FILTERS_STORAGE_KEY);
 			if (!saved) {
 				return;
@@ -338,6 +371,7 @@ export class ItemListComponent implements OnInit, AfterViewInit, OnDestroy {
 			this.filters.itemType = parsed.itemType ?? null;
 		} catch {
 			sessionStorage.removeItem(ItemListComponent.FILTERS_STORAGE_KEY);
+			sessionStorage.removeItem(ItemListComponent.RESTORE_FILTERS_KEY);
 		}
 	}
 
