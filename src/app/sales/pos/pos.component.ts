@@ -2585,31 +2585,53 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       (m: any) => m.modifierOptionId === option.id
     );
 
+    const itemMod = this.modals.itemDetail.item?.itemModifiers?.find(
+      (im: any) => im.modifierId === modifier.id
+    );
+
+    if (!itemMod) {
+      return;
+    }
+
+    const minSelection = Number(itemMod.minSelection) || 0;
+    const maxSelection = Number(itemMod.maxSelection) || 1;
+
+    // Clicking the already selected option deselects it, unless that would
+    // drop below the modifier's minimum (required size/single-choice).
     if (existingIndex !== -1) {
+      const currentCount = this.getModifierSelectionCount(modifier.id);
+      if (currentCount <= minSelection) {
+        return;
+      }
+
       this.modals.itemDetail.selectedModifiers.splice(existingIndex, 1);
-    } else {
-      const itemMod = this.modals.itemDetail.item?.itemModifiers?.find(
-        (im: any) => im.modifierId === modifier.id
-      );
+      return;
+    }
 
-      if (itemMod) {
-        const currentSelections = this.modals.itemDetail.selectedModifiers.filter(
-          (m: any) => m.modifierId === modifier.id
-        ).length;
+    const currentSelections = this.modals.itemDetail.selectedModifiers.filter(
+      (m: any) => m.modifierId === modifier.id
+    );
 
-        if (currentSelections >= itemMod.maxSelection) {
-          return;
-        }
-
-        this.modals.itemDetail.selectedModifiers.push({
-          modifierId: modifier.id,
-          modifierOptionId: option.id,
-          optionName: option.optionName,
-          unitPrice: option.price,
-          modifierName: modifier.modifierName
-        });
+    if (currentSelections.length >= maxSelection) {
+      // Single-choice modifiers (e.g. size) replace the previous option
+      // instead of requiring the cashier to uncheck it first.
+      if (maxSelection === 1) {
+        this.modals.itemDetail.selectedModifiers =
+          this.modals.itemDetail.selectedModifiers.filter(
+            (m: any) => m.modifierId !== modifier.id
+          );
+      } else {
+        return;
       }
     }
+
+    this.modals.itemDetail.selectedModifiers.push({
+      modifierId: modifier.id,
+      modifierOptionId: option.id,
+      optionName: option.optionName,
+      unitPrice: option.price,
+      modifierName: modifier.modifierName
+    });
   }
 
   public isModifierOptionSelected(optionId: number): boolean {

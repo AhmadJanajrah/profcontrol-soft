@@ -464,7 +464,7 @@
 
                             <div class="form-group">
                                 <ng-select
-                                    [ngModel]="null"
+                                    [(ngModel)]="modifierSelectId"
                                     (ngModelChange)="addModifierFromSelect($event)"
                                     [items]="modifiers"
                                     [clearable]="true"
@@ -489,7 +489,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @for (modifier of item.itemModifiers; track $index; let i = $index) {
+                                        @for (modifier of item.itemModifiers; track modifier.modifierId; let i = $index) {
                                         <tr>
                                             <td>
                                                 <strong>
@@ -566,7 +566,7 @@
                             <!-- ng-select for adding ingredients -->
                             <div class="form-group">
                                 <ng-select
-                                    [ngModel]="null"
+                                    [(ngModel)]="ingredientSelectId"
                                     (ngModelChange)="addRecipeItemFromSelect($event)"
                                     [items]="ingredients"
                                     [clearable]="true"
@@ -588,7 +588,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @for (recipeItem of item.recipeItemItems; track $index; let i = $index) {
+                                        @for (recipeItem of item.recipeItemItems; track recipeItem.ingredientId; let i = $index) {
                                         <tr>
                                             <td>
                                                 <div>
@@ -648,7 +648,7 @@
                             <!-- ng-select for adding combo items -->
                             <div class="form-group">
                                 <ng-select
-                                    [ngModel]="null"
+                                    [(ngModel)]="comboItemSelectId"
                                     (ngModelChange)="addComboItem($event)"
                                     [items]="productItems"
                                     [clearable]="true"
@@ -674,7 +674,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @for (comboItem of item.comboItemParentItems; track $index; let i = $index) {
+                                        @for (comboItem of item.comboItemParentItems; track comboItem.childItemId; let i = $index) {
                                         <tr>
                                             <td>
                                                 @if (comboItem.childItem) {
@@ -754,7 +754,7 @@
                             <!-- ng-select for adding combo items -->
                             <div class="form-group">
                                 <ng-select
-                                    [ngModel]="null"
+                                    [(ngModel)]="locationSelectId"
                                     (ngModelChange)="addInitialStock($event)"
                                     [items]="locations"
                                     [clearable]="true"

@@ -73,6 +73,13 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
     // Stock management (for create mode only)
     public showStockSection = false;
 
+    // ng-select adders (kept separate so they can be cleared after save)
+    public modifierSelectId: number | null = null;
+    public ingredientSelectId: number | null = null;
+    public comboItemSelectId: number | null = null;
+    public locationSelectId: number | null = null;
+    private isResettingForm = false;
+
     // ItemType enum for template
     public ItemType = ItemType;
 
@@ -246,7 +253,9 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
         });
     }
 
-    private resetFormData(): void {
+    private resetFormData(form?: NgForm): void {
+        this.isResettingForm = true;
+
         // Revoke any created object URLs for previews
         this.imagePreviewUrls.forEach(url => {
             if (url && url.startsWith('blob:')) {
@@ -264,6 +273,29 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
         this.isValidated = false;
         this.isEditMode = false;
         this.showStockSection = false;
+
+        // Named ng-select adders keep their last value inside NgForm; reset them
+        // first so they cannot write the previous modifier / ingredient back.
+        if (form) {
+            ['modifierSelect', 'ingredientSelect', 'comboItemSelect', 'locationSelect'].forEach(name => {
+                form.controls[name]?.reset(null);
+            });
+        }
+
+        this.modifierSelectId = null;
+        this.ingredientSelectId = null;
+        this.comboItemSelectId = null;
+        this.locationSelectId = null;
+
+        // Clear nested lists on the current object first so the tables drop
+        // immediately, then replace the model with a fresh empty item.
+        if (this.item) {
+            this.item.itemModifiers = [];
+            this.item.recipeItemItems = [];
+            this.item.comboItemParentItems = [];
+            this.item.stocks = [];
+            this.item.itemImages = [];
+        }
 
         this.item = {
             id: 0,
@@ -288,6 +320,14 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
             itemModifiers: [],
             stocks: []
         };
+
+        setTimeout(() => {
+            this.modifierSelectId = null;
+            this.ingredientSelectId = null;
+            this.comboItemSelectId = null;
+            this.locationSelectId = null;
+            this.isResettingForm = false;
+        });
     }
 
     // --- Item Type Change Handler ---
@@ -318,10 +358,13 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
 
     // Add initial stock entry
     public addInitialStock(locationId: number): void {
-        if (!locationId) return;
+        if (this.isResettingForm || !locationId) return;
 
         // Check if stock already exists
         if (this.item.stocks.some((s: any) => s.locationId === locationId)) {
+            setTimeout(() => {
+                this.locationSelectId = null;
+            });
             return;
         }
 
@@ -334,6 +377,10 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                 minLevel: '0',
             });
         }
+
+        setTimeout(() => {
+            this.locationSelectId = null;
+        });
     }
 
     // Remove stock entry
@@ -351,7 +398,7 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
 
     // Add new recipe item using ng-select
     public addRecipeItemFromSelect(ingredientId: any): void {
-        if (!ingredientId) return;
+        if (this.isResettingForm || !ingredientId) return;
 
         // Check if ingredient already exists
         if (this.item.recipeItemItems.some((ri: any) => ri.ingredientId === ingredientId)) {
@@ -359,6 +406,9 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                 this.app.localize('Warning'),
                 this.app.localize('This ingredient is already added.')
             );
+            setTimeout(() => {
+                this.ingredientSelectId = null;
+            });
             return;
         }
 
@@ -372,6 +422,10 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                 ingredient: ingredient
             });
         }
+
+        setTimeout(() => {
+            this.ingredientSelectId = null;
+        });
     }
 
     // Remove recipe item
@@ -392,7 +446,7 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
 
     // Add new combo item using ng-select
     public addComboItem(itemId: any): void {
-        if (!itemId) return;
+        if (this.isResettingForm || !itemId) return;
 
         // Check if item already exists
         if (this.item.comboItemParentItems.some((ci: any) => ci.childItemId === itemId)) {
@@ -400,6 +454,9 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                 this.app.localize('Warning!'),
                 this.app.localize('This item is already added.')
             );
+            setTimeout(() => {
+                this.comboItemSelectId = null;
+            });
             return;
         }
 
@@ -414,6 +471,10 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                 childItem: productItem
             });
         }
+
+        setTimeout(() => {
+            this.comboItemSelectId = null;
+        });
     }
 
     // Remove combo item
@@ -434,7 +495,7 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
 
     // Add modifier group using ng-select
     public addModifierFromSelect(modifierId: any): void {
-        if (!modifierId) return;
+        if (this.isResettingForm || !modifierId) return;
 
         // Check if modifier already exists
         if (this.item.itemModifiers.some((im: any) => im.modifierId === modifierId)) {
@@ -442,6 +503,9 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                 this.app.localize('Warning!'),
                 this.app.localize('This modifier is already added.')
             );
+            setTimeout(() => {
+                this.modifierSelectId = null;
+            });
             return;
         }
 
@@ -457,6 +521,10 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                 modifier: modifier
             });
         }
+
+        setTimeout(() => {
+            this.modifierSelectId = null;
+        });
     }
 
     // Remove modifier group
@@ -597,7 +665,7 @@ export class ItemAddEditComponent implements OnInit, OnDestroy {
                     this.imagesToDelete = [];
                     this.loadItemData(this.item.id);
                 } else {
-                    this.resetFormData();
+                    this.resetFormData(form);
                 }
                 this.isValidated = false;
                 this.isSubmitted = false;
