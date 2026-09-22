@@ -1895,12 +1895,37 @@ select {
      border: 1px solid var(--border-light);
 }
 
+/* Date/time values are always LTR (yyyy-mm-dd). Keep them LTR and pin the
+   native picker to the physical right so icons never cover the value in RTL. */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+     direction: ltr;
+     unicode-bidi: isolate;
+     text-align: left;
+     position: relative;
+     padding-right: 2rem;
+}
+
 input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
      background-color: rgba(240, 240, 240, 0.44);
      color: var(--text-muted);
      border-radius: var(--radius-sm);
      cursor: pointer;
+     position: absolute;
+     right: 8px;
+     left: auto;
+}
+
+input[type="date"]::-webkit-clear-button,
+input[type="time"]::-webkit-clear-button,
+input[type="datetime-local"]::-webkit-clear-button {
+     display: none;
+     -webkit-appearance: none;
 }
 
 .input-round {
@@ -2067,6 +2092,24 @@ textarea.form-control {
 .input-with-icon .input-icon-start:hover,
 .input-with-icon .input-icon-end:hover {
      color: var(--text-main);
+}
+
+/* Place the custom clear (X) to the left of the calendar icon so the date stays readable. */
+.input-with-icon input[type="date"] ~ .input-icon-end,
+.input-with-icon input[type="time"] ~ .input-icon-end,
+.input-with-icon input[type="datetime-local"] ~ .input-icon-end,
+.input-with-icon input[type="month"] ~ .input-icon-end {
+     inset-inline-end: auto;
+     inset-inline-start: auto;
+     right: 1.85rem;
+     left: auto;
+}
+
+.input-with-icon:has(.input-icon-end) > input[type="date"],
+.input-with-icon:has(.input-icon-end) > input[type="time"],
+.input-with-icon:has(.input-icon-end) > input[type="datetime-local"],
+.input-with-icon:has(.input-icon-end) > input[type="month"] {
+     padding-right: 3.5rem;
 }
 
 /* Search input */
