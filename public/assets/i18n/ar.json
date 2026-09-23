@@ -5,5 +5,19 @@
   "Queue No": "رقم الدور",
   "KITCHEN ORDER": "طلب المطبخ",
   "Info": "معلومة",
-  "Email service must be enabled to use two-factor authentication.": "يجب تفعيل خدمة البريد الإلكتروني لاستخدام المصادقة الثنائية."
+  "Email service must be enabled to use two-factor authentication.": "يجب تفعيل خدمة البريد الإلكتروني لاستخدام المصادقة الثنائية.",
+  "Drivers": "السائقين",
+  "Add Driver": "اضافة سائق",
+  "Edit Driver": "تعديل سائق",
+  "Driver": "سائق",
+  "Driver Type": "نوع السائق",
+  "Driver Details": "تفاصيل السائق",
+  "Driver #": "رقم السائق",
+  "Active Driver": "سائق نشط",
+  "Driver created successfully": "تم إضافة السائق بنجاح",
+  "Driver updated successfully": "تم تحديث السائق بنجاح",
+  "Driver deleted successfully.": "تم حذف السائق بنجاح.",
+  "Invalid driver ID provided.": "رقم السائق غير صالح.",
+  "Handover": "تسليم",
+  "Courier": "توصيل"
 }

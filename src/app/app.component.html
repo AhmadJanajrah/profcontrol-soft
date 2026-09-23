@@ -689,6 +689,30 @@ Last Updated: 2025-10-04 15:30:00 UTC
       </li>
       }
 
+      <!-- Drivers -->
+      @if (app.canAccessDrivers()) {
+      <li class="has-submenu">
+        <a href="javascript:void(0);">
+          <i class="ri-steering-2-line"></i>
+          <span>{{ app.localize("Drivers") }}</span>
+        </a>
+        <ul class="submenu">
+          <li>
+            <a [routerLink]="['/drivers/list']" [routerLinkActive]="'active'">
+              <i class="ri-user-add-line"></i>
+              <span>{{ app.localize("Add Driver") }}</span>
+            </a>
+          </li>
+          <li>
+            <a [routerLink]="['/drivers/report']" [routerLinkActive]="'active'">
+              <i class="ri-file-list-3-line"></i>
+              <span>{{ app.localize("Drivers") }}</span>
+            </a>
+          </li>
+        </ul>
+      </li>
+      }
+
       <!-- Marketing -->
       @if (app.hasSomePermission('marketing')) {
       <li class="has-submenu">

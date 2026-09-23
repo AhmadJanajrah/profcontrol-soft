@@ -16,8 +16,9 @@ export enum OrderStatus {
 export enum OrderType {
   DineIn = 1,
   Takeaway = 2,
-  Delivery = 3,
-  Online = 4
+  Handover = 3,
+  Online = 4,
+  Courier = 5
 }
 
 @Component({
@@ -49,7 +50,8 @@ export class KitchenComponent implements OnInit, OnDestroy {
   public filterOptions = [
     { key: OrderType.DineIn, label: 'Dine In', icon: 'ri-store-2-line' },
     { key: OrderType.Takeaway, label: 'Takeaway', icon: 'ri-shopping-bag-2-line' },
-    { key: OrderType.Delivery, label: 'Delivery', icon: 'ri-truck-line' }
+    { key: OrderType.Handover, label: 'Handover', icon: 'ri-user-received-line' },
+    { key: OrderType.Courier, label: 'Courier', icon: 'ri-truck-line' }
   ];
 
   public selectedOrderType = null as number | null;
@@ -281,8 +283,9 @@ export class KitchenComponent implements OnInit, OnDestroy {
     switch (orderType) {
       case OrderType.DineIn: return this.app.localize('Dine In');
       case OrderType.Takeaway: return this.app.localize('Takeaway');
-      case OrderType.Delivery: return this.app.localize('Delivery');
+      case OrderType.Handover: return this.app.localize('Handover');
       case OrderType.Online: return this.app.localize('Online');
+      case OrderType.Courier: return this.app.localize('Courier');
       default: return this.app.localize('Unknown');
     }
   }

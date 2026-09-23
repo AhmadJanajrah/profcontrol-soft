@@ -1,0 +1,283 @@
+<!-- Page header with title and breadcrumb -->
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">
+            {{ getPageTitle() }}
+        </h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a [routerLink]="['/drivers/list']">
+                        {{ app.localize('Add Driver') }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">
+                    {{ isEditMode ? app.localize('Edit') : app.localize('Add') }}
+                </li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card">
+        <div class="card-body">
+            <div [ngClass]="{ 'disabled loader-full': isLoading }">
+                @if (!isLoading) {
+                <form
+                    #driverForm="ngForm"
+                    [ngClass]="{ 'was-validated': isValidated }"
+                    (ngSubmit)="submitForm(driverForm)"
+                    autocomplete="off"
+                    novalidate>
+                    <input [(ngModel)]="driver.id" type="hidden" name="id" />
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="driverType" class="form-label">
+                                    {{ app.localize('Driver Type') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="driver.driverType"
+                                    [items]="driverTypes"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    [placeholder]="app.localize('Choose an option')"
+                                    bindLabel="name"
+                                    bindValue="id"
+                                    name="driverType"
+                                    class="form-control"></ng-select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="fullName" class="form-label">
+                                    {{ app.localize('Full Name') }}
+                                    <code>*</code>
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.fullName"
+                                    type="text"
+                                    id="fullName"
+                                    name="fullName"
+                                    class="form-control"
+                                    maxlength="100"
+                                    required />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('This field is required.') }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="email" class="form-label">
+                                    {{ app.localize('Email') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.email"
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    class="form-control"
+                                    maxlength="100" />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('Please enter a valid email address.') }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="phone" class="form-label">
+                                    {{ app.localize('Phone') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.phone"
+                                    type="tel"
+                                    id="phone"
+                                    name="phone"
+                                    class="form-control"
+                                    maxlength="20"
+                                    pattern="^\+?[0-9]{7,20}$" />
+                                <div class="invalid-feedback">
+                                    {{ app.localize('Please enter a valid phone number.') }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="birthDate" class="form-label">
+                                    {{ app.localize('Birth Date') }}
+                                </label>
+                                <div class="input-with-icon">
+                                    <input
+                                        [(ngModel)]="driver.birthDate"
+                                        type="date"
+                                        name="birthDate"
+                                        id="birthDate"
+                                        onclick="this.showPicker()"
+                                        class="form-control" />
+                                    @if (driver.birthDate) {
+                                    <button
+                                        (click)="driver.birthDate = null"
+                                        type="button"
+                                        class="input-icon-end"
+                                        tabindex="-1">
+                                        <i class="ri-close-line"></i>
+                                    </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="taxIdentificationNumber" class="form-label">
+                                    {{ app.localize('Tax Identification Number') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.taxIdentificationNumber"
+                                    type="text"
+                                    id="taxIdentificationNumber"
+                                    name="taxIdentificationNumber"
+                                    class="form-control"
+                                    maxlength="50" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="address" class="form-label">
+                                    {{ app.localize('Address') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="driver.address"
+                                    id="address"
+                                    name="address"
+                                    class="form-control"
+                                    rows="2"
+                                    maxlength="255"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="country" class="form-label">
+                                    {{ app.localize('Country') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.country"
+                                    type="text"
+                                    id="country"
+                                    name="country"
+                                    class="form-control"
+                                    maxlength="100" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="city" class="form-label">
+                                    {{ app.localize('City') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.city"
+                                    type="text"
+                                    id="city"
+                                    name="city"
+                                    class="form-control"
+                                    maxlength="100" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="state" class="form-label">
+                                    {{ app.localize('State') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.state"
+                                    type="text"
+                                    id="state"
+                                    name="state"
+                                    class="form-control"
+                                    maxlength="100" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group">
+                                <label for="postalCode" class="form-label">
+                                    {{ app.localize('Postal Code') }}
+                                </label>
+                                <input
+                                    [(ngModel)]="driver.postalCode"
+                                    type="text"
+                                    id="postalCode"
+                                    name="postalCode"
+                                    class="form-control"
+                                    maxlength="20" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <div class="form-check form-switch mt-2">
+                                    <input
+                                        [(ngModel)]="driver.isActive"
+                                        type="checkbox"
+                                        id="isActive"
+                                        name="isActive"
+                                        class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">
+                                        {{ app.localize('Active Driver') }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="notes" class="form-label">
+                                    {{ app.localize('Notes') }}
+                                </label>
+                                <textarea
+                                    [(ngModel)]="driver.notes"
+                                    id="notes"
+                                    name="notes"
+                                    class="form-control"
+                                    rows="2"
+                                    maxlength="1000"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div [ngClass]="{ disabled: isSubmitted }" class="d-flex gap-2 justify-content-end py-0 mt-4">
+                        <button (click)="app.goBack()" type="button" class="btn btn-light btn-round btn-back">
+                            <i class="ri-arrow-left-line"></i>
+                            {{ app.localize('Back') }}
+                        </button>
+                        <button
+                            [ngClass]="{ 'disabled btn-progress': isSubmitted }"
+                            type="submit"
+                            class="btn btn-primary btn-round">
+                            <i class="ri-save-3-line"></i>
+                            {{ driver.id > 0 ? app.localize('Update') : app.localize('Save') }}
+                        </button>
+                    </div>
+                </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

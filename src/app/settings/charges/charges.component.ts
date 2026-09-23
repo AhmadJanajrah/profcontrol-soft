@@ -38,8 +38,9 @@ export class ChargesComponent implements OnInit, AfterViewInit, OnDestroy {
 	public applyToOptions = [
 		{ value: 1, label: 'Dine In' },
 		{ value: 2, label: 'Takeaway' },
-		{ value: 3, label: 'Delivery' },
-		{ value: 4, label: 'Other' }
+		{ value: 3, label: 'Handover' },
+		{ value: 4, label: 'Other' },
+		{ value: 5, label: 'Courier' }
 	];
 
 	constructor(

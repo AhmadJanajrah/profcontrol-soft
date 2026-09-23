@@ -1,0 +1,55 @@
+<div class="page-header d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0">
+    <div>
+        <h1 class="page-title">{{ app.localize('Drivers') }}</h1>
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item icon">
+                    <a [routerLink]="['/']" [appTooltip]="app.localize('Home')">
+                        <i class="ri-home-4-line"></i>
+                    </a>
+                </li>
+                <li class="breadcrumb-item active">{{ app.localize('Drivers') }}</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="card mb-2">
+        <div class="card-body">
+            <div class="d-flex align-items-end gap-3 flex-wrap filter-bar">
+                <div class="form-group flex-grow-1 mb-0" style="min-width: 220px; max-width: 320px">
+                    <label for="statusFilter" class="form-label">
+                        {{ app.localize('Status') }}
+                    </label>
+                    <select
+                        [(ngModel)]="statusFilter"
+                        (ngModelChange)="reloadDataTable(true)"
+                        name="statusFilter"
+                        id="statusFilter"
+                        class="form-control">
+                        <option value="all">{{ app.localize('All') }}</option>
+                        <option value="active">{{ app.localize('Active') }}</option>
+                        <option value="inactive">{{ app.localize('Inactive') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body py-2">
+            <div class="table-responsive">
+                <table
+                    [dtOptions]="dtOptions"
+                    [dtTrigger]="dtTrigger"
+                    datatable
+                    class="table table-bordered"
+                    id="dataTable">
+                    <thead></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

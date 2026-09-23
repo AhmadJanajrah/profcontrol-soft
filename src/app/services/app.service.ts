@@ -64,6 +64,7 @@ export class AppService {
 
   private initializeApp(): void {
     this.loadUser();
+    this.loadAccessRole();
     this.loadAppConfig();
     this.loadLocalizationData();
   }
@@ -78,7 +79,11 @@ export class AppService {
     this.userSelectedLocationId = selectedLocationId || 0;
     this.userPermissions = userData.permissionsJson?.split(',').map((p: string) => p.trim()) || [];
 
+    const tokenRole = this.roleFromToken(userData.token);
+    const cachedRole = this.getDecrypted<string>('gorestofy_UserRole') || '';
+
     this.user = {
+      id: userData.id || userData.userId || 0,
       fullName: userData.fullName,
       userName: userData.userName,
       email: userData.email,
@@ -86,6 +91,8 @@ export class AppService {
       isWaiter: userData.isWaiter,
       profileImageUrl: userData.profileImageUrl,
       accessAllLocations: userData.accessAllLocations,
+      isSystemUser: userData.isSystemUser === true,
+      roleName: userData.roleName || userData.role?.roleName || userData.RoleName || tokenRole || cachedRole || '',
       token: userData.token,
     };
   }
@@ -413,6 +420,102 @@ export class AppService {
 
   public hasSomePermission(permissionPrefix: string): boolean {
     return this.userPermissions.some(permission => permission.startsWith(permissionPrefix));
+  }
+
+  public canAccessDrivers(): boolean {
+    if (this.hasSomePermission('drivers')) return true;
+    if (this.user?.['isSystemUser'] === true) return true;
+    if (Number(this.user?.['id']) === 1) return true;
+    if (this.isAdminOrSuperAdminRole(String(this.user?.['roleName'] || ''))) return true;
+
+    return this.hasPermission('users.roles')
+      || this.hasPermission('settings.systemconfig')
+      || this.hasPermission('tools.database');
+  }
+
+  private loadAccessRole(): void {
+    if (!this.user || !this.isAuthenticated()) return;
+
+    this.http.get<any>('/api/profile/getprofile').subscribe({
+      next: (res) => {
+        const profile = res?.profile || res?.data || res;
+        if (!profile || !this.user) return;
+
+        const roleName = profile.roleName || profile.role?.roleName || profile.RoleName || '';
+        if (roleName) {
+          this.user['roleName'] = roleName;
+          this.setEncrypted('gorestofy_UserRole', roleName);
+        }
+        if (profile.id) this.user['id'] = profile.id;
+        if (profile.isSystemUser === true) this.user['isSystemUser'] = true;
+      },
+      error: () => { }
+    });
+  }
+
+  private roleFromToken(token: string): string {
+    const payload = this.decodeJwtPayload(token);
+    if (!payload) return '';
+
+    const role = payload.role
+      ?? payload.Role
+      ?? payload.roleName
+      ?? payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+
+    if (Array.isArray(role)) return role.join(',');
+    return typeof role === 'string' ? role : '';
+  }
+
+  private decodeJwtPayload(token: string): any {
+    try {
+      const part = (token || '').split('.')[1];
+      if (!part) return null;
+      const base64 = part.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+      const json = decodeURIComponent(
+        Array.from(atob(padded))
+          .map(char => '%' + char.charCodeAt(0).toString(16).padStart(2, '0'))
+          .join('')
+      );
+      return JSON.parse(json);
+    } catch {
+      return null;
+    }
+  }
+
+  private isAdminOrSuperAdminRole(roleName: string): boolean {
+    const arabicAdmin = 'ادمن';
+    const adminNames = new Set(['admin', 'administrator', arabicAdmin, `ال${arabicAdmin}`]);
+    const superNames = new Set([
+      'superadmin',
+      'superadministrator',
+      `سوبر${arabicAdmin}`,
+      `السوبر${arabicAdmin}`,
+      `سوبرال${arabicAdmin}`
+    ]);
+
+    return roleName
+      .split(/[,|/]/)
+      .map(part => this.normalizeRole(part))
+      .filter(Boolean)
+      .some(role =>
+        adminNames.has(role)
+        || superNames.has(role)
+        || role.includes('superadmin')
+        || role.includes(`سوبر${arabicAdmin}`)
+        || role.endsWith('admin')
+        || role.endsWith('administrator')
+        || role.endsWith(arabicAdmin)
+      );
+  }
+
+  private normalizeRole(value: string): string {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/[\s_\-]+/g, '');
   }
 
   public hasHomeAccess(): boolean {

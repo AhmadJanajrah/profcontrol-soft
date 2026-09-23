@@ -16,8 +16,9 @@ export enum OrderStatus {
 export enum OrderType {
 	DineIn = 1,
 	Takeaway = 2,
-	Delivery = 3,
-	Online = 4
+	Handover = 3,
+	Online = 4,
+	Courier = 5
 }
 
 @Component({
@@ -325,8 +326,9 @@ export class WaiterComponent implements OnInit, OnDestroy {
 		switch (orderType) {
 			case OrderType.DineIn: return this.app.localize('Dine In');
 			case OrderType.Takeaway: return this.app.localize('Takeaway');
-			case OrderType.Delivery: return this.app.localize('Delivery');
+			case OrderType.Handover: return this.app.localize('Handover');
 			case OrderType.Online: return this.app.localize('Online');
+			case OrderType.Courier: return this.app.localize('Courier');
 			default: return this.app.localize('Unknown');
 		}
 	}
@@ -366,8 +368,9 @@ export class WaiterComponent implements OnInit, OnDestroy {
 		switch (orderType) {
 			case OrderType.DineIn: return 'badge-primary';
 			case OrderType.Takeaway: return 'badge-info';
-			case OrderType.Delivery: return 'badge-success';
+			case OrderType.Handover: return 'badge-warning';
 			case OrderType.Online: return 'badge-light';
+			case OrderType.Courier: return 'badge-success';
 			default: return 'badge-secondary';
 		}
 	}

@@ -233,6 +233,38 @@ export const routes: Routes = [
     data: { permission: 'customers.coupons' }
   },
 
+  // Driver Routes
+  {
+    path: 'drivers/list',
+    loadComponent: () => import('./drivers/driverlist/driverlist.component').then(m => m.DriverListComponent),
+    canActivate: [AuthGuard],
+    data: { permission: 'drivers.manage' }
+  },
+  {
+    path: 'drivers/add',
+    loadComponent: () => import('./drivers/driveraddedit/driveraddedit.component').then(m => m.DriverAddEditComponent),
+    canActivate: [AuthGuard],
+    data: { permission: 'drivers.manage' }
+  },
+  {
+    path: 'drivers/edit/:id',
+    loadComponent: () => import('./drivers/driveraddedit/driveraddedit.component').then(m => m.DriverAddEditComponent),
+    canActivate: [AuthGuard],
+    data: { permission: 'drivers.manage' }
+  },
+  {
+    path: 'drivers/view/:id',
+    loadComponent: () => import('./drivers/driverview/driverview.component').then(m => m.DriverViewComponent),
+    canActivate: [AuthGuard],
+    data: { permission: 'drivers.manage' }
+  },
+  {
+    path: 'drivers/report',
+    loadComponent: () => import('./drivers/driverreport/driverreport.component').then(m => m.DriverReportComponent),
+    canActivate: [AuthGuard],
+    data: { permission: 'drivers.report' }
+  },
+
   // Marketing Routes
   {
     path: 'marketing/campaigns',

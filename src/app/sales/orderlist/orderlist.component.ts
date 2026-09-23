@@ -25,8 +25,9 @@ export enum PaymentStatus {
 export enum OrderType {
 	DineIn = 1,
 	Takeaway = 2,
-	Delivery = 3,
-	Online = 4
+	Handover = 3,
+	Online = 4,
+	Courier = 5
 }
 
 @Component({
@@ -125,7 +126,8 @@ export class OrderListComponent implements OnInit, AfterViewInit, OnDestroy {
 		this.orderTypeOptions = [
 			{ value: OrderType.DineIn, label: this.app.localize('Dine In'), class: 'badge-primary' },
 			{ value: OrderType.Takeaway, label: this.app.localize('Takeaway'), class: 'badge-info' },
-			{ value: OrderType.Delivery, label: this.app.localize('Delivery'), class: 'badge-success' },
+			{ value: OrderType.Handover, label: this.app.localize('Handover'), class: 'badge-warning' },
+			{ value: OrderType.Courier, label: this.app.localize('Courier'), class: 'badge-success' },
 			{ value: OrderType.Online, label: this.app.localize('Online'), class: 'badge-dark' }
 		];
 

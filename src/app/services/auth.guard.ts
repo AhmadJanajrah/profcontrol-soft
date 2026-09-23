@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, Router } from '@angular/router';
+import { AppService } from './app.service';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +9,7 @@ export class AuthGuard {
   private user: any;
   private permissions: any;
 
-  constructor(private router: Router) { };
+  constructor(private router: Router, private app: AppService) { };
   canActivate(
     next: ActivatedRouteSnapshot,
     state: RouterStateSnapshot): boolean {
@@ -23,6 +24,10 @@ export class AuthGuard {
 
       if (permission == "home") {
         return true;
+      }
+
+      if (typeof permission === 'string' && permission.startsWith('drivers.')) {
+        return this.app.canAccessDrivers();
       }
 
       if (this.permissions == null) {

@@ -21,8 +21,9 @@ export enum OrderStatus {
 export enum OrderType {
   DineIn = 1,
   Takeaway = 2,
-  Delivery = 3,
-  Online = 4
+  Handover = 3,
+  Online = 4,
+  Courier = 5
 }
 
 export enum TableStatus {
@@ -98,7 +99,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   public orderTypeOptions = [
     { value: OrderType.DineIn, label: 'Dine In', class: 'badge-primary', icon: 'ri-store-2-line' },
     { value: OrderType.Takeaway, label: 'Takeaway', class: 'badge-info', icon: 'ri-shopping-bag-line' },
-    { value: OrderType.Delivery, label: 'Delivery', class: 'badge-success', icon: 'ri-truck-line' },
+    { value: OrderType.Handover, label: 'Handover', class: 'badge-warning', icon: 'ri-user-received-line' },
+    { value: OrderType.Courier, label: 'Courier', class: 'badge-success', icon: 'ri-truck-line' },
   ];
 
   public customerTypes = [
@@ -2030,7 +2032,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
             );
 
             const invoiceHtml = payResponse.invoice;
-            const shouldPrintKitchenQueues = orderType === OrderType.Takeaway || orderType === OrderType.Delivery;
+            const shouldPrintKitchenQueues = orderType === OrderType.Takeaway || orderType === OrderType.Handover || orderType === OrderType.Courier;
 
             setTimeout(() => {
               if (shouldPrintKitchenQueues && orderId) {
@@ -3056,8 +3058,9 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     switch (orderType) {
       case OrderType.DineIn: return this.app.localize('Dine In');
       case OrderType.Takeaway: return this.app.localize('Takeaway');
-      case OrderType.Delivery: return this.app.localize('Delivery');
+      case OrderType.Handover: return this.app.localize('Handover');
       case OrderType.Online: return this.app.localize('Online');
+      case OrderType.Courier: return this.app.localize('Courier');
       default: return this.app.localize('Unknown');
     }
   }
