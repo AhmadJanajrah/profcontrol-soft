@@ -385,6 +385,33 @@
                             </div>
                             }
                         </div>
+
+                        <!-- Default Order Type -->
+                        <div class="col-md-6 form-group">
+                            <label for="defOrderType" class="form-label">
+                                {{ app.localize('Default Order Type') }}
+                                <code>*</code>
+                            </label>
+                            <ng-select
+                                [(ngModel)]="user.defOrderType"
+                                [items]="orderTypes"
+                                bindLabel="label"
+                                bindValue="value"
+                                [clearable]="false"
+                                [searchable]="false"
+                                [placeholder]="app.localize('Choose an option')"
+                                [class.is-invalid]="isValidated && !user.defOrderType"
+                                name="defOrderType"
+                                id="defOrderType"
+                                class="form-control"
+                                dropdownPosition="top"
+                                required></ng-select>
+                            @if (isValidated && !user.defOrderType) {
+                            <div class="invalid-feedback">
+                                {{ app.localize('This field is required.') }}
+                            </div>
+                            }
+                        </div>
                     </div>
 
                     <!-- Form Actions -->

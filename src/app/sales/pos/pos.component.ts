@@ -100,6 +100,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     { value: OrderType.DineIn, label: 'Dine In', class: 'badge-primary', icon: 'ri-store-2-line' },
     { value: OrderType.Takeaway, label: 'Takeaway', class: 'badge-info', icon: 'ri-shopping-bag-line' },
     { value: OrderType.Handover, label: 'Handover', class: 'badge-warning', icon: 'ri-user-received-line' },
+    { value: OrderType.Online, label: 'Online', class: 'badge-dark', icon: 'ri-global-line' },
     { value: OrderType.Courier, label: 'Courier', class: 'badge-success', icon: 'ri-truck-line' },
   ];
 
@@ -302,6 +303,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.orderTypeOptions.forEach(opt => { opt.label = this.app.localize(opt.label); });
     this.customerTypes.forEach(type => { type.name = this.app.localize(type.name); });
 
+    this.order.orderType = this.getDefaultOrderType();
     this.locationId = this.app.getSelectedLocationId() || 1;
     this.setupSearch();
     this.checkMobileView();
@@ -574,6 +576,9 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         `${chrg.chargeName} (${this.app.formatPercent(chrg.chargeValue)})` :
         `${chrg.chargeName} (${this.app.formatCurrency(chrg.chargeValue)})`;
     });
+    if (!this.order.id && this.cart.length === 0) {
+      this.order.orderType = this.getDefaultOrderType();
+    }
     this.filteredCharges = this.charges.filter((c: any) => c.applyTo === this.order.orderType);
 
     if (response.walkInCustomer) {
@@ -1507,6 +1512,14 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   | ORDER CONFIGURATION
   |-------------------------------------------------------------------------- 
   */
+
+  private getDefaultOrderType(): OrderType {
+    const value = Number(this.app.getDefOrderType());
+    if (this.orderTypeOptions.some(option => option.value === value)) {
+      return value as OrderType;
+    }
+    return OrderType.DineIn;
+  }
 
   public selectOrderType(orderType: OrderType): void {
     this.order.orderType = orderType;
@@ -2755,6 +2768,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         this.app.localize('Starting a new order will clear the current order. Do you want to continue?'),
         () => {
           this.clearOrder();
+          this.selectOrderType(this.getDefaultOrderType());
           this.modals.orderConfig.show = true;
           if (this.floorAreas.length > 0) {
             this.selectFloorForConfig(this.floorAreas[0].id);
@@ -2766,6 +2780,9 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         `<i class="ri-close-line"></i>` + this.app.localize('Cancel')
       );
       return;
+    }
+    if (isNewOrder && !this.order.id) {
+      this.selectOrderType(this.getDefaultOrderType());
     }
     this.modals.orderConfig.show = true;
     if (this.floorAreas.length > 0 && !this.selectedFloor) {
@@ -2909,7 +2926,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   private resetOrderState(): void {
     this.order = {
       id: 0,
-      orderType: OrderType.DineIn,
+      orderType: this.getDefaultOrderType(),
       customerId: this.order.customer?.id || 1,
       customer: this.order.customer,
       customerName: this.order.customer?.fullName || 'Walk-in Customer',

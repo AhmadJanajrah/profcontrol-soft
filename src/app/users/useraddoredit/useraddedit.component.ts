@@ -37,6 +37,13 @@ export class UserAddEditComponent implements OnInit, OnDestroy {
         { value: 2, label: 'Inactive' },
         { value: 3, label: 'Suspended' }
     ];
+    public orderTypes = [
+        { value: 1, label: 'Dine In' },
+        { value: 2, label: 'Takeaway' },
+        { value: 3, label: 'Handover' },
+        { value: 4, label: 'Online' },
+        { value: 5, label: 'Courier' }
+    ];
 
     constructor(
         private http: HttpClient,
@@ -44,6 +51,9 @@ export class UserAddEditComponent implements OnInit, OnDestroy {
         private router: Router,
         public app: AppService
     ) {
+        this.orderTypes.forEach(option => {
+            option.label = this.app.localize(option.label);
+        });
         this.resetForm();
     }
 
@@ -87,6 +97,7 @@ export class UserAddEditComponent implements OnInit, OnDestroy {
             roleId: null,
             userLocations: [],
             defaultLocationId: null,
+            defOrderType: 1,
             profileImageUrl: '',
             status: 1,
             accessAllLocations: false,
@@ -137,6 +148,7 @@ export class UserAddEditComponent implements OnInit, OnDestroy {
                 this.http.get<any>(`/api/users/getuser/${userId}`).subscribe({
                     next: (response) => {
                         this.user = response.user;
+                        this.user.defOrderType = Number(this.user.defOrderType ?? this.user.DefOrderType) || 1;
                         this.selectedLocations = this.user.userLocations?.map((ul: any) => ul.locationId) || [];
                         this.updateAvailableDefaultLocations();
                         this.user.userLocations = this.selectedLocations.map(locationId => ({ locationId }));
@@ -294,6 +306,7 @@ export class UserAddEditComponent implements OnInit, OnDestroy {
         formData.append('user.phone', this.user.phone || '');
         formData.append('user.roleId', this.user.roleId?.toString() || '');
         formData.append('user.defaultLocationId', this.user.defaultLocationId?.toString() || '');
+        formData.append('user.defOrderType', this.user.defOrderType?.toString() || '1');
         formData.append('user.status', this.user.status?.toString() || '1');
         formData.append('user.accessAllLocations', this.user.accessAllLocations?.toString() || 'false');
         formData.append('user.isTwoFactorEnabled', this.user.isTwoFactorEnabled?.toString() || 'false');

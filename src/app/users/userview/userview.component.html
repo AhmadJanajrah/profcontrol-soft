@@ -107,6 +107,12 @@
                             </span>
                         </li>
                         <li class="list-group-item">
+                            <span class="fw-medium me-2">{{ app.localize('Default Order Type') }}:</span>
+                            <span class="badge badge-info">
+                                {{ getDefaultOrderTypeLabel() }}
+                            </span>
+                        </li>
+                        <li class="list-group-item">
                             <span class="fw-medium me-2">{{ app.localize('Online Status') }}:</span>
                             <span [class]="getOnlineStatusClass()">
                                 <i [class]="getOnlineStatusIcon() + ' me-1'"></i>
@@ -207,6 +213,12 @@
                                             <span class="fw-medium me-2">{{ app.localize('Default Location') }}:</span>
                                             <span class="badge badge-primary">
                                                 {{ user?.defaultLocation?.locationName || app.localize('Not set') }}
+                                            </span>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <span class="fw-medium me-2">{{ app.localize('Default Order Type') }}:</span>
+                                            <span class="badge badge-info">
+                                                {{ getDefaultOrderTypeLabel() }}
                                             </span>
                                         </li>
                                         <li class="list-group-item">

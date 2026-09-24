@@ -91,6 +91,19 @@ export class UserViewComponent implements OnInit, OnDestroy {
 
 	// --- Display Helper Methods ---
 
+	public getDefaultOrderTypeLabel(): string {
+		const labels: Record<number, string> = {
+			1: 'Dine In',
+			2: 'Takeaway',
+			3: 'Handover',
+			4: 'Online',
+			5: 'Courier'
+		};
+		const value = Number(this.user?.defOrderType ?? this.user?.DefOrderType);
+		const key = labels[value];
+		return key ? this.app.localize(key) : this.app.localize('Not set');
+	}
+
 	public getLocationNames(): string {
 		if (!this.user?.userLocations || this.user.userLocations.length === 0) {
 			return this.app.localize('No locations assigned');

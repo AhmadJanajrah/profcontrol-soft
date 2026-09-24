@@ -19,5 +19,15 @@
   "Driver deleted successfully.": "تم حذف السائق بنجاح.",
   "Invalid driver ID provided.": "رقم السائق غير صالح.",
   "Handover": "تسليم",
-  "Courier": "توصيل"
+  "Courier": "توصيل",
+  "Call Center & Delivery": "كول سنتر والتوصيل",
+  "Call Center": "كول سنتر",
+  "Internal": "داخلي",
+  "Independent": "مستقل",
+  "Order Amount With Driver": "مبلغ الطلب مع السائق",
+  "Paid": "مدفوع",
+  "On Account": "ذمة",
+  "Default Order Type": "نوع الطلب الافتراضي",
+  "Dine In": "تناول بالمطعم",
+  "Takeaway": "أخذ"
 }

@@ -81,6 +81,16 @@ export class SystemConfigComponent implements OnInit {
 		{ value: 'AfterDiscount', label: 'After Discount' }
 	];
 
+	public callCenterTypes = [
+		{ value: 'Internal', label: 'Internal' },
+		{ value: 'Independent', label: 'Independent' }
+	];
+
+	public paidDriverOptions = [
+		{ value: 'Paid', label: 'Paid' },
+		{ value: 'OnAccount', label: 'On Account' }
+	];
+
 	public fiscalMonths: any[] = [];
 
 	public backgroundOptions = [
@@ -136,7 +146,9 @@ export class SystemConfigComponent implements OnInit {
 		taxType: 'Exclusive',
 		taxApplication: 'Order',
 		discountApplication: 'Order',
-		taxCalculationOrder: 'AfterDiscount'
+		taxCalculationOrder: 'AfterDiscount',
+		callCenterType: 'Internal',
+		paidDriver: 'Paid'
 	};
 
 	// Receipt
@@ -223,6 +235,8 @@ export class SystemConfigComponent implements OnInit {
 		this.taxTypes.forEach(o => (o.label = this.app.localize(o.label)));
 		this.applicationTypes.forEach(o => (o.label = this.app.localize(o.label)));
 		this.taxCalculationOrders.forEach(o => (o.label = this.app.localize(o.label)));
+		this.callCenterTypes.forEach(o => (o.label = this.app.localize(o.label)));
+		this.paidDriverOptions.forEach(o => (o.label = this.app.localize(o.label)));
 		this.backgroundOptions.forEach(o => (o.label = this.app.localize(o.label)));
 		this.salaryComponentTypes.forEach(o => (o.label = this.app.localize(o.label)));
 

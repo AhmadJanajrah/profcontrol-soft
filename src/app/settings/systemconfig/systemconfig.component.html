@@ -711,6 +711,51 @@
                                     [class.is-invalid]="validated.pos && !pos.discountApplication"
                                     class="form-control"></ng-select>
                             </div>
+
+                            <div class="col-12">
+                                <div class="heading heading-form-title mt-3">
+                                    <i class="ri-customer-service-2-line me-2"></i>
+                                    {{ app.localize('Call Center & Delivery') }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="callCenterType" class="form-label">
+                                    {{ app.localize('Call Center') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.callCenterType"
+                                    [items]="callCenterTypes"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="callCenterType"
+                                    name="callCenterType"
+                                    [class.is-invalid]="validated.pos && !pos.callCenterType"
+                                    class="form-control"
+                                    required></ng-select>
+                            </div>
+
+                            <div class="col-md-6 form-group">
+                                <label for="paidDriver" class="form-label">
+                                    {{ app.localize('Order Amount With Driver') }}
+                                    <code>*</code>
+                                </label>
+                                <ng-select
+                                    [(ngModel)]="pos.paidDriver"
+                                    [items]="paidDriverOptions"
+                                    bindLabel="label"
+                                    bindValue="value"
+                                    [clearable]="false"
+                                    [searchable]="false"
+                                    id="paidDriver"
+                                    name="paidDriver"
+                                    [class.is-invalid]="validated.pos && !pos.paidDriver"
+                                    class="form-control"
+                                    required></ng-select>
+                            </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-2">

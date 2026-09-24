@@ -91,6 +91,7 @@ export class AppService {
       isWaiter: userData.isWaiter,
       profileImageUrl: userData.profileImageUrl,
       accessAllLocations: userData.accessAllLocations,
+      defOrderType: this.readDefOrderType(userData),
       isSystemUser: userData.isSystemUser === true,
       roleName: userData.roleName || userData.role?.roleName || userData.RoleName || tokenRole || cachedRole || '',
       token: userData.token,
@@ -448,6 +449,16 @@ export class AppService {
         }
         if (profile.id) this.user['id'] = profile.id;
         if (profile.isSystemUser === true) this.user['isSystemUser'] = true;
+
+        const defOrderType = this.readDefOrderType(profile);
+        if (defOrderType) {
+          this.user['defOrderType'] = defOrderType;
+          const stored = this.getDecrypted<any>('gorestofy_User');
+          if (stored) {
+            stored.defOrderType = defOrderType;
+            this.setEncrypted('gorestofy_User', stored);
+          }
+        }
       },
       error: () => { }
     });
@@ -549,6 +560,16 @@ export class AppService {
   }
 
   // ==================== User Data Management ====================
+
+  private readDefOrderType(source: any): number | null {
+    const raw = source?.defOrderType ?? source?.DefOrderType;
+    const value = Number(raw);
+    return value >= 1 && value <= 5 ? value : null;
+  }
+
+  public getDefOrderType(): number | null {
+    return this.readDefOrderType(this.user);
+  }
 
   public getUserAttribute(name: string): string {
     return this.user?.[name] ?? '';
