@@ -6794,6 +6794,33 @@ main {
 }
 
 /* Order card */
+.active-orders-grid {
+     display: grid;
+     grid-template-columns: repeat(4, minmax(0, 1fr));
+     gap: 0.75rem;
+}
+
+.active-orders-grid > * {
+     min-width: 0;
+}
+
+.active-orders-grid .order-card .card-body > .d-flex {
+     flex-wrap: wrap;
+     row-gap: 0.25rem;
+}
+
+@media (max-width: 767.98px) {
+     .active-orders-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+     }
+}
+
+@media (max-width: 575.98px) {
+     .active-orders-grid {
+          grid-template-columns: minmax(0, 1fr);
+     }
+}
+
 .order-card {
      cursor: pointer;
      transition: all 0.2s ease;
