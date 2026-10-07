@@ -28,13 +28,17 @@ export interface CartPrintItem {
   quantity: number;
   modifiers: string[];
   notes?: string;
+  isPrinted?: boolean;
 }
 
 export interface KitchenGroup {
   printerId: string;
   queueNo: number;
-  invoiceNo: number;
-  locationId: number;
+  dispatchNo?: number;
+  invoiceNo?: number;
+  locationId?: number;
+  isAddition?: boolean;
+  title?: string;
   items: KitchenTicketItem[];
 }
 
@@ -155,13 +159,18 @@ export class PosPrintService {
   private findCartMatchIndex(remaining: CartPrintItem[], item: KitchenTicketItem): number {
     const itemId = Number(item.itemId);
     const quantity = Number(item.quantity);
-    const exactIndex = remaining.findIndex(
-      cartItem => Number(cartItem.itemId) === itemId && Number(cartItem.quantity) === quantity
-    );
-    if (exactIndex >= 0) {
-      return exactIndex;
-    }
-    return remaining.findIndex(cartItem => Number(cartItem.itemId) === itemId);
+    const matches = remaining
+      .map((cartItem, index) => ({ cartItem, index }))
+      .filter(entry => Number(entry.cartItem.itemId) === itemId);
+
+    const unprinted = matches.filter(entry => !entry.cartItem.isPrinted);
+    const pool = unprinted.length ? unprinted : matches;
+    const exact = pool.find(entry => Number(entry.cartItem.quantity) === quantity);
+    return exact?.index ?? pool[0]?.index ?? -1;
+  }
+
+  private additionTitle(kitchen: KitchenGroup): string {
+    return (kitchen.isAddition ? (kitchen.title || 'إضافة جديدة على الطلب') : '').trim();
   }
 
   private getItemModifierNames(item: KitchenTicketItem): string[] {
@@ -390,6 +399,10 @@ export class PosPrintService {
     const dir = document.documentElement.dir || 'ltr';
     const itemRows = (kitchen.items || []).map(item => this.buildItemRow(item, 'text-end')).join('');
     const queueNo = String(kitchen.queueNo ?? '');
+    const additionTitle = this.additionTitle(kitchen);
+    const heading = additionTitle
+      ? `<h4 class="addition-title">${this.escapeHtml(additionTitle)}</h4>`
+      : `<h4>${this.escapeHtml(this.app.localize('KITCHEN ORDER'))}</h4>`;
 
     const tableRow = meta.table
       ? `<div class="mb-1">${this.escapeHtml(this.app.localize('Table'))}: ${this.escapeHtml(meta.table)}</div>`
@@ -405,13 +418,13 @@ export class PosPrintService {
       <html dir="${dir}">
       <head>
         <meta charset="utf-8">
-        <title>${this.escapeHtml('رقم الدور')} ${this.escapeHtml(queueNo)}</title>
+        <title>${this.escapeHtml(additionTitle || 'رقم الدور')} ${this.escapeHtml(queueNo)}</title>
         ${this.ticketStyles()}
       </head>
       <body>
         <div class="kitchen-ticket">
           <div class="header">
-            <h4>${this.escapeHtml(this.app.localize('KITCHEN ORDER'))}</h4>
+            ${heading}
             <div class="queue-no">${this.escapeHtml('رقم الدور')} ${this.escapeHtml(queueNo)}</div>
             <small>${this.escapeHtml(meta.branchName || '')}</small>
           </div>
@@ -440,9 +453,14 @@ export class PosPrintService {
 
   private buildQueueTicketMarkup(kitchen: KitchenGroup): string {
     const itemRows = (kitchen.items || []).map(item => this.buildItemRow(item, 'qty')).join('');
+    const additionTitle = this.additionTitle(kitchen);
+    const additionRow = additionTitle
+      ? `<div class="addition-title">${this.escapeHtml(additionTitle)}</div>`
+      : '';
 
     return `
       <div class="queue-ticket">
+        ${additionRow}
         <div class="queue-no">${this.escapeHtml('رقم الدور')} ${this.escapeHtml(String(kitchen.queueNo ?? ''))}</div>
         <table>
           <thead>
@@ -483,6 +501,13 @@ export class PosPrintService {
         font-weight: bold;
         margin: 0;
         text-transform: uppercase;
+      }
+      .kitchen-ticket .addition-title {
+        text-transform: none;
+        font-size: 18px;
+        border: 2px solid #000;
+        padding: 4px 6px;
+        margin: 0 0 6px;
       }
       .kitchen-ticket .queue-no {
         font-size: 24px;
@@ -558,6 +583,14 @@ export class PosPrintService {
         margin: 0 auto;
         padding: 6px 4px 10px;
         color: #000;
+      }
+      .queue-ticket .addition-title {
+        text-align: center;
+        font-size: 16px;
+        font-weight: 700;
+        border: 2px solid #000;
+        padding: 4px 6px;
+        margin: 0 0 8px;
       }
       .queue-ticket .queue-no {
         text-align: center;

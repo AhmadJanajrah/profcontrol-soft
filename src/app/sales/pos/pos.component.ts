@@ -233,7 +233,9 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     },
     activeOrders: {
       show: false,
-      loading: false
+      loading: false,
+      orderTypeFilter: null as OrderType | null,
+      selectedFloorId: null as number | null
     },
     orderConfig: {
       show: false,
@@ -838,6 +840,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   private resetActiveOrdersModal(): void {
     this.modals.activeOrders.show = false;
     this.modals.activeOrders.loading = false;
+    this.modals.activeOrders.orderTypeFilter = null;
+    this.modals.activeOrders.selectedFloorId = null;
     this.printingOrderId = null;
   }
 
@@ -1148,6 +1152,10 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public showCartItemDetail(cartItem: any): void {
+    if (cartItem?.isPrinted) {
+      return;
+    }
+
     this.modals.itemDetail.show = true;
     this.modals.itemDetail.item = cartItem.item;
     this.modals.itemDetail.quantity = cartItem.quantity;
@@ -1167,8 +1175,10 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private addItemToCart(item: any, quantity: number, modifiers: any[], notes?: string): void {
-    if (this.cart.filter(ci => ci.itemId === item.id).length > 0)
+    const hasUnprintedLine = this.cart.some(ci => ci.itemId === item.id && !ci.isPrinted);
+    if (hasUnprintedLine) {
       return;
+    }
 
     const cartItemId = `${item.id}_${Date.now()}_${Math.random()}`;
     const modifiersTotal = modifiers.reduce((sum, mod) => sum + (mod.unitPrice || 0), 0);
@@ -1186,7 +1196,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       notes: notes || '',
       item: item,
       modifiers: modifiers,
-      cogsAmount: 0
+      cogsAmount: 0,
+      isPrinted: false
     };
 
     this.cart.push(cartItem);
@@ -1211,6 +1222,9 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     const cartItemIndex = this.cart.findIndex((item: any) => item.id === cartItemId);
     if (cartItemIndex !== -1) {
       const cartItem = this.cart[cartItemIndex];
+      if (cartItem.isPrinted) {
+        return;
+      }
       const modifiersTotal = modifiers.reduce((sum: number, mod: any) => sum + (mod.unitPrice || 0), 0);
       const lineTotal = (cartItem.unitPrice + modifiersTotal) * quantity;
 
@@ -1225,14 +1239,23 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public removeFromCart(cartItemId: string): void {
-    this.cart = this.cart.filter((item: any) => item.id !== cartItemId);
+    const item = this.cart.find((i: any) => i.id === cartItemId);
+    if (!item || item.isPrinted) {
+      return;
+    }
+
+    this.cart = this.cart.filter((entry: any) => entry.id !== cartItemId);
     this.sound.trash();
     this.calculateOrderTotals();
   }
 
   public updateCartItemQuantity(cartItemId: string, quantity: number): void {
     const item = this.cart.find((i: any) => i.id === cartItemId);
-    if (item && quantity > 0) {
+    if (!item || item.isPrinted) {
+      return;
+    }
+
+    if (quantity > 0) {
       item.quantity = quantity;
       item.totalAmount = (item.unitPrice + item.modifiersTotal) * quantity;
       this.calculateOrderTotals();
@@ -2096,7 +2119,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       modifiers: (item.modifiers || [])
         .map((modifier: any) => String(modifier?.optionName || '').trim())
         .filter(Boolean),
-      notes: item.notes || ''
+      notes: item.notes || '',
+      isPrinted: !!item.isPrinted
     }));
   }
 
@@ -2802,8 +2826,62 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public showActiveOrdersModal(): void {
+    this.modals.activeOrders.orderTypeFilter = null;
+    this.modals.activeOrders.selectedFloorId = null;
     this.modals.activeOrders.show = true;
     history.pushState(null, '', window.location.pathname);
+  }
+
+  public setActiveOrdersTypeFilter(orderType: OrderType | null): void {
+    this.modals.activeOrders.orderTypeFilter = orderType;
+    if (orderType !== OrderType.DineIn) {
+      this.modals.activeOrders.selectedFloorId = null;
+    }
+  }
+
+  public setActiveOrdersFloorFilter(floorId: number | null): void {
+    this.modals.activeOrders.selectedFloorId = floorId;
+  }
+
+  public getActiveOrderTypeFilters(): typeof this.orderTypeOptions {
+    const allowed = [OrderType.DineIn, OrderType.Courier, OrderType.Handover];
+    return allowed
+      .map(value => this.orderTypeOptions.find(option => option.value === value))
+      .filter((option): option is typeof this.orderTypeOptions[number] => !!option);
+  }
+
+  public getFilteredActiveOrders(): any[] {
+    const { orderTypeFilter, selectedFloorId } = this.modals.activeOrders;
+
+    return this.activeOrders.filter(order => {
+      if (orderTypeFilter != null && Number(order.orderType) !== orderTypeFilter) {
+        return false;
+      }
+
+      if (orderTypeFilter === OrderType.DineIn && selectedFloorId != null) {
+        return this.getOrderFloorId(order) === selectedFloorId;
+      }
+
+      return true;
+    });
+  }
+
+  private getOrderFloorId(order: any): number | null {
+    const table = order?.table;
+    const directFloorId = Number(table?.floorAreaId ?? table?.floorArea?.id ?? 0);
+    if (directFloorId) {
+      return directFloorId;
+    }
+
+    const tableId = Number(table?.id ?? order?.tableId ?? 0);
+    if (!tableId) {
+      return null;
+    }
+
+    const floor = this.floorAreas.find(area =>
+      (area.tables || []).some(item => Number(item.id) === tableId)
+    );
+    return floor ? Number(floor.id) : null;
   }
 
   public closeActiveOrdersModal(): void {
@@ -3044,7 +3122,9 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
         taxAmount: 0,
         totalAmount: totalAmount,
         notes: it.notes || it.note || '',
-        cogsAmount: it.cogsamount || 0
+        cogsAmount: it.cogsamount || 0,
+        orderItemId: it.id ?? null,
+        isPrinted: it.isPrinted ?? it.printed ?? true
       };
     });
 

@@ -6438,6 +6438,14 @@ main {
      display: flex;
 }
 
+.cart-item.is-printed .clickable-info {
+     cursor: default;
+}
+
+.cart-item.is-printed .clickable-info:hover .view-icon {
+     display: none;
+}
+
 .cart-item .item-img {
      width: 64px;
      height: 64px;
@@ -6519,6 +6527,20 @@ main {
 
 .cart-item .quantity-wrapper {
      align-self: flex-end;
+}
+
+.cart-item .printed-qty {
+     margin-top: auto;
+     min-width: 36px;
+     height: 32px;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     font-weight: var(--font-weight-semibold);
+     background-color: var(--bg-surface);
+     border: 1px solid var(--border-light);
+     border-radius: var(--radius-full);
+     padding-inline: 10px;
 }
 
 .cart-item .plus-minus {
