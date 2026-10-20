@@ -134,9 +134,14 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   public openedCashRegisters: any[] = [];
   public activeOrders: any[] = [];
   public printingOrderId: number | null = null;
+  public incomingActionId: number | null = null;
+  public incomingActionType: 'execute' | 'finish' | null = null;
   public offlineOrders: any[] = [];
   public heldOrder: any = null;
   public waiterOrDrivers: any[] = [];
+  public drivers: any[] = [];
+  private driversLoading = false;
+  private customerCache = new Map<number, any>();
 
   // POS Settings
   public posSettings: any = {
@@ -189,6 +194,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     couponCode: '',
     couponDiscount: 0,
     waiterOrDriver: null,
+    driverId: null,
 
     // Financial calculations
     subTotal: 0,
@@ -236,6 +242,10 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       loading: false,
       orderTypeFilter: null as OrderType | null,
       selectedFloorId: null as number | null
+    },
+    incomingOrders: {
+      show: false,
+      loading: false
     },
     orderConfig: {
       show: false,
@@ -318,6 +328,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit(): void {
     this.loadPOSData();
+    this.loadDrivers();
     this.loadFloorData();
     this.loadOfflineOrders();
     this.loadHeldOrder();
@@ -673,6 +684,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.http.get<any>(`/api/sales/getactiveorders?locationId=${this.locationId}`).subscribe({
       next: (response) => {
         this.activeOrders = response.data || [];
+        this.hydrateOrderCustomers(this.activeOrders);
         this.modals.activeOrders.loading = false;
       },
       error: (error) => {
@@ -698,6 +710,7 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
           this.activeOrders = this.activeOrders.filter(order => order.id !== orderId);
           this.activeOrders.push(activeOrder);
           this.activeOrders.sort((a) => a.id === orderId ? -1 : 1);
+          this.hydrateOrderCustomers([activeOrder]);
           this.sound.notification();
         }
       },
@@ -742,6 +755,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       this.resetCashRegisterModal();
     } else if (this.modals.activeOrders.show) {
       this.resetActiveOrdersModal();
+    } else if (this.modals.incomingOrders.show) {
+      this.resetIncomingOrdersModal();
     } else if (this.modals.splitBill.show) {
       this.resetSplitBillModal();
     } else if (this.modals.kitchenPrint.show) {
@@ -843,6 +858,13 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.modals.activeOrders.orderTypeFilter = null;
     this.modals.activeOrders.selectedFloorId = null;
     this.printingOrderId = null;
+  }
+
+  private resetIncomingOrdersModal(): void {
+    this.modals.incomingOrders.show = false;
+    this.modals.incomingOrders.loading = false;
+    this.incomingActionId = null;
+    this.incomingActionType = null;
   }
 
   private resetSplitBillModal(): void {
@@ -1377,10 +1399,130 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   public selectCustomer(customer: any): void {
-    this.order.customer = customer;
-    this.order.customerId = customer.id;
-    this.order.customerName = customer.fullName || '';
+    this.applyCustomer(customer);
     this.closeCustomerChangeModal();
+    this.loadCustomerRecord(customer?.id);
+  }
+
+  private applyCustomer(customer: any): void {
+    if (!customer) {
+      return;
+    }
+
+    const customerId = Number(customer.id || 0);
+    const cached = customerId ? this.customerCache.get(customerId) : null;
+    const merged = cached ? { ...customer, ...cached } : customer;
+    if (customerId && merged.address) {
+      this.customerCache.set(customerId, merged);
+    }
+
+    this.order.customer = merged;
+    this.order.customerId = merged.id;
+    this.order.customerName = merged.fullName || '';
+  }
+
+  private loadCustomerRecord(customerId: number | null | undefined): void {
+    const id = Number(customerId || 0);
+    if (!id || id === 1) {
+      return;
+    }
+
+    this.http.get<any>(`/api/customers/getcustomer/${id}`).subscribe({
+      next: (response) => {
+        const customer = response?.customer || response;
+        if (!customer?.id) {
+          return;
+        }
+
+        this.customerCache.set(Number(customer.id), customer);
+        if (Number(this.order.customerId) === Number(customer.id)) {
+          this.order.customer = { ...(this.order.customer || {}), ...customer };
+          this.order.customerName = customer.fullName || this.order.customerName;
+        }
+
+        this.activeOrders.forEach(order => {
+          const orderCustomerId = Number(order?.customer?.id || order?.customerId || 0);
+          if (orderCustomerId === Number(customer.id)) {
+            order.customer = { ...(order.customer || {}), ...customer };
+          }
+        });
+      }
+    });
+  }
+
+  private hydrateOrderCustomers(orders: any[]): void {
+    const ids = [...new Set(
+      (orders || [])
+        .map(order => Number(order?.customer?.id || order?.customerId || 0))
+        .filter(id => id > 1)
+    )];
+
+    ids.forEach(id => this.loadCustomerRecord(id));
+  }
+
+  private loadDrivers(): void {
+    if (this.driversLoading) {
+      return;
+    }
+
+    this.driversLoading = true;
+    this.http.get<any>('/api/drivers/getdrivers', {
+      params: {
+        start: 0,
+        length: 500,
+        searchValue: '',
+        sortColumn: 1,
+        sortDirection: 'asc'
+      }
+    }).subscribe({
+      next: (response) => {
+        const rows = response.data || response.Data || [];
+        this.drivers = rows.filter((driver: any) => driver.isActive !== false);
+        this.driversLoading = false;
+        this.syncSelectedDriver();
+      },
+      error: () => {
+        this.drivers = [];
+        this.driversLoading = false;
+      }
+    });
+  }
+
+  private syncSelectedDriver(): void {
+    if (this.order.orderType !== OrderType.Courier) {
+      return;
+    }
+
+    if (this.order.driverId) {
+      const driver = this.drivers.find(item => Number(item.id) === Number(this.order.driverId));
+      if (driver) {
+        this.order.waiterOrDriver = driver.fullName;
+      }
+      return;
+    }
+
+    const match = this.drivers.find(item => item.fullName === this.order.waiterOrDriver);
+    if (match) {
+      this.order.driverId = match.id;
+    }
+  }
+
+  private staffForRequest(): { waiterOrDriver: string | null; driverId: number | null } {
+    if (this.order.orderType === OrderType.Courier) {
+      return {
+        waiterOrDriver: this.order.waiterOrDriver || null,
+        driverId: this.order.driverId || null
+      };
+    }
+
+    if (this.order.orderType === OrderType.DineIn) {
+      return {
+        waiterOrDriver: this.order.waiterOrDriver || null,
+        driverId: null
+      };
+    }
+
+    return { waiterOrDriver: null, driverId: null };
   }
 
   public addNewCustomer(form: NgForm): void {
@@ -1395,9 +1537,12 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.http.post<any>('/api/customers/createcustomer', this.modals.customerChange.newCustomer).subscribe({
       next: (response) => {
         const customer = response?.customer || response;
-        this.order.customer = customer;
-        this.order.customerId = customer?.id;
-        this.order.customerName = customer?.fullName || this.modals.customerChange.newCustomer.fullName || '';
+        this.applyCustomer(customer?.id ? customer : {
+          ...this.modals.customerChange.newCustomer,
+          ...customer,
+          fullName: customer?.fullName || this.modals.customerChange.newCustomer.fullName
+        });
+        this.loadCustomerRecord(this.order.customerId);
         this.modals.customerChange.submitted = false;
         this.modals.customerChange.validated = false;
         this.closeCustomerChangeModal();
@@ -1538,13 +1683,22 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private getDefaultOrderType(): OrderType {
     const value = Number(this.app.getDefOrderType());
-    if (this.orderTypeOptions.some(option => option.value === value)) {
+    if (value !== OrderType.Online && this.orderTypeOptions.some(option => option.value === value)) {
       return value as OrderType;
     }
     return OrderType.DineIn;
   }
 
+  public getConfigOrderTypes(): typeof this.orderTypeOptions {
+    return this.orderTypeOptions.filter(option => option.value !== OrderType.Online);
+  }
+
+  public showsStaffField(): boolean {
+    return this.order.orderType === OrderType.DineIn || this.order.orderType === OrderType.Courier;
+  }
+
   public selectOrderType(orderType: OrderType): void {
+    const previous = this.order.orderType;
     this.order.orderType = orderType;
 
     this.filteredCharges = this.charges.filter((c: any) => c.applyTo === orderType);
@@ -1556,6 +1710,42 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       this.order.tableId = null;
       this.floorService.setSelectedTable(null);
     }
+
+    if (orderType === OrderType.Courier) {
+      if (previous !== OrderType.Courier) {
+        this.order.waiterOrDriver = null;
+        this.order.driverId = null;
+      }
+      this.loadDrivers();
+    } else if (orderType === OrderType.DineIn) {
+      if (previous === OrderType.Courier) {
+        this.order.waiterOrDriver = null;
+      }
+      this.order.driverId = null;
+    } else {
+      this.order.waiterOrDriver = null;
+      this.order.driverId = null;
+    }
+  }
+
+  public onDriverChange(driverId: number | null): void {
+    const driver = this.drivers.find(item => Number(item.id) === Number(driverId));
+    this.order.driverId = driver?.id ?? null;
+    this.order.waiterOrDriver = driver?.fullName ?? null;
+  }
+
+  public customerAddress(customer: any = this.order?.customer): string {
+    const customerId = Number(customer?.id || 0);
+    const source = customerId && this.customerCache.has(customerId)
+      ? this.customerCache.get(customerId)
+      : customer;
+    return this.app.formatAddress(
+      source?.address,
+      source?.city,
+      source?.state,
+      source?.postalCode,
+      source?.country
+    );
   }
 
   public selectTaxRate(taxRateId: number | null): void {
@@ -1725,7 +1915,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       guests: this.order.guests,
       notes: this.order.notes,
       specialInstructions: this.order.specialInstructions,
-      waiterOrDriver: this.order.waiterOrDriver,
+      waiterOrDriver: this.staffForRequest().waiterOrDriver,
+      driverId: this.staffForRequest().driverId,
       couponCode: this.order.couponCode || null,
       items: this.cart.map((item: any) => ({
         itemId: item.itemId,
@@ -2026,7 +2217,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       guests: this.order.guests,
       notes: this.order.notes,
       specialInstructions: this.order.specialInstructions,
-      waiterOrDriver: this.order.waiterOrDriver,
+      waiterOrDriver: this.staffForRequest().waiterOrDriver,
+      driverId: this.staffForRequest().driverId,
       couponCode: this.order.couponCode || null,
       items: this.cart.map((item: any) => ({
         itemId: item.itemId,
@@ -2524,6 +2716,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       charge: this.order.charge,
       couponCode: this.order.couponCode,
       couponDiscount: this.order.couponDiscount,
+      waiterOrDriver: this.order.waiterOrDriver,
+      driverId: this.order.driverId,
       timestamp: new Date().toISOString()
     };
 
@@ -2574,6 +2768,10 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.order.chargeId = this.heldOrder.charge?.id || null;
     this.order.couponCode = this.heldOrder.couponCode || '';
     this.order.couponDiscount = this.heldOrder.couponDiscount || 0;
+    this.order.waiterOrDriver = this.heldOrder.waiterOrDriver || null;
+    this.order.driverId = this.heldOrder.driverId || null;
+    this.syncSelectedDriver();
+    this.loadCustomerRecord(this.order.customerId);
 
     this.app.deleteOfflineData(`heldorder_${this.locationId}`);
     this.heldOrder = null;
@@ -2889,6 +3087,224 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     history.back();
   }
 
+  public get incomingOrders(): any[] {
+    return this.activeOrders.filter(order => this.isIncomingOrder(order));
+  }
+
+  public get incomingOrderCount(): number {
+    return this.incomingOrders.length;
+  }
+
+  public showIncomingOrdersModal(): void {
+    this.modals.incomingOrders.show = true;
+    this.modals.incomingOrders.loading = true;
+    this.http.get<any>(`/api/sales/getactiveorders?locationId=${this.locationId}`).subscribe({
+      next: (response) => {
+        this.activeOrders = response.data || [];
+        this.hydrateOrderCustomers(this.activeOrders);
+        this.modals.incomingOrders.loading = false;
+      },
+      error: () => {
+        this.modals.incomingOrders.loading = false;
+      }
+    });
+    history.pushState(null, '', window.location.pathname);
+  }
+
+  public closeIncomingOrdersModal(): void {
+    this.resetIncomingOrdersModal();
+    history.back();
+  }
+
+  public isIncomingAction(orderId: number, type: 'execute' | 'finish'): boolean {
+    return this.incomingActionId === orderId && this.incomingActionType === type;
+  }
+
+  public incomingCustomerName(order: any): string {
+    return order?.customer?.fullName || order?.customerName || '—';
+  }
+
+  public incomingPhone(order: any): string {
+    return order?.customer?.phone || order?.phone || '—';
+  }
+
+  public incomingAddress(order: any): string {
+    return this.customerAddress(order?.customer) || '—';
+  }
+
+  public incomingDriverName(order: any): string {
+    return order?.driver?.fullName || order?.driverName || order?.waiterOrDriver || '—';
+  }
+
+  public executeIncomingOrder(order: any): void {
+    if (!order?.id || this.incomingActionId) {
+      return;
+    }
+
+    this.incomingActionId = order.id;
+    this.incomingActionType = 'execute';
+
+    const meta: KitchenPrintMeta = {
+      orderNumber: order.id,
+      table: '',
+      orderType: this.getOrderTypeText(order.orderType),
+      orderDate: order.orderDate
+        ? this.app.formatDateTime(order.orderDate)
+        : this.app.getLocalCurrentDateTime(),
+      branchName: this.app.getSelectedLocationName(),
+      waiterOrDriver: this.incomingDriverName(order) === '—' ? '' : this.incomingDriverName(order),
+      specialInstructions: order.specialInstructions || ''
+    };
+
+    this.posPrint.printAfterDineInFire(
+      order.id,
+      this.locationId,
+      meta,
+      this.snapshotOrderPrintItems(order)
+    ).then(() => {
+      this.app.showSuccessMessage(
+        this.app.localize('Success!'),
+        this.app.localize('Order sent to kitchen printers.')
+      );
+    }).catch(() => {
+      this.app.showErrorMessage(
+        this.app.localize('Error!'),
+        this.app.localize('Failed to print.')
+      );
+    }).finally(() => {
+      this.incomingActionId = null;
+      this.incomingActionType = null;
+    });
+  }
+
+  public finishIncomingOrder(order: any): void {
+    if (!order?.id || this.incomingActionId) {
+      return;
+    }
+
+    const paymentMethodId = this.resolveIncomingPaymentMethodId(order);
+    if (!paymentMethodId) {
+      this.app.showErrorMessage(this.app.localize('Error!'), this.app.localize('Please select payment method.'));
+      return;
+    }
+
+    const registerId = paymentMethodId === 3 ? (this.openedCashRegisters[0]?.id ?? null) : null;
+    if (paymentMethodId === 3 && !registerId) {
+      this.app.showErrorMessage(
+        this.app.localize('Error!'),
+        this.app.localize('Cash register is not open. Please open the register before processing cash payments.')
+      );
+      return;
+    }
+
+    this.incomingActionId = order.id;
+    this.incomingActionType = 'finish';
+
+    const paymentRequest = {
+      locationId: this.locationId,
+      orderId: order.id,
+      registerId,
+      paymentMethodId,
+      paymentReference: order.paymentReference || '',
+      paidAmount: this.incomingPayableAmount(order),
+      tipAmount: 0
+    };
+
+    this.http.post<any>('/api/sales/processorder', paymentRequest).subscribe({
+      next: (payResponse) => {
+        const invoiceHtml = payResponse?.invoice || payResponse?.data?.invoice;
+        if (invoiceHtml) {
+          this.printReceiptAfterPayment(invoiceHtml);
+          this.completeIncomingOrder(order.id);
+          return;
+        }
+
+        this.http.get(`/api/sales/viewinvoice/${order.id}`, {
+          params: {
+            locationId: (this.locationId || 0).toString(),
+            isReturnInvoice: 'false'
+          },
+          responseType: 'text'
+        }).subscribe({
+          next: html => {
+            this.printReceiptAfterPayment(html);
+            this.completeIncomingOrder(order.id);
+          },
+          error: error => {
+            this.app.handleApiError(error);
+            this.completeIncomingOrder(order.id);
+          }
+        });
+      },
+      error: (error) => {
+        this.app.handleApiError(error);
+        this.incomingActionId = null;
+        this.incomingActionType = null;
+      }
+    });
+  }
+
+  private completeIncomingOrder(orderId: number): void {
+    this.activeOrders = this.activeOrders.filter(order => order.id !== orderId);
+    this.incomingActionId = null;
+    this.incomingActionType = null;
+    this.app.showSuccessMessage(
+      this.app.localize('Success!'),
+      this.app.localize('Order closed successfully.')
+    );
+  }
+
+  private isIncomingOrder(order: any): boolean {
+    const status = Number(order?.status);
+    if (status === OrderStatus.Completed || status === OrderStatus.Cancelled) {
+      return false;
+    }
+
+    const orderType = Number(order?.orderType);
+    return orderType === OrderType.Handover || orderType === OrderType.Courier;
+  }
+
+  private incomingPayableAmount(order: any): number {
+    const remaining = Number(order?.remainingAmount);
+    if (Number.isFinite(remaining) && remaining > 0) {
+      return remaining;
+    }
+
+    const payable = Number(order?.totalPayable);
+    if (Number.isFinite(payable) && payable > 0) {
+      return payable;
+    }
+
+    return Number(order?.totalAmount || 0);
+  }
+
+  private resolveIncomingPaymentMethodId(order: any): number | null {
+    const fromOrder = Number(order?.paymentMethodId || order?.paymentMethod?.id || 0);
+    if (fromOrder > 0) {
+      return fromOrder;
+    }
+
+    const methods = this.paymentMethods || [];
+    const cash = methods.find((method: any) => Number(method.id) === 3);
+    if (cash) {
+      return 3;
+    }
+
+    return methods[0] ? Number(methods[0].id) : null;
+  }
+
+  private snapshotOrderPrintItems(order: any): CartPrintItem[] {
+    return (order?.orderItems || []).map((item: any) => ({
+      itemId: Number(item.itemId),
+      quantity: Number(item.quantity || 0),
+      modifiers: (item.orderItemModifiers || [])
+        .map((modifier: any) => String(modifier?.modifierOption?.optionName || modifier?.optionName || '').trim())
+        .filter(Boolean),
+      notes: item.notes || '',
+      isPrinted: !!(item.isPrinted ?? item.printed)
+    }));
+  }
+
   public printActiveOrder(event: Event, order: any): void {
     event.stopPropagation();
 
@@ -3031,7 +3447,8 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
       remainingAmount: 0,
       processingFee: 0,
       tipAmount: 0,
-      waiterOrDriver: null
+      waiterOrDriver: null,
+      driverId: null
     };
 
     this.selectedPaymentMethod = null;
@@ -3063,6 +3480,9 @@ export class POSComponent implements OnInit, OnDestroy, AfterViewInit {
     this.order.notes = active.notes ?? '';
     this.order.specialInstructions = active.specialInstructions ?? '';
     this.order.waiterOrDriver = active.waiterOrDriver ?? '';
+    this.order.driverId = active.driverId ?? null;
+    this.syncSelectedDriver();
+    this.loadCustomerRecord(this.order.customerId);
     this.order.registerId = active.registerId ?? null;
 
     const taxId = active.taxRateId ?? active.taxRate?.id ?? null;

@@ -49,6 +49,15 @@
                 }
                 {{ app.localize('Active Orders') }}
             </button>
+
+            <button type="button" class="incoming-bell" [class.has-orders]="incomingOrderCount > 0"
+                (click)="showIncomingOrdersModal()" [appTooltip]="app.localize('Call Center Orders')"
+                [attr.aria-label]="app.localize('Call Center Orders')">
+                <i class="ri-notification-3-fill"></i>
+                @if (incomingOrderCount > 0) {
+                <span class="incoming-bell-count">{{ incomingOrderCount }}</span>
+                }
+            </button>
         </div>
 
         <div class="header-right">
@@ -263,6 +272,12 @@
                                     {{ currentOrder.waiterOrDriver }}
                                 </div>
                                 }
+                                @if (customerAddress()) {
+                                <div class="info-item">
+                                    <i class="ri-map-pin-line ri-1x me-1"></i>
+                                    {{ customerAddress() }}
+                                </div>
+                                }
                             </div>
                             <div>
                                 <button (click)="showOrderConfigModal(false)"
@@ -466,7 +481,7 @@
                             <form>
                                 <!-- Order Type Selection -->
                                 <div class="d-flex flex-wrap gap-2 mb-3">
-                                    @for (orderType of orderTypeOptions; track orderType.value) {
+                                    @for (orderType of getConfigOrderTypes(); track orderType.value) {
                                     <button type="button" class="btn btn-light btn-round"
                                         [ngClass]="{ active: order.orderType === orderType.value }" (click)="
                                             selectOrderType(orderType.value);
@@ -480,10 +495,18 @@
 
                                 <!-- Customer Selection -->
                                 <div class="selected-customer mb-3" (click)="showCustomerChangeModal()">
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex justify-content-between align-items-start">
                                         <div class="me-2">
-                                            <i class="ri-user-line me-2"></i>
-                                            <strong>{{ order.customerName }}</strong>
+                                            <div>
+                                                <i class="ri-user-line me-2"></i>
+                                                <strong>{{ order.customerName }}</strong>
+                                            </div>
+                                            @if (customerAddress()) {
+                                            <div class="text-muted small mt-1">
+                                                <i class="ri-map-pin-line me-1"></i>
+                                                {{ customerAddress() }}
+                                            </div>
+                                            }
                                         </div>
                                         <div>
                                             <i class="ri-pencil-line"></i>
@@ -546,17 +569,26 @@
                                     </div>
                                 </div>
 
-                                <!-- Waiter/Driver Selection -->
+                                @if (showsStaffField()) {
                                 <div class="form-group">
                                     <label for="waiterOrDriver" class="control-label">
-                                        {{ app.localize('Waiter/Driver') }}
+                                        {{ order.orderType === OrderType.Courier ? app.localize('Driver') : app.localize('Waiter/Driver') }}
                                     </label>
+                                    @if (order.orderType === OrderType.Courier) {
+                                    <ng-select [ngModel]="order.driverId" (ngModelChange)="onDriverChange($event)"
+                                        id="waiterOrDriver" name="waiterOrDriver" [items]="drivers" bindLabel="fullName"
+                                        bindValue="id" [searchable]="true" [clearable]="true"
+                                        [placeholder]="app.localize('Choose an option')"
+                                        class="form-control"></ng-select>
+                                    } @else {
                                     <ng-select [(ngModel)]="order.waiterOrDriver" id="waiterOrDriver"
                                         name="waiterOrDriver" [items]="waiterOrDrivers" bindLabel="userName"
                                         bindValue="userName" [searchable]="true" [clearable]="true"
                                         [placeholder]="app.localize('Choose an option')"
                                         class="form-control"></ng-select>
+                                    }
                                 </div>
+                                }
 
                                 <!-- Special Instructions -->
                                 <div class="mb-3">
@@ -1509,6 +1541,82 @@
             </div>
         </div>
         <div (click)="closeActiveOrdersModal()" class="modal-backdrop"></div>
+    </div>
+
+    <!-- Call center pickup / delivery orders -->
+    <div [ngClass]="{ show: modals.incomingOrders.show }" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="ri-notification-3-fill me-1"></i>
+                        {{ app.localize('Call Center Orders') }}
+                    </h5>
+                    <button (click)="closeIncomingOrdersModal()" type="button" class="btn-close">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    @if (modals.incomingOrders.loading) {
+                    <div class="d-flex align-items-center justify-content-center py-4">
+                        <div class="loader"></div>
+                    </div>
+                    } @else if (incomingOrders.length === 0) {
+                    <div class="text-center py-4">
+                        <i class="ri-notification-off-line fs-2 text-muted"></i>
+                        <p class="mt-1">{{ app.localize('No incoming orders') }}</p>
+                    </div>
+                    } @else {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle incoming-orders-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>{{ app.localize('Order #') }}</th>
+                                    <th>{{ app.localize('Customer') }}</th>
+                                    <th>{{ app.localize('Phone') }}</th>
+                                    <th>{{ app.localize('Address') }}</th>
+                                    <th>{{ app.localize('Driver') }}</th>
+                                    <th>{{ app.localize('Order Value') }}</th>
+                                    <th class="text-end">{{ app.localize('Actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (order of incomingOrders; track order.id) {
+                                <tr>
+                                    <td>#{{ order.id }}</td>
+                                    <td>{{ incomingCustomerName(order) }}</td>
+                                    <td>{{ incomingPhone(order) }}</td>
+                                    <td class="incoming-address">{{ incomingAddress(order) }}</td>
+                                    <td>{{ incomingDriverName(order) }}</td>
+                                    <td>{{ formatCurrency(order.totalAmount) }}</td>
+                                    <td class="text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <button type="button" class="btn btn-primary btn-sm btn-round"
+                                                [ngClass]="{ 'disabled btn-progress': isIncomingAction(order.id, 'execute') }"
+                                                [disabled]="incomingActionId !== null"
+                                                (click)="executeIncomingOrder(order)">
+                                                <i class="ri-printer-line"></i>
+                                                {{ app.localize('Execute') }}
+                                            </button>
+                                            <button type="button" class="btn btn-success btn-sm btn-round"
+                                                [ngClass]="{ 'disabled btn-progress': isIncomingAction(order.id, 'finish') }"
+                                                [disabled]="incomingActionId !== null"
+                                                (click)="finishIncomingOrder(order)">
+                                                <i class="ri-check-double-line"></i>
+                                                {{ app.localize('Finish') }}
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    }
+                </div>
+            </div>
+        </div>
+        <div (click)="closeIncomingOrdersModal()" class="modal-backdrop"></div>
     </div>
 
     <!-- Split Bill Modal -->

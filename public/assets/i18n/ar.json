@@ -29,5 +29,14 @@
   "On Account": "ذمة",
   "Default Order Type": "نوع الطلب الافتراضي",
   "Dine In": "تناول بالمطعم",
-  "Takeaway": "أخذ"
+  "Takeaway": "أخذ",
+  "Call Center Orders": "طلبات الكول سنتر",
+  "No incoming orders": "لا توجد طلبات واردة",
+  "Execute": "تنفيذ",
+  "Finish": "انهاء",
+  "Order Value": "قيمة الطلب",
+  "Phone": "رقم الهاتف",
+  "Order sent to kitchen printers.": "تم إرسال الطلب إلى طابعات المطبخ.",
+  "Order closed successfully.": "تم إغلاق الطلب بنجاح.",
+  "Failed to print.": "فشلت الطباعة."
 }
